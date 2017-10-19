@@ -1,0 +1,32 @@
+a.tooltip em {
+    display:none;
+}
+a.tooltip:hover {
+    border: 0;
+    position: relative;
+    z-index: 500;
+    text-decoration:none;
+}
+a.tooltip:hover em {
+    font-style: normal;
+    display: block;
+    position: absolute;
+    top: 20px;
+    left: 40px;
+    padding: 5px;
+    color: #000;
+    border: 1px solid #fff;
+    background: #c3d9ff;
+    width:170px;
+}
+a.tooltip:hover em span {
+    position: absolute;
+    top: -7px;
+    left: 15px;
+    height: 7px;
+    width: 11px;
+    background: transparent url(../images/image-infobulle.gif);
+    margin:0;
+    padding: 0;
+    border: 0;
+}

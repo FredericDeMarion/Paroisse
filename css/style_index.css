@@ -1,0 +1,40 @@
+
+
+entete
+{
+    display: block;
+	position: fixed; z-index: 2; top: 0px; left: 0px; right: 0px;
+}
+
+nav
+{
+    display: inline-block;
+	 Position: relative;
+	 right: 10px;
+	 top:10px;
+    width: 360px;
+    border: 1px solid black;
+    vertical-align: top;
+
+}
+ 
+anniv
+{
+    display: inline-block;   
+	 Position: relative;
+	 top:10px;
+	 bottom:50px;
+    border: 1px solid black;
+    vertical-align: top;
+}
+
+pied
+{
+    display: block;
+	position: relative;
+	top:100px;
+	 background-color:#F7F7F7;
+    width: 99%;
+    border: 2px solid black;
+
+}

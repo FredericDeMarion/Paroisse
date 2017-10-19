@@ -1,0 +1,6 @@
+ 
+<?xml version="1.0" encoding="utf-8"?>
+<markers>
+  <marker adresse="35 avenue de la république 75011 paris" detail="test1" />
+  <marker adresse="16 rue oberkampf 75011 paris" detail="test2" />
+</markers>
