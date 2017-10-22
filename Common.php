@@ -748,34 +748,31 @@ function format_Telephone( $pTelNum, $pSeparator) {
 	return trim($RetourChaine);
 }
 
-function fCOM_Display_Photo($Nom, $Prenom, $id, $Font_Size, $pCliquable)
+function fCOM_Display_Photo($pNom, $pPrenom, $pid, $pFont_Size="1", $pCliquable=False)
 {
-	if(!isset($Font_Size)) {
-		$Font_Size="1";
-	}
 	
-	if (file_exists("Photos/Individu_".$id.".jpg")) { 
+	if (file_exists("Photos/Individu_".$pid.".jpg")) { 
 		if ($pCliquable == False) {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].' class="tooltip"><FONT SIZE="'.$Font_Size.'">'.$Nom.'</FONT>';
+			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].' class="tooltip"><FONT SIZE="'.$pFont_Size.'">'.$pNom.'</FONT>';
 			echo '<em><span></span>';
-			echo "<img src='Photos/Individu_".$id.".jpg' height='100' border='1' alt='Paroissien_".$id."'>";
-			echo '<br><font face=verdana size=1>'.$Prenom.' '.$Nom.'</font>';
+			echo "<img src='Photos/Individu_".$pid.".jpg' height='100' border='1' alt='Paroissien_".$pid."'>";
+			echo '<br><FONT face=verdana size=1>'.$pPrenom.' '.$pNom.'</FONT>';
 			echo '</em></A>';
 		} else {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$id.' class="tooltip"><FONT SIZE="'.$Font_Size.'">'.$Prenom.' '.$Nom.'</FONT>';
+			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$pid.' class="tooltip"><FONT SIZE="'.$pFont_Size.'">'.$pPrenom.' '.$pNom.'</FONT>';
 			echo '<em><span></span>';
-			echo "<img src='Photos/Individu_".$id.".jpg' height='100' border='1' alt='Paroissien_".$id."'>";
-			echo '<br><font face=verdana size=1>'.$Prenom.' '.$Nom.'</font>';
+			echo "<img src='Photos/Individu_".$pid.".jpg' height='100' border='1' alt='Paroissien_".$pid."'>";
+			echo '<br><FONT face=verdana size=1>'.$pPrenom.' '.$pNom.'</FONT>';
 			echo '</em></A>';
 		}
 	} else {
 		if ($pCliquable == False) {
 			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].'>';
-			echo '<FONT SIZE="'.$Font_Size.'">'.$Prenom.' '.$Nom.'</FONT> ';
+			echo '<FONT SIZE='.$pFont_Size.'>'.$pPrenom.' '.$pNom.'</FONT> ';
 			echo '</A>';
 		} else {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$id.'>';
-			echo '<FONT SIZE="'.$Font_Size.'">'.$Prenom.' '.$Nom.'</FONT> ';
+			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$pid.'>';
+			echo '<FONT SIZE='.$pFont_Size.'>'.$pPrenom.' '.$pNom.'</FONT> ';
 			echo '</A>';
 		}
 	}

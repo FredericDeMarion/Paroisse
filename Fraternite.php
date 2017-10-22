@@ -1806,6 +1806,83 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="trombinoscope") {
 	exit;
 }
 
+if ( isset( $_GET['action'] ) AND $_GET['action']=="Inviter") { 
+	// si KT
+	// Tous les enfants >= 6 ans et moins de 12 qui ont déjà été baptisés et qui n'ont pas remis les pieds au catéchisme
+	// si Aumônerie
+	// Tous les enfants >= 12 ans et moins de 18 qui ont déjà été baptisés et qui n'ont pas remis les pieds au aumônerie
+	Global $eCOM_db;
+	$debug = False;
+	address_top();
+	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+	echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Invité</B><BR>';
+	echo '</TD></TR>';
+	echo '<TR><TD BGCOLOR="#EEEEEE">';
+	
+	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		$ComplementWhere = 'AND T3.`Activite_id`!= '.$_SESSION["Activite_id"].' AND T0.`Bapteme`!= "0000-00-00" AND (YEAR(CURRENT_DATE)-YEAR(T0.`Naissance`))>=6 AND (YEAR(CURRENT_DATE)-YEAR(T0.`Naissance`))<12 ';
+		
+	}elseif ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège		
+		$ComplementWhere = 'AND T3.`Activite_id`!= '.$_SESSION["Activite_id"].' AND (YEAR(CURRENT_DATE)-YEAR(T0.`Naissance`))>=12 AND (YEAR(CURRENT_DATE)-YEAR(T0.`Naissance`))<=18 ';
+	}
+
+	$requete = 'SELECT DISTINCT T0.`id`, T0.`Prenom` AS Prenom, T0.`Nom` as Nom, T0.`Bapteme`, (YEAR(CURRENT_DATE)-YEAR(T0.`Naissance`)) AS Age, T0.`e_mail`, T1.`e_mail` As AdressPere, T2.`e_mail`AS AdressMere 
+		FROM `Individu` T0
+		LEFT JOIN `Individu` T1 on T1.`id`=T0.`Pere_id`
+		LEFT JOIN `Individu` T2 on T2.`id`=T0.`Mere_id`
+		LEFT JOIN `QuiQuoi` T3 on T0.`id`= T3.`Individu_id` 
+		WHERE T0.`Actif`=1 AND T3.`QuoiQuoi_id`=1 '.$ComplementWhere.'
+		ORDER BY Age';
+	
+	pCOM_DebugAdd($debug, "Fraternite:Invite Requete=".$requete);
+	$resultat = mysqli_query($eCOM_db,  $requete );
+	
+	$trcolor = "#EEEEEE";
+	echo '<TABLE>';
+	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Prénom et Nom</font></TH>';
+	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Age</font></TH>';
+	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Date Baptême</font></TH>';
+	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>e_mail (<A HREF="load/ListeMail_Parents_invite.php">Préparer e_mail</A>)</font></TH>';
+
+	$temp_Parent = "load/ListeMail_Parents_invite.php";
+	$handle_Parent = fopen($temp_Parent, 'w');
+	fwrite($handle_Parent, "<HTML><HEAD><TITLE>Liste adresses mail des parents</TITLE></HEAD><BODY><br>");
+	$TreatedName = ""; // mise à zéro pour éviter erreur
+	fwrite($handle_Parent, "<h1><FONT face=verdana>Liste des adresses mail des parents : ".$TreatedName."</FONT></h1>");
+	fwrite($handle_Parent, "<FONT face=verdana size=2>");
+	fwrite($handle_Parent, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>");
+	fwrite($handle_Parent, "<p>===================================================</p><br><TABLE>");
+	fwrite($handle_Parent, "<FONT face=verdana size=2>");
+		
+	echo '</TR>';
+	while( $row = mysqli_fetch_assoc( $resultat )) {
+		$trcolor = usecolor();
+		echo '<TR>';
+
+		echo '<TD bgcolor='.$trcolor.'>';
+		echo fCOM_Display_Photo($row['Nom'], $row['Prenom'], $row['id'], "2", True);
+		echo '</TD>';
+		
+		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Age'].'</FONT></TD>';
+		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.fCOM_PrintDate($row['Bapteme']).'</FONT></TD>';
+		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['AdressMere'].'; '.$row['AdressPere'].'</FONT></TD>';
+		fwrite($handle_Parent, '"Parents de '.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"< '.format_email_list(Securite_html($row['AdressPere']).' '.Securite_html($row['AdressMere']), ">;< ").'>; ');
+		echo '</TR>';
+	}
+		
+	fwrite($handle_Parent, "</TD></TR><TR><TD><BR><BR></TD></TR>");
+	fwrite($handle_Parent, "<TR><TD><FONT face=verdana size=2>");
+	fwrite($handle_Parent, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
+	fwrite($handle_Parent, "</FONT></TD></TR></TABLE>");
+	fwrite($handle_Parent, "</BODY></HTML>");
+	fclose($handle_Parent);
+		
+	echo "</TABLE>";
+	fCOM_address_bottom();
+	mysqli_close($eCOM_db);
+	exit;
+}
 
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------

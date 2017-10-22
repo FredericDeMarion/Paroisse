@@ -218,9 +218,13 @@ $count_user_online=mysqli_num_rows($result3);
 								<ul class="simple">
 									<?php
 									echo '<li><a href="'.$_SERVER['PHP_SELF'].'?">Liste des Participants</a></li>';
-									if ($_SESSION["Activite_id"] == 26) {
+									if ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
 										echo '<li><a href="'.$_SERVER['PHP_SELF'].'?action=trombinoscope">Trombinoscope</a></li>';									
 									}
+									if ($_SESSION["Activite_id"] == 26 || // Aumônerie Lycée et collège
+									    $_SESSION["Activite_id"] == 12) { // Cathéchèse
+										echo '<li><a href="'.$_SERVER['PHP_SELF'].'?action=Inviter">Requete invitation nouveaux</a></li>';									
+									}									
 									echo '<li><a href="'.$_SERVER['PHP_SELF'].'?action=list_fraternite">Composition des frats</a></li>';
 									if ($_SERVER['PHP_AUTH_USER'] == "administrateur" || $_SERVER['PHP_AUTH_USER'] == "comptable" || $_SERVER['PHP_AUTH_USER'] == "gestionnaire" || fCOM_Get_Autorization( $_SESSION["Activite_id"] ) >= 30) {
 										echo '<li><a href="'.$_SERVER['PHP_SELF'].'?action=edit_Individu&id=0">Ajouter un Paroissien</a></li>';
