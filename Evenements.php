@@ -1104,25 +1104,40 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 
 	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	
-	$debug = false;
+	$debug = False;
 	pCOM_DebugInit($debug);
 	
 	// Réinitialiser la liste des prochaines célébrations
 	// Date limite = today + 60 jours
-	$DateLimite=fCOM_sqlDateToOut(date("Y-m-d H:i:s")) + (24*3600*60);
+	$DateLimite=fCOM_sqlDateToOut(date("Y-m-d H:i:s")) + (24*3600*360);
+	$CurrentDate=date("Y-m-d");
+	pCOM_DebugAdd($debug,"Evenements:Liste DateLimite=".$DateLimite);
+	pCOM_DebugAdd($debug,"Evenements:Liste CurrentDate=".$CurrentDate);
+	
 	$requete="Truncate Celebrations_futur";
 	$result = mysqli_query( $eCOM_db, $requete);
-	$requete="SELECT * FROM Celebrations_rec WHERE Now() >= DateDeb AND Now() <= DateFin";
+	$requete='SELECT * FROM Celebrations_rec WHERE "'.$CurrentDate.'" <= DateFin';
+	pCOM_DebugAdd($debug,"Evenements:Liste Requete=".$requete);
+
 	$result = mysqli_query( $eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)) {
 		$DateRec = fCOM_sqlDateToOut(date("Y-m-d").' '.$row['Heure']);
 		while ( date('N', $DateRec) != $row['Jour'] ) {
 			$DateRec = $DateRec + (24*3600);
 		}
-		While ( $DateRec <= $DateLimite ) {
-			$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d H:i:s",$DateRec).'", '.$row['Lieu_id'].')';
+		pCOM_DebugAdd($debug,"Evenements:Liste DateDeb=".fCOM_sqlDateToOut($row['DateDeb']));
+		pCOM_DebugAdd($debug,"Evenements:Liste DateFin=".fCOM_sqlDateToOut($row['DateFin']));
+		pCOM_DebugAdd($debug,"Evenements:Liste DateRec=".$DateRec);
+		While ( $DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
+				$DateRec <= $DateLimite ) {
+			if ($DateRec >= fCOM_sqlDateToOut($row['DateDeb']) AND 
+				$DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
+				$DateRec <= $DateLimite ) {
+				$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d",$DateRec).'", '.$row['Lieu_id'].')';
+				pCOM_DebugAdd($debug,"Evenements:Liste Requete02=".$requete);
 			//pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - requete=".$requete);
-			mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
+				mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
+			}
 			$DateRec = $DateRec + (24*3600*7); // 7 jours
 		}
 	}

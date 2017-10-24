@@ -85,7 +85,7 @@ function popupwnd(url, toolbar, menubar, locationbar, resize, scrollbars, status
 //-->
 </script>
 <link rel="stylesheet" href="css/style_titre.css" type="text/css" media="screen" />
-<link rel="icon" type="image/png" href="icone.png" />
+<link rel="icon" type="image/png" href="logo.png" />
 </HEAD>
 <BODY BGCOLOR="#FFFFFF" link="blue" vlink="blue" alink="blue">
 <CENTER>

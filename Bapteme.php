@@ -1506,7 +1506,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AffecterBaseBapteme") {
 			mysqli_query($eCOM_db, "INSERT INTO QuiQuoi (Individu_id, Activite_id, Engagement_id, QuoiQuoi_id, Session) VALUES (".$_GET['Qui_id'].",".$_SESSION["Activite_id"].", ".$_GET['Bapteme_id'].", 5, '".$_SESSION["Session"]."')") or die (mysqli_error($eCOM_db));
 		} else {
 			pCOM_DebugAdd($Debug, "Bapteme:AffecterBaseBapteme-".$_GET['Qui']." Requete=UPDATE Bapteme SET ".$_GET['Qui']."_id=".$_GET['Qui_id']." WHERE id=".$_GET['Bapteme_id']);
-			$Qui = stripAccents($_GET['Qui']);
+			$Qui = fCOM_stripAccents($_GET['Qui']);
 			mysqli_query($eCOM_db, "UPDATE Bapteme SET ".$_GET['Qui']."_id=".$_GET['Qui_id']." WHERE id=".$_GET['Bapteme_id']." ") or die (mysqli_error($eCOM_db));
 		}
 		mysqli_query($eCOM_db, 'UPDATE Bapteme SET MAJ="'.date("Y-m-d H:i:s").'" WHERE id='.$_GET['Bapteme_id'].' ') or die (mysqli_error($eCOM_db));

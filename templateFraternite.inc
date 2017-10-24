@@ -7,7 +7,7 @@
 //--------------------------------------------------------------------------------------------------
 //    V1.00 | 12/04/2017 | Version originale
 //==================================================================================================
-
+// 24/10/2017 : remplacement de stripAccents par fCOM_stripAccents
 
 $Liste_Genre = array(" ", "F", "M");
 
@@ -84,11 +84,6 @@ function get_liste_celebrants_testold() {
 }
 
 
-function stripAccents($string){
-	return strtr($string,'àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ',
-'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
-}
-
 function sqlDateToOut($sqldate) {
 
   setlocale (LC_TIME, "fr");
@@ -140,7 +135,7 @@ function popupwnd(url, toolbar, menubar, locationbar, resize, scrollbars, status
 //-->
 </script>
 <link rel="stylesheet" href="css/style_titre.css" type="text/css" media="screen" />
-<link rel="icon" type="image/png" href="icone.png" />
+<link rel="icon" type="image/png" href="logo.png" />
 </HEAD>
 <BODY BGCOLOR="#FFFFFF" link="blue" vlink="blue" alink="blue">
 <CENTER>

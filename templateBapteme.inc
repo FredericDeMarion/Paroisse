@@ -7,6 +7,7 @@
 //--------------------------------------------------------------------------------------------------
 //    V1.00 | 12/04/2017 | Version originale
 //==================================================================================================
+//24/10/2017 : remplacement de stripAccents par fCOM_stripAccents
 
 $Liste_Confessions = array("Confession ?", "Sans", "Catéchumène", "Catholique", "Orthodoxe", "Protestant", "Musulman", "Juif", "Bouddhiste", "Autre");
 $Liste_Genre = array(" ", "F", "M");
@@ -24,12 +25,6 @@ function debug_plus($ch) {
 // 4 - Diacre
 // 8 - Accompagnateur Bapteme
 
-
-
-function stripAccents($string){
-	return strtr($string,'àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ',
-'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
-}
 
  
 //header for all pages
@@ -61,7 +56,7 @@ function popupwnd(url, toolbar, menubar, locationbar, resize, scrollbars, status
 //-->
 </script>
 <link rel="stylesheet" href="css/style_titre.css" type="text/css" media="screen" />
-<link rel="icon" type="image/png" href="icone.png" />
+<link rel="icon" type="image/png" href="logo.png" />
 </HEAD>
 <BODY BGCOLOR="#FFFFFF" link="blue" vlink="blue" alink="blue">
 <CENTER>
@@ -105,7 +100,7 @@ $count_user_online=mysqli_num_rows($result3);
 				<TD><TABLE WIDTH="100%" BORDER="0" CELLSPACING="0" CELLPADDING="0">
 				<TR>
 				<?php
-				$result = mysqli_query( $eCOM_db, "SELECT Nom FROM Activite WHERE Activite_id=".$_SESSION["Activite_id"]." ");
+				$result = mysqli_query( $eCOM_db, "SELECT Nom FROM Activites WHERE id=".$_SESSION["Activite_id"]." ");
 				$row = mysqli_fetch_assoc( $result );
 				$Titre_Page = $row['Nom'];
 				if ($_SESSION["Session"]=="All") {
@@ -121,9 +116,9 @@ $count_user_online=mysqli_num_rows($result3);
 		
 				require("Login/sqlconf.php");
 				if ($_SESSION["Session"]=="All") {
-					$result = mysqli_query( $eCOM_db, "SELECT * FROM Bapteme ");
+					$result = mysqli_query( $eCOM_db, "SELECT * FROM Bapteme WHERE Activite_id=".$_SESSION["Activite_id"]." ");
 				} else {
-					$result = mysqli_query( $eCOM_db, "SELECT * FROM Bapteme WHERE Session = ".$_SESSION["Session"]." ");
+					$result = mysqli_query( $eCOM_db, "SELECT * FROM Bapteme WHERE Session = ".$_SESSION["Session"]." AND Activite_id=".$_SESSION["Activite_id"]." ");
 				}
 				$num_total = mysqli_num_rows($result);
 				echo("Il y a " . $num_total . " fiches baptême en cours.</FONT></TD>\n"); 
@@ -161,7 +156,7 @@ $count_user_online=mysqli_num_rows($result3);
 									<?php
 									echo '<li><a href="Bapteme.php?Session='.$_SESSION["Session"].'&action=list_accomp">Liste</a></li>';
 									echo '<li><a href="Bapteme.php?Session='.$_SESSION["Session"].'&action=list_accompagnateur_sssession">Liste par sous session</a></li>';
-									if ($_SERVER['PHP_AUTH_USER'] == "administrateur" || $_SERVER['PHP_AUTH_USER'] == "comptable" || $_SERVER['PHP_AUTH_USER'] == "gestionnaire" || fCOM_Get_Autorization( $_SESSION["Activite_id"] ) >= 30) {
+									if (fCOM_Get_Autorization( $_SESSION["Activite_id"] ) >= 30) {
 										echo '<li><a href="Bapteme.php?Session='.$_SESSION["Session"].'&action=Configuration_Accompagnateur&id=0&Activite=3">Ajouter et retirer</a></li>';
 									}
 									?>
@@ -180,6 +175,9 @@ $count_user_online=mysqli_num_rows($result3);
 							</div>
 						</div>
 					</li>
+					<?php
+					if ($_SESSION["Activite_id"]==3) { // Baptême bébé
+					?>
 					<li class="menu_right"><a href="#" class="drop">Divers</a><!-- classique -->
 						<div class="dropdown_1column align_right">
 							<div class="col_1">
@@ -199,6 +197,7 @@ $count_user_online=mysqli_num_rows($result3);
 						</div>
 					</li>
 					<?php
+					}
 					if ($_SERVER['USER'] <= 2 || fCOM_Get_Autorization( $_SESSION["Activite_id"] )>= 30) {
 					?>
 					<li class="menu_right"><a href="#" class="drop">Comptabilité</a><!-- classique -->

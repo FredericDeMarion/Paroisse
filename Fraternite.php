@@ -1618,7 +1618,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AffecterBaseFraternite") {
 //if ($action == "AffecterBaseFraternite") { 
 	Global $eCOM_db;
 	if ($_GET['Qui_id'] > 0 & $_GET['Invite_id'] > 0) {
-		$Qui = stripAccents($_GET['Qui']);
+		$Qui = fCOM_stripAccents($_GET['Qui']);
 		$Activite_id=$_SESSION["Activite_id"];
 		if ($Qui == "Parrain") {
 			mysqli_query($eCOM_db, 'INSERT INTO QuiQuoi (Individu_id, Activite_id, Engagement_id, QuoiQuoi_id, Session) VALUES ('.$_GET['Qui_id'].','.$Activite_id.','.$_GET['Invite_id'].',3, ".$_SESSION["Session"].")') or die (mysqli_error($eCOM_db));
@@ -1840,10 +1840,10 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Inviter") {
 	
 	$trcolor = "#EEEEEE";
 	echo '<TABLE>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Prénom et Nom</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Age</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Date Baptême</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>e_mail (<A HREF="load/ListeMail_Parents_invite.php">Préparer e_mail</A>)</font></TH>';
+	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Prénom et Nom</FONT></TH>';
+	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Age</FONT></TH>';
+	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Date Baptême</FONT></TH>';
+	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>e_mail (<A HREF="load/ListeMail_Parents_invite.php">Préparer e_mail</A>)</FONT></TH>';
 
 	$temp_Parent = "load/ListeMail_Parents_invite.php";
 	$handle_Parent = fopen($temp_Parent, 'w');

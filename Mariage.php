@@ -1139,7 +1139,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="DeclarerBaseQuiQuoi") {
 	pCOM_DebugAdd($debug, "Mariage:Action=DeclarerBaseQuiQuoi -> RetourPageCourante =".$_SESSION["RetourPageCourante"]);
 	
 	if ($_GET['Qui_id'] > 0 & $Engagement_id > 0) {
-		//$Qui = stripAccents($Qui);
 
 		// verifier si la fiche existe déjà
 		$requete = 'SELECT T0.`id` 
