@@ -792,11 +792,11 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		echo '</TD><TD bgcolor="#eeeeee" valign="top">';
 		echo '<p>';
 		if ($row['Extrait_Naissance'] == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-		echo '<input type="checkbox" name="SExtrait_Naissance" id="SExtrait_Naissance" ' .$optionSelect .' /> <label for="SExtrait_Naissance"><FONT SIZE="2">Acte de Naissance</b></label>';
+		echo '<input type="checkbox" name="SExtrait_Naissance" '.$BloquerAcces.' id="SExtrait_Naissance" ' .$optionSelect .' /> <label for="SExtrait_Naissance"><FONT SIZE="2">Acte de Naissance</b></label>';
 		if ($row['Dossier_Renseigne'] == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-		echo '<input type="checkbox" name="SDossier_Renseigne" id="SDossier_Renseigne" ' .$optionSelect .' /> <label for="SDossier_Renseigne"><FONT SIZE="2">Dossier renseigné<br></b></label>';
+		echo '<input type="checkbox" name="SDossier_Renseigne" '.$BloquerAcces.' id="SDossier_Renseigne" ' .$optionSelect .' /> <label for="SDossier_Renseigne"><FONT SIZE="2">Dossier renseigné<br></b></label>';
 		if ($row['Livret_de_famille'] == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-		echo '<input type="checkbox" name="SLivret_de_famille" id="SLivret_de_famille" ' .$optionSelect .' /> <label for="SLivret_de_famille"><FONT SIZE="2">Livret_de_famille (si catholique)</b></label>';
+		echo '<input type="checkbox" name="SLivret_de_famille" '.$BloquerAcces.' id="SLivret_de_famille" ' .$optionSelect .' /> <label for="SLivret_de_famille"><FONT SIZE="2">Livret_de_famille (si catholique)</b></label>';
 		echo '</p>';
 	}
 
