@@ -11,6 +11,7 @@
 // 28/05/2017 : Correction de la session sélectionnée différente que le courant
 // 17/07/2017 : Ajout des célébrations automatiques
 // 17/07/2017 : Ajout de la fonction Gerer_Equipe_Technique_Messe lorsqu'il n'y a pas de fichier XML
+// 05/11/2017 : utilisation de fCOM_sqlDateToOut et suppression de sqlDateToOut de Template.inc
 //==================================================================================================
 
 require('Common.php');
@@ -407,7 +408,7 @@ WHERE T4.`Date_mariage` < now() and T4.`Date_mariage` != "0000-00-00 00:00:00")
 					}
 				}
 				echo '</B></font></TD>';
-				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=1>'.strftime("%d/%m/%Y",sqlDateToOut($row['DateEv'])).' ('.$row['Age'].' ans)</font></TD>';
+				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=1>'.strftime("%d/%m/%Y",fCOM_sqlDateToOut($row['DateEv'])).' ('.$row['Age'].' ans)</font></TD>';
 				echo '</B></TR>';
 			}
 		}

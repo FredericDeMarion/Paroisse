@@ -64,9 +64,10 @@ require('Paroissien.php');
 
 // Activation des fonctions suivant les paroisses
 // -----------------------------------------------
+Global $eCOM_db;
 $Paroisse_name = "Inconnue";
 $requete_Lieux = 'SELECT * FROM Lieux WHERE IsParoisse = -1';
-$result_Lieux = mysqli_query($db, $requete_Lieux);
+$result_Lieux = mysqli_query($eCOM_db, $requete_Lieux);
 while($row_lieu = mysqli_fetch_array($result_Lieux)){
 	$Paroisse_name = $row_lieu['Lieu'];
 }
@@ -1049,6 +1050,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 //----------------------------------------------------------------------
 	address_top();
 	Global $eCOM_db;
+	setlocale(LC_ALL, 'fr_FR','fra');
 	
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<TR BGCOLOR="#F7F7F7">';
@@ -1074,18 +1076,18 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 	}
 	
 	if ($criteria=="Lieu" ) {
-		$SecondCriteria = ", Date ASC, Ordre";
+		$SecondCriteria = ", Date ASC, Ordre ASC";
 	} elseif ($criteria=="Celebrant") {
-		$SecondCriteria = ", Date ASC, Lieu ASC, Ordre";
+		$SecondCriteria = ", Date ASC, Lieu ASC, Ordre ASC";
 	} else {
-		$SecondCriteria = ", Lieu ASC, Ordre";
+		$SecondCriteria = ", Lieu ASC, Ordre ASC";
 	}
+	
 	if($order=="ASC"){
 		$order="DESC";
 	}else{
 		$order="ASC";
 	}
-
 	echo "<TABLE>";
 	$trcolor = "#EEEEEE";
 	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2> </font></TH>';
@@ -1358,7 +1360,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana color='.$ColorFont.' size=2>'.$Team_broadcast.'</TD>';
 			
 			$MemoDate = strftime("%d/%m/%Y  %H:%M", sqlDateToOut($row['Date']));
-			$MemoDisplayDate = strftime("%d/%m/%y  %a%H:%M", sqlDateToOut($row['Date']));
+			$MemoDisplayDate = strftime("%d/%m/%y  %a %H:%M", sqlDateToOut($row['Date']));
 			$MemoDateOrg = $row['Date'];
 			$MemoId = 0;
 			$MemoLieu = $row['Lieu'];
@@ -1409,7 +1411,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			$MemoIntitule = Build_Intitule("", $row['Ordre'], $MemoActivité, $row['id'], $row['Paroissien'], $row['Celebrant']);
 			$PremLine = 0;
 			$MemoDate = strftime("%d/%m/%Y  %H:%M", sqlDateToOut($row['Date']));
-			$MemoDisplayDate = strftime("%d/%m/%y  %a%H:%M", sqlDateToOut($row['Date']));
+			$MemoDisplayDate = strftime("%d/%m/%y  %a %H:%M", sqlDateToOut($row['Date']));
 			$MemoDateOrg = $row['Date'];
 			$MemoLieu = $row['Lieu'];
 			$MemoCelebrant = $row['Celebrant'];

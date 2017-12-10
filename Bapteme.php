@@ -20,7 +20,8 @@ if( ! isset( $Reunion_Present ) ) $Reunion_Present = "";
 if( ! isset( $Reunion_Absent ) ) $Reunion_Absent = ""; 
 if( ! isset( $Selectionner_Paroissien ) ) $Selectionner_Paroissien = ""; 
 if( ! isset( $Selectionner_Individue ) ) $Selectionner_Individue = ""; 
-
+if( isset ($_GET['Service']) ) { $_SESSION["Activite_id"]=$_GET['Service'];}
+if( isset ($_POST['SessionSelection']) ) { $_SESSION["Session"]=$_POST['SessionSelection'];}
 
 function debug($ch) {
    global $debug;
@@ -75,7 +76,7 @@ function get_month_year_from_session($pSession)
 	pCOM_DebugAdd($debug, 'Bapteme:get_month_year_from_session - requete = '.$requete);
 	$result = mysqli_query($eCOM_db, $requete);//, $db);
 	$Date_de_la_Session = trim($pSession);
-	while($row = mysqli_fetch_assoc($result, MYSQL_ASSOC)){
+	while($row = mysqli_fetch_assoc($result)){
 		if ($Date_de_la_Session == trim($pSession)) {
 			$Date_de_la_Session = date("M Y",strtotime($row['Date']));
 			//echo " resultat=".$row[`Date`];
@@ -571,7 +572,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="printall") {
 //==========================================================
 //edit records Bapteme
 if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
-//if ($action == "edit")
+
 	Global $eCOM_db;
 	$debug = true;
 	
@@ -671,34 +672,36 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	}
 	echo '</TD></TR>';
 	
-	
 	// Date ==================================
 	echo '<TR><TD bgcolor="#eeeeee">';
 	if ( $_GET['id'] > 0 ) {
 		if (strftime("%d/%m/%y", fCOM_sqlDateToOut($row['Date'])) != "01/01/70" ) {
-			pCOM_DebugAdd($debug, "Bapteme:Edit Date(1) - ".$row['Date']." sqlDate=".fCOM_sqlDateToOut($row['Date']));
-			if ( $row['Date'] = "0000-00-00") {
+			pCOM_DebugAdd($debug, "Bapteme:Edit Date(1) - ".$row['Date']." sqlDate=".fCOM_sqlDateToOut($row['Date'])." devient ".strftime("%d/%m/%Y", fCOM_sqlDateToOut($row['Date']." 00:00:00")));
+			if ( $row['Date'] == "0000-00-00") {
 				$DateValue="";
 			} else {
-				$DateValue=strftime("%d/%m/%Y", fCOM_sqlDateToOut($row['Date']));
+				$DateValue=strftime("%d/%m/%Y", fCOM_sqlDateToOut($row['Date']." 00:00:00"));
 			}
 			$hour=strftime("%H", fCOM_sqlDateToOut($row['Date2']));
 			$min=strftime("%M", fCOM_sqlDateToOut($row['Date2']));
+			
 		} elseif (strftime("%d/%m/%y", fCOM_sqlDateToOut($row['Date2'])) != "01/01/70" ) { 
 			pCOM_DebugAdd($debug, "Bapteme:Edit Date(2) - ".$row['Date2']);
-			if ( $row['Date2'] = "0000-00-00") {
+			if ( $row['Date2'] == "0000-00-00 00:00:00") {
 				$DateValue="";
 			} else {			
 				$DateValue=strftime("%d/%m/%Y", fCOM_sqlDateToOut($row['Date2']));
 			}
 			$hour=strftime("%H", fCOM_sqlDateToOut($row['Date2']));
 			$min=strftime("%M", fCOM_sqlDateToOut($row['Date2']));
+			
 		} else {
 			pCOM_DebugAdd($debug, "Bapteme:Edit Date(3)");
 			$DateValue="01/01/1970";
 			$hour = "00";
 			$min = "00";
 		}
+		pCOM_DebugAdd($debug, "Bapteme:Edit Date(4) = ".$DateValue);
 	//} else {
 	//	$DateValue="01/01/1970";
 	//	$hour = "00";
@@ -1595,7 +1598,7 @@ function personne_line($enregistrement, $pCompteur) {
   echo '</CENTER></TD>';
 
 
-  if ($enregistrement['Extrait_Naissance'] == '1' && $enregistrement['Dossier_Renseigne'] == '1' && $enregistrement['Reunion'] == 6) { $fgcolor = "green"; } else { $fgcolor = "black"; };
+  if ($enregistrement['Extrait_Naissance'] == '1' && $enregistrement['Dossier_Renseigne'] == '1' ) { $fgcolor = "green"; } else { $fgcolor = "black"; }; // && $enregistrement['Reunion'] == 30
 	echo '<TD bgcolor='.$trcolor.'>';
 	if ( ((int)$enregistrement['Reunion'] & (int)2) > 0) {
 		echo '<img src="images/Boutton_ok.gif" border=0 alt="Présent à la 1ère réunion" width=10 height=10>';
