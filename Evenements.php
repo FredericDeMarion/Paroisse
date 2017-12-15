@@ -1060,7 +1060,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 	$Liste_Type_Bapteme = array("Baptême", "Baptême en aspersion", "Baptême en immersion");
 	
 	if (!isset($_GET['criteria'])) {
-		if (fCOM_Get_Autorization( 16 ) >= 20) {
+		if (fCOM_Get_Autorization( 16 ) == 20) {
 			$criteria="Lieu";
 		} else {
 			$criteria="Date";
