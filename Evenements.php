@@ -1,4 +1,5 @@
 <?php
+session_start();
 
 //==================================================================================================
 //    Nom du module : Evenements.php développé par Frédéric de Marion - frederic.de.marion@free.fr
@@ -20,6 +21,7 @@
 if (isset( $_SERVER['PHP_AUTH_USER'] ) AND $_SERVER['PHP_AUTH_USER'] == "celebration"){
 	echo '<META http-equiv="refresh" content="1; URL=https://'.$_SERVER['SERVER_NAME'].'/Celebration/index.php">';
 }
+if( isset ($_GET['Service']) ) $_SESSION["Activite_id"] = $_GET['Service'];
 
 function debug($ch) {
    global $debug;
@@ -42,7 +44,7 @@ function usecolor()
 	return($colorvalue);
 }
 
-session_start();
+
 $debug = False;
 //$IdSession = $_POST["IdSession"];
 //session_readonly();
@@ -53,7 +55,8 @@ $SessionEnCours=$_SESSION["Session"];
 //mysql_connect( $sqlserver , $login , $password ) ;
 //mysql_select_db( $sqlbase );
 require('Common.php');
-require('templateEvenement.inc');
+require('Menu.php');
+//require('templateEvenement.inc');
 
 
 setlocale (LC_TIME, 'fr_FR','fra'); 
@@ -86,7 +89,7 @@ if ( isset( $_POST['Evenement_delete'] ) AND $_POST['Evenement_delete']=="Suppri
 	$debug = false;
 	debug($Table . "<BR>\n");
 
-	address_top();
+	fMENU_top();
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<TR BGCOLOR="#F7F7F7">';
 	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Database Rencontre: Suppression d\'un événement</B><BR>';
@@ -102,7 +105,7 @@ if ( isset( $_POST['Evenement_delete'] ) AND $_POST['Evenement_delete']=="Suppri
 	$result = mysqli_query( $eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)) {
 		echo '<FONT face=verdana color=#313131 size=2>';
-		echo strftime("%d/%m/%y  %H:%M    ", sqlDateToOut($row['Date']));
+		echo strftime("%d/%m/%y  %H:%M    ", fCOM_sqlDateToOut($row['Date']));
 		echo '</FONT>';
 		echo '<FONT face=verdana color=#313131 size=2> - '.$row['Lieu'].'</FONT>';
 		echo '<FONT face=verdana color=#313131 size=2> < '.$row['Intitule'].' ></FONT>';
@@ -112,7 +115,7 @@ if ( isset( $_POST['Evenement_delete'] ) AND $_POST['Evenement_delete']=="Suppri
 	echo '<input type="submit" name="" value="Non">';
 	echo '<input type="hidden" name="id" value="'.$_POST['id'].'">';
 	echo '</FORM>';
-	fCOM_address_bottom();
+	fMENU_bottom();
 	exit();	
 }
 
@@ -130,72 +133,80 @@ if ( isset( $_POST['Evenement_supprimer'] ) AND $_POST['Evenement_supprimer']=="
 		echo '<B><CENTER><FONT face="verdana" size="2" color=red>Impossible d\'exécuter la requête : '.mysqli_error($eCOM_db).'</FONT></CENTER></B>';
 		
     } else {
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement supprimée avec succes</FONT></CENTER></B>';
+		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement supprimée avec succès</FONT></CENTER></B>';
 	}
 	echo '<META http-equiv="refresh" content="2; URL='.$_SERVER['PHP_SELF'].'">';
 	exit;
 }
 
+if ((isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder']=="Enregistrer") OR
+	(isset( $_POST['Evenement_annuler']))) {
 
-
-if ( isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder']=="Enregistrer") {
-//if ($Evenement_sauvegarder){
 	Global $eCOM_db;
 	$debug = False;
 	
 	pCOM_DebugInit($debug);
 	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder DateRencontre='.$_POST['DateRencontre']);
 	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder heure='.$_POST['heure']);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder minute='.$_POST['minute']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder minute='.$_POST['minute']);
 	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Lieux='.$_POST['Lieux']);
 	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Intitule='.$_POST['Intitule']);
 	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder EveilFoi='.$_POST['EveilFoi']);
 	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Garderie='.$_POST['Garderie']);
 	
-	//if (ereg ("([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})", $_POST['DateRencontre'], $regs)) {
-	$DateTimeValue=fCOM_getSqlDate($_POST['DateRencontre'], $_POST['heure'], $_POST['minute'], 0);
-	if ($DateTimeValue != "") {
+	$DateTimeValue=$_POST['DateRencontre'].' '.$_POST['heure'].':00';
 
-		$Activite_id=86;
-		if (date("n") <= 7 ) { $Session= date("Y");	} else { $Session= date("Y")+1;	}
-		
-		if ($_POST['id'] > 0) {
-			mysqli_query( $eCOM_db, 'UPDATE Rencontres SET 
-				Date="'.$DateTimeValue.'", 
-				Intitule="'.$_POST['Intitule'].'", 
-				Lieux_id="'.$_POST['Lieux'].'", 
-				Session="'.$Session.'", 
-				Activite_id="'.$Activite_id.'" 
-				WHERE id='.$_POST['id'].'') or die (mysqli_error($eCOM_db));
-			
-			$Engagement_Id=$_POST['id'];
-
-		} else {
-			$requete = 'INSERT INTO Rencontres (Activite_id, Session, Date, Classement, Intitule, Lieux_id) VALUES ('.$Activite_id.',"'.$Session.'", "'.$DateTimeValue.'", "", "'.$_POST['Intitule'].'", '.$_POST['Lieux'].')';
-			
-			pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder requete='.$requete);
-			mysqli_query( $eCOM_db, $requete) or die (mysqli_error($eCOM_db));
-			$Engagement_Id=mysqli_insert_id($eCOM_db);
-		}
-		
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 5, $_POST['Celebrant']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 12, $_POST['Sacristin']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur_02'], 2);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien_02'], 2);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 16, $_POST['EveilFoi']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 23, $_POST['Garderie']);
-		if ( $Gerer_Equipe_Technique_Messe == True) {
-			Enregistrer_Intervenants($Activite_id, $Engagement_Id, 24, $_POST['Sono']);
-			Enregistrer_Intervenants($Activite_id, $Engagement_Id, 25, $_POST['Projection']);
-			Enregistrer_Intervenants($Activite_id, $Engagement_Id, 26, $_POST['Broadcast']);
-		}
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement sauvegardée avec succes</FONT></CENTER></B>';
-	} else {
-		echo '<B><CENTER><FONT face="verdana" size="2" color=red>Format de date invalide : '.$_POST['DateRencontre'].'</FONT></CENTER></B>';
-		exit;
+	$Celebration_Status = "";
+	if (isset( $_POST['Evenement_annuler'] ) AND $_POST['Evenement_annuler']=="Annuler cette célébration"){
+		$Celebration_Status = "Annulé";
+	} elseif (isset( $_POST['Evenement_annuler'] ) AND $_POST['Evenement_annuler']=="Réactiver cette célébration") {
+		$Celebration_Status = "Valide";
+	} elseif ($_POST['id'] > 0) {
+		$result = mysqli_query( $eCOM_db, 'SELECT Classement FROM Rencontres 
+			WHERE id='.$_POST['id'].'') or die (mysqli_error($eCOM_db));
+		while($row = mysqli_fetch_assoc($result)){
+			$Celebration_Status = $row['Classement'];
+		}	
 	}
+
+	$Activite_id=86;
+	if (date("n") <= 7 ) { $Session= date("Y");	} else { $Session= date("Y")+1;	}
+		
+	if ($_POST['id'] > 0) {
+		mysqli_query( $eCOM_db, 'UPDATE Rencontres SET 
+			Date="'.$DateTimeValue.'", 
+			Intitule="'.$_POST['Intitule'].'", 
+			Lieux_id="'.$_POST['Lieux'].'", 
+			Session="'.$Session.'", 
+			Activite_id="'.$Activite_id.'",
+			Classement="'.$Celebration_Status.'"
+			WHERE id='.$_POST['id'].'') or die (mysqli_error($eCOM_db));
+			
+		$Engagement_Id=$_POST['id'];
+
+	} else {
+		$requete = 'INSERT INTO Rencontres (Activite_id, Session, Date, Classement, Intitule, Lieux_id) VALUES ('.$Activite_id.',"'.$Session.'", "'.$DateTimeValue.'", "'.$Celebration_Status.'", "'.$_POST['Intitule'].'", '.$_POST['Lieux'].')';
+			
+		pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder requete='.$requete);
+		mysqli_query( $eCOM_db, $requete) or die (mysqli_error($eCOM_db));
+		$Engagement_Id=mysqli_insert_id($eCOM_db);
+	}
+		
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 5, $_POST['Celebrant']);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 12, $_POST['Sacristin']);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur']);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur_02'], 2);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien']);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien_02'], 2);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 16, $_POST['EveilFoi']);
+	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 23, $_POST['Garderie']);
+	if ( $Gerer_Equipe_Technique_Messe == True) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 24, $_POST['Sono']);
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 25, $_POST['Projection']);
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 26, $_POST['Broadcast']);
+	}
+	echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement sauvegardée avec succes</FONT></CENTER></B>';
+
 	echo '<META http-equiv="refresh" content="1; URL='.$_SERVER['PHP_SELF'].'">';
 	exit;
 }
@@ -236,23 +247,15 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 
 	Global $eCOM_db;
 	Global $Activite_id;
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	$debug = false;
 
-	address_top();
-
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	if ($_GET['id'] == 0) {
-		echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Nouvel Célébration</B></FONT></TD></TR>';
-	} else {
-		echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Célébration No '.$_GET['id'].'</B></FONT></TD></TR>'; 
-	}
+	fMENU_top();
 
 	if ($_GET['id'] > 0) {
 		$Compteur = 1;
 		$_Musicien_02="";
 		$_Animateur_02="";
-		$requete = 'SELECT T0.`id`, T0.`Date`, T0.`Intitule`, T1.`Lieu`, CONCAT(T3.`Prenom`, " ", T3.`Nom`) as Celebrant, CONCAT(T5.`Prenom`, " ", T5.`Nom`) as Sacristin, CONCAT(T7.`Prenom`, " ", T7.`Nom`) as Animateur, CONCAT(T9.`Prenom`, " ", T9.`Nom`) as Musicien, CONCAT(T11.`Prenom`, " ", T11.`Nom`) as EveilFoi, CONCAT(T13.`Prenom`, " ", T13.`Nom`) as Garderie, CONCAT(T15.`Prenom`, " ", T15.`Nom`) as Sono, CONCAT(T17.`Prenom`, " ", T17.`Nom`) as Projection, CONCAT(T19.`Prenom`, " ", T19.`Nom`) as Broadcast   
+		$requete = 'SELECT T0.`id`, T0.`Date`, T0.`Intitule`, T0.`Classement` as Status, T1.`Lieu`, CONCAT(T3.`Prenom`, " ", T3.`Nom`) as Celebrant, CONCAT(T5.`Prenom`, " ", T5.`Nom`) as Sacristin, CONCAT(T7.`Prenom`, " ", T7.`Nom`) as Animateur, CONCAT(T9.`Prenom`, " ", T9.`Nom`) as Musicien, CONCAT(T11.`Prenom`, " ", T11.`Nom`) as EveilFoi, CONCAT(T13.`Prenom`, " ", T13.`Nom`) as Garderie, CONCAT(T15.`Prenom`, " ", T15.`Nom`) as Sono, CONCAT(T17.`Prenom`, " ", T17.`Nom`) as Projection, CONCAT(T19.`Prenom`, " ", T19.`Nom`) as Broadcast   
 		FROM Rencontres T0
 		LEFT JOIN `Lieux` T1 ON T0.`Lieux_id` = T1.`id`
 		LEFT JOIN `QuiQuoi` T2 ON T0.`id` = T2.`Engagement_id` AND T2.`QuoiQuoi_id`=5 AND T2.`Activite_id`= T0.`Activite_id`
@@ -281,9 +284,12 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			$DateYear=substr($row['Date'],0,4);
 			$DateMonth=substr($row['Date'],5,2);
 			$DateDay=substr($row['Date'],8,2);
-			$_DateRencontre = $DateDay."/".$DateMonth."/".$DateYear;
-			$_HeureRencontre = substr($row['Date'],11,2);
-			$_MinuteRencontre = substr($row['Date'],14,2);
+			$_Status = $row['Status'];
+			//$_DateRencontre = $DateDay."/".$DateMonth."/".$DateYear;
+			$_DateRencontre = substr($row['Date'],0,10);
+			//$_HeureRencontre = substr($row['Date'],11,2);
+			//$_MinuteRencontre = substr($row['Date'],14,2);
+			$_HeureRencontre = substr($row['Date'],11,5);
 			$_Intitule = $row['Intitule'];
 			$_Lieu = $row['Lieu'];
 			$_Celebrant = $row['Celebrant'];
@@ -321,21 +327,21 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	} else {
 		if ( isset($_GET['Date']) ) {
 			$pDate=unserialize(urldecode(stripslashes($_GET['Date'])));
-			$debug=true;
 			pCOM_DebugAdd($debug, "Evenement:Edit pDate=".$pDate);
 			$_DateRencontre=substr($pDate,0,10);
-			$_HeureRencontre = substr($pDate,12,2);
-			$_MinuteRencontre = substr($pDate,15,2);
+			$_HeureRencontre = substr($pDate,11,5);
+			//$_MinuteRencontre = substr($pDate,15,2);
 		} else {
 			$_DateRencontre = "";
 			$_HeureRencontre = "";
-			$_MinuteRencontre = "";
+			//$_MinuteRencontre = "";
 		}
 		if ( isset($_GET['Lieu']) ) {
 			$_Lieu = $_GET['Lieu'];
 		} else {
 			$_Lieu = "";
 		}
+
 		if ( isset($_GET['Celebrant']) ) {
 			$_Celebrant = unserialize(urldecode(stripslashes($_GET['Celebrant'])));
 		} else {
@@ -349,6 +355,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		if (strlen($_ComplementIntitule) > 0) {
 			$_ComplementIntitule =$_ComplementIntitule."<BR>";
 		}
+		$_Status = "";
 		$_Intitule = "";
 		$_Sacristin = "";
 		$_Animateur = "";
@@ -361,52 +368,45 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		$_Projection = "";
 		$_Broadcast = "";
 	}
-	
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	echo '<FORM method=post action='.$_SERVER['PHP_SELF'].'>';
-	echo '<P><TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR>';
+
+	if ($_GET['id'] == 0) {
+		fMENU_Title("Nouvelle Célébration");
+		//echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Nouvelle Célébration</B></FONT></TD></TR>';
+	} else {
+		if ($_Status == "" OR $_Status == "Valide" ){
+			fMENU_Title("Célébration No ".$_GET['id']);
+		} else {
+			fMENU_Title("<div style='color:#ff0000'>Célébration No ".$_GET['id']." : Annulée</div>");
+		}
+	}
+
+
+	echo '<FORM Class="form ml-2 mr-2" method="post" action='.$_SERVER['PHP_SELF'].'>';
 
 	// Intitulé
-	echo '<TD colspan="2" bgcolor="#eeeeee" valign="middle">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Intitulé:</FONT></B><BR>';
-	echo '<FONT FACE="Verdana" SIZE="2">'.$_ComplementIntitule.'</FONT>';
-	echo '<input type=text name="Intitule" size="30" maxlength="100" value="'.$_Intitule.'"></TD>';
+	echo '<div class="form-row">';
+	echo '<div class="form-group col-md-5">';
+	echo '<label for="labelIntitule">Intitulé</label>';
+	echo '<input type="text" class="form-control form-control-sm" id="labelIntitule" name="Intitule" size="30" maxlength="100" value="'.$_Intitule.'">';
+	echo '<FONT SIZE="2">'.$_ComplementIntitule.'</FONT>';
+	echo '</div>';
 
-	echo '</TR><TR>';
-
-	echo '<TD bgcolor="#eeeeee" valign="middle" height="60">'; //width="330" 
-	echo '<B><FONT FACE="Verdana" SIZE="2">&nbsp Date: <FONT ACE="Verdana" SIZE="2"></B>';
-	echo '<input type=text id="DateRencontre" name="DateRencontre" size="8" maxlength="10" value="'.$_DateRencontre.'">';
-	?>
-	<a href="javascript:popupwnd('calendrier.php?idcible=DateRencontre&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span>
-	<?php
-	echo '<B><FONT FACE="Verdana" SIZE="2">&nbsp Heure: <FONT ACE="Verdana" SIZE="2"></B>';
-	echo '<b><FONT FACE="Verdana" SIZE="2"></FONT></b>';
-	echo '<select name="heure">';
-	for ($i=0; $i<=23; $i++) {
-		if (sprintf("%02d", $i) == sprintf("%02d", $_HeureRencontre)) {
-			echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';
-		} else {
-			echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';
-		}
-	}
-	echo '</select><FONT FACE="Verdana" SIZE="2">h</FONT>';
-	echo '<select name="minute">';
-	for ($i=0; $i<=45; $i=$i+15) {
-		if (sprintf("%02d", $i) == sprintf("%02d", $_MinuteRencontre)) {
-			echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';
-		} else {
-			echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';
-		}
-	}
-	echo '</SELECT></TD>';
+	// Date
+	echo '<div class="form-group col-md-2">';
+	echo '<label for="DateRencontre">Date</label>';
+	echo '<input type="date" class="form-control form-control-sm" id="DateRencontre" name="DateRencontre" value="'.$_DateRencontre.'">';
+	echo '</div>';
+	
+	// heure
+	echo '<div class="form-group col-md-2">';
+	echo '<label for="HeureRencontre">Heure</label>';
+	echo '<input type="time" class="form-control form-control-sm" id="HeureRencontre" name="heure" value="'.$_HeureRencontre.'">';
+	echo '</div>';
 	
 	// Lieux
-	$debug= False;
-	echo '<TD bgcolor="#eeeeee" valign="middle">'; // width=100 
-	echo '<B><FONT FACE="Verdana" SIZE="2">Lieux:</FONT></B><BR>';
-	echo '<SELECT name="Lieux">';
+	echo '<div class="form-group col-md-3">';
+	echo '<label for="LabelLieu">Lieux</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelLieu" name="Lieux">';
 	$Liste_Lieux_Evenements = pCOM_Get_liste_lieu_celebration(1);
 	foreach ($Liste_Lieux_Evenements as $Lieu_Celebration_array){
 		list($Lieu_id, $Lieu_name) = $Lieu_Celebration_array;
@@ -418,16 +418,18 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Lieu_id.'"'.$SelectionDefault.'>'.$Lieu_name.'</option>';
 	}
-	echo '</SELECT></TD>';
-	
-	echo '</TR><TR>';
+	echo '</SELECT>';
+	echo '</div>';
+
+	echo '</div>';
 	
 	// Prêtre
+	echo '<div class="form-row">';
+	echo '<div class="form-group col-md-6">';
 	$BloquerAcces="disabled='disabled'";
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
-	echo '<TR><TD bgcolor="#eeeeee" valign="middle" height="60">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">&nbsp Célébrant:</FONT></B><BR>';
-	echo '<SELECT name="Celebrant" '.$BloquerAcces.' >';
+	echo '<label for="LabelCelebrant">Célébrant</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelCelebrant" name="Celebrant" '.$BloquerAcces.' >';
 	$liste_serviteurs = fCOM_Get_liste_celebrants();
 	foreach ($liste_serviteurs as $Celebrant){
 		list($Celebrant_id, $Celebrant_prenom, $Celebrant_nom) = $Celebrant;
@@ -438,15 +440,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Celebrant_id.'"'.$SelectionDefault.'>'.$Celebrant_prenom." ".$Celebrant_nom.'</option>';
 	}
-	echo '</SELECT></TD>';	
+	echo '</SELECT>';
+	echo '</div>';
 
-	// Sacristins
+		// Sacristins	
 	$BloquerAcces="disabled='disabled'";
+	echo '<div class="form-group col-md-6">';
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 	if (fCOM_Get_Autorization( 16 ) >= 30) { $BloquerAcces="";} // 16 = Sacristie
-	echo '<TD bgcolor="#eeeeee" valign="middle">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Sacristin:</FONT></B><BR>';
-	echo '<SELECT name="Sacristin" '.$BloquerAcces.' >';
+	echo '<label for="LabelSacristin">Sacristin</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelSacristin" name="Sacristin" '.$BloquerAcces.' >';
 	$liste_serviteurs = fCOM_Get_liste_serviteurs(16, False); // 16-sacristie
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -456,17 +459,19 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
-	echo '</SELECT></TD>';	
+	echo '</SELECT>';
+	echo '</div>';
 	
-	echo '</TR><TR>';
-
+	echo '</div>';
+	
 	// Musiciens
+	echo '<div class="form-row">';
+	echo '<div class="form-group col-md-6">';
 	$BloquerAcces="disabled='disabled'";
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 	if (fCOM_Get_Autorization( 51 ) >= 30) { $BloquerAcces="";} // 51 = Animateur Chants
-	echo '<TR><TD bgcolor="#eeeeee" valign="middle" height="80">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Musiciens:</FONT></B><BR>';
-	echo '<SELECT name="Musicien" '.$BloquerAcces.' >';
+	echo '<label for="LabelMusicien">Musiciens</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelMusicien" name="Musicien" '.$BloquerAcces.' >';
 	$liste_serviteurs = fCOM_Get_liste_serviteurs(36, False); // 36-Musique 
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -476,9 +481,10 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
-	echo '</SELECT><BR>';
+	echo '</SELECT>';
 	// Musicien 02
-	echo '<SELECT name="Musicien_02" '.$BloquerAcces.' >';
+	echo '<label for="LabelMusicien2"></label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelMusicien2" name="Musicien_02" '.$BloquerAcces.' >';
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
 		$SelectionDefault = '';
@@ -488,15 +494,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
 	echo '</SELECT>';
-	echo '</TD>';
+	echo '</div>';
 	
 	// Animateurs
+	echo '<div class="form-group col-md-6">';
 	$BloquerAcces="disabled='disabled'";
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 	if (fCOM_Get_Autorization( 51 ) >= 30) { $BloquerAcces="";} // 51 = Animateur Chants
-	echo '<TD bgcolor="#eeeeee" valign="middle">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Animateur:</FONT></B><BR>';
-	echo '<SELECT name="Animateur" '.$BloquerAcces.' >';
+	echo '<TD valign="middle">';
+	echo '<label for="LabelAnimateur">Animateurs</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelAnimateur" name="Animateur" '.$BloquerAcces.' >';
 	$liste_serviteurs = fCOM_Get_liste_serviteurs(51, False); // 51-Animateur 
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -506,9 +513,11 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
-	echo '</SELECT><BR>';
+	echo '</SELECT>';
+	
 	// Animateur 2
-	echo '<SELECT name="Animateur_02" '.$BloquerAcces.' >';
+	echo '<label for="LabelAnimateur2"></label>';
+	echo '<SELECT class="form-control form-control-sm mb-2" id="LabelAnimateur2" name="Animateur_02" '.$BloquerAcces.' >';
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
 		$SelectionDefault = '';
@@ -518,17 +527,17 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
 	echo '</SELECT>';
-	echo '</TD>';
+	echo '</div></div>';
 
-	echo '</TR><TR>';
-		
+
 	// Eveil à la Foi
+	echo '<div class="form-row">';
+	echo '<div class="form-group col-md-6">';
 	$BloquerAcces="disabled='disabled'";
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 	if (fCOM_Get_Autorization( 14 ) >= 30) { $BloquerAcces="";} // 14-Eveil à la Foi
-	echo '<TD bgcolor="#eeeeee" valign="middle" height="60">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Eveil à la Foi:</FONT></B><BR>';
-	echo '<SELECT name="EveilFoi" '.$BloquerAcces.' >';
+	echo '<label for="LabelEveil">Eveil à la Foi</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelEveil" name="EveilFoi" '.$BloquerAcces.' >';
 	$liste_serviteurs = fCOM_Get_liste_serviteurs(14, False); // 14-Eveil à la Foi 
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -538,15 +547,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
-	echo '</SELECT></TD>';
+	echo '</SELECT>';
+	echo '</div>';
 	
 	// Garderie
+	echo '<div class="form-group col-md-6">';
 	$BloquerAcces="disabled='disabled'";
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 	if (fCOM_Get_Autorization( 90 ) >= 30) { $BloquerAcces="";} // 90-Garderie
-	echo '<TD bgcolor="#eeeeee" valign="middle">';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Garderie:</FONT></B><BR>';
-	echo '<SELECT name="Garderie" '.$BloquerAcces.' >';
+	echo '<label for="LabelGarderie">Garderie</label>';
+	echo '<SELECT class="form-control form-control-sm" id="LabelGarderie" name="Garderie" '.$BloquerAcces.' >';
 	$liste_serviteurs = fCOM_Get_liste_serviteurs(90, False); // 90-Garderie
 	foreach ($liste_serviteurs as $Serviteur){
 		list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -556,20 +566,20 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 		echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 	}
-	echo '</SELECT></TD>';
+	echo '</SELECT>';
+	echo '</div></div>';
 
-	echo '</TR>';
 	
 	if ( $Gerer_Equipe_Technique_Messe == True ) {
-		echo '<TR>';
+		echo '<div class="form-row">';		
 		
 		// Sono
+		echo '<div class="form-group col-md-4">';
 		$BloquerAcces="disabled='disabled'";
 		if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 		if (fCOM_Get_Autorization( 19 ) >= 30) { $BloquerAcces="";} // 19-Sono
-		echo '<TD bgcolor="#eeeeee" valign="middle" height="60">';
-		echo '<B><FONT FACE="Verdana" SIZE="2">Sono:</FONT></B><BR>';
-		echo '<SELECT name="Sono" '.$BloquerAcces.' >';
+		echo '<label for="LabelSono">Sono</label>';
+		echo '<SELECT class="form-control form-control-sm" id="LabelSono" name="Sono" '.$BloquerAcces.' >';
 		$liste_serviteurs = fCOM_Get_liste_serviteurs(19, False); // 19-Sono
 		foreach ($liste_serviteurs as $Serviteur){
 			list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -579,15 +589,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			}
 			echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 		}
-		echo '</SELECT></TD>';
+		echo '</SELECT>';
+		echo '</div>';
 	
 		// Projection
 		$BloquerAcces="disabled='disabled'";
+		echo '<div class="form-group col-md-4">';
 		if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 		if (fCOM_Get_Autorization( 47 ) >= 30) { $BloquerAcces="";} // 47-Projection
-		echo '<TD bgcolor="#eeeeee" valign="middle">';
-		echo '<B><FONT FACE="Verdana" SIZE="2">Projection:</FONT></B><BR>';
-		echo '<SELECT name="Projection" '.$BloquerAcces.' >';
+		echo '<label for="LabelProjection">Projection</label>';
+		echo '<SELECT class="form-control form-control-sm" id="LabelProjection" name="Projection" '.$BloquerAcces.' >';
 		$liste_serviteurs = fCOM_Get_liste_serviteurs(47, False); // 47-Projection
 		foreach ($liste_serviteurs as $Serviteur){
 			list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -597,17 +608,17 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			}
 			echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 		}
-		echo '</SELECT></TD>';
+		echo '</SELECT>';
+		echo '</div>';
 
-		echo '</TR><TR>';
 		
 		// Broadcast
 		$BloquerAcces="disabled='disabled'";
+		echo '<div class="form-group col-md-4">';
 		if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
 		if (fCOM_Get_Autorization( 20 ) >= 30) { $BloquerAcces="";} // 20-Vidéo Broadcast
-		echo '<TD bgcolor="#eeeeee" valign="middle" height="60">';
-		echo '<B><FONT FACE="Verdana" SIZE="2">Broadcast:</FONT></B><BR>';
-		echo '<SELECT name="Broadcast" '.$BloquerAcces.' >';
+		echo '<label for="LabelBroadcast">Broadcast</label>';;
+		echo '<SELECT class="form-control form-control-sm" id="LabelBroadcast" name="Broadcast" '.$BloquerAcces.' >';
 		$liste_serviteurs = fCOM_Get_liste_serviteurs(20, False); // 20-Vidéo Broadcast
 		foreach ($liste_serviteurs as $Serviteur){
 			list($Serviteur_id, $Serviteur_lieu, $Serviteur_prenom, $Serviteur_nom) = $Serviteur;
@@ -617,24 +628,31 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			}
 			echo '<option value="'.$Serviteur_id.'"'.$SelectionDefault.'>'.$Serviteur_lieu." - ".$Serviteur_prenom." ".$Serviteur_nom.'</option>';
 		}
-		echo '</SELECT></TD>';
-		echo '<TD bgcolor="#eeeeee"> </TD>';
+		echo '</SELECT>';
 
-		echo '</TR>';
+		echo '</div></div>';
 	}
 	
-	echo '<TR><TD> </TD></TR>';
-
-	
-	echo '<TR><TD COLSPAN="2">';
-	echo '<INPUT type="submit" name="Evenement_sauvegarder" value="Enregistrer">';
-	echo '<INPUT type="reset" name="Reset" value="Reset">';
+	echo '<div class="form-row">';	
+	echo '<div class="form-group col">';
+	echo '<INPUT type="submit" class="btn btn-secondary" name="Evenement_sauvegarder" value="Enregistrer"> ';
+	echo '<INPUT type="reset" class="btn btn-secondary" name="Reset" value="Reset">';
 	echo '<INPUT type="hidden" name="id" value='.$_GET['id'].'>';
-	if ($_GET['id'] > 0 AND fCOM_Get_Autorization( $Activite_id ) >= 30) {
-		echo '<INPUT type="submit" name="Evenement_delete" value="Supprimer">';
+	
+	if (fCOM_Get_Autorization( $Activite_id ) >= 30) {
+		if ($_GET['id'] > 0 AND fCOM_Get_Autorization( $Activite_id ) >= 30) {
+			echo ' <INPUT type="submit" class="btn btn-secondary" name="Evenement_delete" value="Supprimer">';
+		}
+		if ($_Status=="" OR $_Status=="Valide"){
+			echo ' <INPUT type="submit" class="btn btn-secondary" name="Evenement_annuler" value="Annuler cette célébration">';
+		} else {
+			echo ' <INPUT type="submit" class="btn btn-secondary" name="Evenement_annuler" value="Réactiver cette célébration">';
+		}
 	}
-	echo '</TD></TR></TABLE></P></FORM>';
-	fCOM_address_bottom();
+	
+	echo '</div></div>';
+	echo '</CENTER></TD></TR></TABLE></P></FORM>';
+	fMENU_bottom();
 	exit();
 }
 
@@ -657,30 +675,27 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 	$debug = false;
 	pCOM_DebugAdd($debug, "Evenements:".$_GET['action']." ... en cours");
 	
-	address_top();
-	
+	fMENU_top();
+	fMENU_Title("Configuration des célébration récurrentes");
 	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF']."?action=Prog_Recurrente_Celebration";
 
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Configuration des célébration récurrentes</B><BR>';
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-
-	echo '<TABLE>';
-	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>';
-	if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
-			echo '<CENTER>';
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id=0><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
-			echo '</CENTER>';
-	} else { echo ' ';}
-	echo '</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Date Début</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Date Fin</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Jour</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Heure</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Lieu</FONT></TH>';
+	echo '<table id="TableauTrier" class="table table-striped table-bordered hover ml-1 mr-1" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	echo '<th scope="col" width="20"> </th>';
+	echo '<th scope="col" width="70">Date Début</th>';
+	echo '<th scope="col" width="70">Date Fin</th>';
+	echo '<th scope="col" width="80">Jour</th>';
+	echo '<th scope="col" width="50">Heure</th>';
+	echo '<th scope="col">Lieu</th>';
+	echo '</tr></thead>';
+	echo '<tbody>';
+	
+	//if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
+	//		echo '<CENTER>';
+	//		echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id=0><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
+	//		echo '</CENTER>';
+	//} else { echo ' ';}
+	
 	$requete = 'SELECT T0.`id`, T0.`DateDeb`, T0.`DateFin`, T0.`Jour`, T0.`Heure`, T1.`Lieu`
 				FROM Celebrations_rec T0
 				LEFT JOIN Lieux T1 ON T1.`id`=T0.`Lieu_id`
@@ -688,30 +703,25 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 		
 	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
-		$trcolor = usecolor();
-		$Foregroundcolor = "#000000";
-		if (sqlDateToOut($row['DateFin']) < sqlDateToOut(date("Y/m/d"))) {
-			$Foregroundcolor = "#919191";
-		}
-		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Date =".sqlDateToOut($row['DateFin'])." à comparer avec=".sqlDateToOut(date("Y/m/d")));
+
+		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Date =".fCOM_sqlDateToOut($row['DateFin'])." à comparer avec=".fCOM_sqlDateToOut(date("Y/m/d")));
+		
+		$TD_OnClick = 'onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id='.$row['id'].'\')"';
 		
 		echo '<TR>';
-		if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
-			echo '<TD bgcolor='.$trcolor.'><CENTER>';
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id='.$row['id'].'><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
-			echo '</CENTER></TD>';
-		} else {
-			echo '<TD></TD>';
-		}
-		echo '<TD width=120 align="middle" bgcolor='.$trcolor.'><font face=verdana color='.$Foregroundcolor.' size=2>';
-		echo strftime("%d/%m/%y", sqlDateToOut($row['DateDeb']));
-		echo '</TD>';
+				
+		//if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
+		//	echo '<TD bgcolor='.$trcolor.'><CENTER>';
+		//	echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id='.$row['id'].'><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
+		//	echo '</CENTER></TD>';
+		//} else {
+		//	echo '<TD></TD>';
+		//}
+		echo '<TD> </TD>';
+		echo '<TD '.$TD_OnClick.'>'.$row['DateDeb'].'</TD>';
+		echo '<TD '.$TD_OnClick.'>'.$row['DateFin'].'</TD>';
 		
-		echo '<TD width=120 align="middle" bgcolor='.$trcolor.'><font face=verdana color='.$Foregroundcolor.' size=2>';
-		echo strftime("%d/%m/%y", sqlDateToOut($row['DateFin']));
-		echo '</TD>';
-		
-		echo '<TD width=120 align="middle" bgcolor='.$trcolor.'><font face=verdana color='.$Foregroundcolor.' size=2>';
+		echo '<TD '.$TD_OnClick.'>';
 		switch ($row['Jour']) {
 		case 7:
 			echo 'Dimanche';
@@ -737,39 +747,26 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 		}
 		echo '</TD>';
 		
-		echo '<TD width=120 align="middle" bgcolor='.$trcolor.'><font face=verdana color='.$Foregroundcolor.' size=2>';
-		//echo strftime("%H:%M", sqlDateToOut($row['Heure']));
-		echo substr($row['Heure'], 0, 5);
-		echo '</TD>';
-
-		echo '<TD width=120 align="middle" bgcolor='.$trcolor.'><font face=verdana color='.$Foregroundcolor.' size=2>';
-		echo $row['Lieu'];
-		echo '</TD>';
+		echo '<TD '.$TD_OnClick.'>'.substr($row['Heure'], 0, 5).'</TD>';
+		echo '<TD '.$TD_OnClick.'>'.$row['Lieu'].'</TD>';
 
 		echo '</TR>';
 	}
-
+	echo '<tbody></table>';
+	echo '</div>';
 	
+	//---------------------
 	// formulaire de saisie
 	//---------------------
 	if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
 		echo '<FORM method=post action='.$_SERVER['PHP_SELF'].'>';
-		echo '<P><TABLE WIDTH="100%" BORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-		echo '<TR BGCOLOR="#F7F7F7">';
+		echo '<div class="form-row ml-1 mt-3">';
 		if ( $_GET['id'] > 0 ) {
-			echo '<TD COLSPAN="5"><FONT FACE="Verdana" SIZE="2"><BR><B>Modification d\'une célébration récurrente</B></TD>';
+			echo '<BR><B>Modification d\'une célébration récurrente</B>';
 		} else {
-			echo '<TD COLSPAN="5"><FONT FACE="Verdana" SIZE="2"><BR><B>Saisie d\'une nouvelle célébration récurrente</B></TD>';
+			echo '<BR><B>Saisie d\'une nouvelle célébration récurrente</B>';
 		}
-		echo '</TR>';
-		echo '<TR>';
-		echo '<TD width="100" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Date début: </U></FONT></B></TD>';
-		echo '<TD width="120" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Date fin: </U></FONT></B></TD>';
-		echo '<TD width="120" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Jour: </U></FONT></B></TD>';
-		echo '<TD width="120" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Heure: </U></FONT></B></TD>';
-		echo '<TD bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Lieu :</U></FONT></B></TD>';
-		echo '</TR>';
-		
+		echo '</div>';
 
 
 		if ( $_GET['id'] > 0 )
@@ -778,10 +775,10 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 			$result = mysqli_query($eCOM_db, $requete);
 			while($row = mysqli_fetch_assoc($result))
 			{
-				$DateDeb=strftime("%d/%m/%y", sqlDateToOut($row['DateDeb']));
-				$DateFin=strftime("%d/%m/%y", sqlDateToOut($row['DateFin']));
+				$DateDeb=$row['DateDeb'];
+				$DateFin=$row['DateFin'];
 				$Jour_id=$row['Jour'];
-				$Heure=$row['Heure'];
+				$Heure=substr($row['Heure'], 0, 5);
 				$Lieu_id=$row['Lieu_id'];
 			}
 		} else {
@@ -792,60 +789,44 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 			$Lieu_id = 0;
 		}
 		
-		echo '<TR>';
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<input type=text id="DateDeb" name="DateDeb" size="8" maxlength="10" value="'.$DateDeb.'">';
-		?>	
-		<a href="javascript:popupwnd('calendrier.php?idcible=DateDeb&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span>
-		<?php
-		echo '</TD>';
+		echo '<div class="container-fluid"">';
+		echo '<div class="form-row">';
 		
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<input type=text id="DateFin" name="DateFin" size="8" maxlength="10" value="'.$DateFin.'">';
-		?>	
-		<a href="javascript:popupwnd('calendrier.php?idcible=DateFin&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span>
-		<?php
-		echo '</TD>';
+		echo '<div class="col-form-label">';
+		echo '<label for="DateDebut">Date début</label>';
+		echo '<input type="date" id="DateDebut" name="DateDeb" class="form-control" size="8" value="'.$DateDeb.'">';
+		echo '</div>';
 		
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<B><FONT FACE="Verdana" SIZE="2"></FONT></B>';
-		$Liste_jour = array(" ", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche");
-		echo '<SELECT name="jour">';
-		for ($i=0; $i<=7; $i++) {
-			if (sprintf("%02d", $i) == sprintf("%02d", $Jour_id)) {
-				echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.$Liste_jour[$i].'</option>';
+		echo '<div class="col-form-label">';
+		echo '<label for="DateFin">Date de fin</label>';
+		echo '<input type="date" id="DateFin" name="DateFin" class="form-control" size="8" value="'.$DateFin.'">';
+		echo '</div>';
+		
+		echo '<div class="col-form-label">';
+		echo '<label for="Jour">Jour</label>';
+		$Liste_jour = array("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche");
+		echo '<SELECT name="jour" id="Jour" class="form-control" >';
+		echo '<option value="">Choisir dans la liste</option>';
+		for ($i=0; $i<=6; $i++) {
+			if (sprintf("%02d", $i+1) == sprintf("%02d", $Jour_id)) {
+				echo '<option value="'.sprintf("%02d", $i+1).'" selected="selected">'.$Liste_jour[$i].'</option>';
 			} else {
-				echo '<option value="'.sprintf("%02d", $i).'">'.$Liste_jour[$i].'</option>';
+				echo '<option value="'.sprintf("%02d", $i+1).'">'.$Liste_jour[$i].'</option>';
 			}
 		}
-		echo '</SELECT></TD>';
+		echo '</SELECT></div>';
 		
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<B><FONT FACE="Verdana" SIZE="2"></FONT></B>';
-		echo '<SELECT name="heure">';
-		for ($i=0; $i<=23; $i++) {
-			if (sprintf("%02d", $i) == sprintf("%02d", $Heure)) {
-				echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';
-			} else {
-				echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';
-			}
-		}
-		echo '</SELECT><FONT FACE="Verdana" SIZE="2">h</FONT>';
-		echo '<SELECT name="minute">';
-		for ($i=0; $i<=45; $i=$i+15) {
-			if (sprintf("%02d", $i) == sprintf("%02d", substr($Heure,3,2))) {
-				echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';
-			} else {
-				echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';
-			}
-		}
-		echo '</SELECT>';
-		echo '</TD>';
+		echo '<div class="col-form-label  mr-sm-2">';
+		echo '<label for="Heure">Heure</label>';
+		echo '<input type="time" id="Heure" name="heure" class="form-control" value="'.$Heure.'" >';
+		echo '</div>';
 		
 		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Lieux_id =".$Lieu_id." id=".$_GET['id']);
 		$BloquerAcces="";
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<SELECT name="Lieu" '.$BloquerAcces.' >';
+		echo '<div class="col-form-label">';
+		echo '<label for="Lieu">Lieu</label>';
+		echo '<SELECT name="Lieu" id="Lieu" '.$BloquerAcces.' class="form-control" >';
+		echo '<option value="">Choisir dans la liste</option>';
 		$Liste_Lieu_Celebration = pCOM_Get_liste_lieu_celebration(1);
 		foreach ($Liste_Lieu_Celebration as $Lieu_Celebration){
 			list($ListLieu_id, $Lieu_name) = $Lieu_Celebration;
@@ -860,26 +841,30 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 				echo '<option value="'.$ListLieu_id.'">'.$Lieu_name.'</option>';
 			}
 		}
-		echo '</SELECT></TD>';
+		echo '</SELECT></div>';
+		//echo '<div class="form-group col-2"> </div>';
 		
-		echo '</TR>';
+		echo '</div></div>';
 		
-		echo '<TR><TD COLSPAN="2">';
-		echo '<INPUT type="submit" name="Prog_Recurrente_Celebration_sauvegarder" value="Enregistrer">';
-		echo '<INPUT type="reset" name="Reset" value="Reset">';
+		echo '<div class="container-fluid mb-1">';
+		echo '<INPUT type="submit" class="btn btn-secondary" name="Prog_Recurrente_Celebration_sauvegarder" value="Enregistrer">&nbsp';
+		echo '<a href="'.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id=0" class="btn btn-secondary" role="button">Reset</a>&nbsp';
+		//echo '<INPUT type="reset" name="Reset" value="Reset_Celebration_Recurrente">';
 		if ( $_GET['id'] > 0 ) {
-			echo '<INPUT type="submit" name="Prog_Recurrente_Celebration_supprimer" value="Supprimer">';
+			echo '<INPUT type="submit" class="btn btn-secondary" name="Prog_Recurrente_Celebration_supprimer" value="Supprimer">';
 		}
 		echo '<INPUT type="hidden" name="id" value='.$_GET['id'].'>';
-		echo '<BR></TD></TR>';
-		echo '</TABLE></P></FORM>';
+		echo '</div></FORM>';
 
 	} 
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	fMENU_bottom();
 	exit();
 }
 
+if ( isset( $_POST['Reset'] ) AND 
+			$_POST['Reset']=="Reset_Celebration_Recurrente") {
+}
+				
 //--------------------------------------------------------------------------------------
 //delete one rencontre by id
 //--------------------------------------------------------------------------------------
@@ -888,10 +873,10 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_supprimer'] ) AND
 			$_POST['Prog_Recurrente_Celebration_supprimer']=="Supprimer") {
 //if ( $rencontre_supprimer ) {
 	Global $eCOM_db;
-	$debug = true;
+	$debug = false;
 
 
-	address_top();
+	fMENU_top();
 
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<TR BGCOLOR="#F7F7F7">';
@@ -908,8 +893,8 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_supprimer'] ) AND
 	while($row = mysqli_fetch_assoc($result))
 	{
 		echo '<FONT FACE="verdana" color="#313131" size="2">';
-		echo 'Du '.strftime("%d/%m/%y", sqlDateToOut($row['DateDeb']));
-		echo ' au '.strftime("%d/%m/%y", sqlDateToOut($row['DateFin']));
+		echo 'Du '.strftime("%d/%m/%y", fCOM_sqlDateToOut($row['DateDeb']));
+		echo ' au '.strftime("%d/%m/%y", fCOM_sqlDateToOut($row['DateFin']));
 		echo '  -> tous les ';
 		switch ($row['Jour']) {
 		case 7:
@@ -946,7 +931,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_supprimer'] ) AND
 	echo '</FORM>';
 	echo '</TD></TR></TABLE>';
 	
-	fCOM_address_bottom();
+	fMENU_bottom();
 	mysqli_close($eCOM_db);
 	exit();	
 }
@@ -996,28 +981,28 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 		exit;
 	}
 	
-	$debug = True;
+	$debug = false;
 	pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave DateDeb=" .$_POST['DateDeb']);
 	pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave DateFin=" .$_POST['DateFin']);
 	pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave Jour=" .$_POST['jour']);
-	pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave Heure=" .$_POST['heure'].":".$_POST['minute']);
+	pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave Heure=" .$_POST['heure']);
 	pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave Lieu=" .$_POST['Lieu']);
 	
 	$id=$_POST['id'];
 	
 	// vérifierer :DateDeb, DateFin, jour, heure, minute, Lieu
-	$DateDeb=fCOM_getSqlDate($_POST['DateDeb'], 0, 0, 0);
+	$DateDeb=$_POST['DateDeb'];
 	if ( $DateDeb == "" ) {
 		fCOM_GetWindowBack(2);
 		exit;
 	}
-	$DateFin=fCOM_getSqlDate($_POST['DateFin'], 0, 0, 0);
+	$DateFin=$_POST['DateFin'];
 	if ( $DateFin == "" ) {
 		fCOM_GetWindowBack(2);
 		exit;
 	}
 	
-	$Heure=$_POST['heure'].':'.$_POST['minute'].':00';
+	$Heure=$_POST['heure'];
 	if ( $id > 0 ) {
 		// sauvegarder :DateDeb, DateFin, jour, heure, minute, Lieu
 		mysqli_query($eCOM_db, 'UPDATE Celebrations_rec SET DateDeb="'.substr($DateDeb,0,10).'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
@@ -1048,16 +1033,13 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
-	address_top();
+	fMENU_top();
+	fMENU_Title("Liste des Messes et célébrations ...");
 	Global $eCOM_db;
 	setlocale(LC_ALL, 'fr_FR','fra');
 	
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Messes et célébrations</B><BR>';
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	$Liste_Type_Bapteme = array("Baptême", "Baptême en aspersion", "Baptême en immersion");
+
+	$Liste_Type_Bapteme = array("Baptême", "Baptême par aspersion", "Baptême par immersion");
 	
 	if (!isset($_GET['criteria'])) {
 		if (fCOM_Get_Autorization( 16 ) == 20) {
@@ -1088,24 +1070,23 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 	}else{
 		$order="ASC";
 	}
-	echo "<TABLE>";
-	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2> </font></TH>';
-	echo "<TH bgcolor=".$trcolor."><font face=verdana size=2><A HREF=\"".$_SERVER['SCRIPT_NAME']."?criteria=Date&order=".$order."\">Date</A></font>";
-    echo '<input type="checkbox" onclick="FiltrerLine()"> <label for="Filter_old_fich"><FONT SIZE="2"></b></label></TH>';
-	echo "<TH bgcolor=".$trcolor."><font face=verdana size=2><A HREF=\"".$_SERVER['SCRIPT_NAME']."?criteria=Lieu&order=".$order."\">Lieu</A></font></TH>";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Intitulé</font></TH>';
-	echo "<TH bgcolor=".$trcolor."><font face=verdana size=2><A HREF=\"".$_SERVER['SCRIPT_NAME']."?criteria=Celebrant&order=".$order."\">Célébrant</A></font></TH>";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Sacristin</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Animateur</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Musicien</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Eveil Foi</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Garderie</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Sono</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Projection</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Vidéo</font></TH>';
-
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	echo '<table id="TableauTrier" class="table table-striped table-bordered hover ml-1 mr-1" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	echo '<th scope="col"> </th>';
+	echo '<th scope="col">Date&nbsp<input type="checkbox" onclick="FiltrerLine()"> <label for="Filter_old_fich"></label></th>';
+	echo '<th scope="col">Lieu</th>';
+	echo '<th scope="col">Intitulé</th>';
+	echo '<th scope="col">Célébrant</th>';
+	echo '<th scope="col">Sacristin</th>';
+	echo '<th scope="col">Animateur</th>';
+	echo '<th scope="col">Musicien</th>';
+	echo '<th scope="col">Eveil_Foi</th>';
+	echo '<th scope="col">Garderie</th>';
+	echo '<th scope="col">Sono</th>';
+	echo '<th scope="col">Projection</th>';
+	echo '<th scope="col">Vidéo</th>';
+	echo '</tr></thead>';
+	echo '<tbody>';
 	
 	$debug = False;
 	pCOM_DebugInit($debug);
@@ -1176,7 +1157,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 	$MemoActivité = "";
 	$MemoParoissien = "";
 	
-	$requete = '(SELECT T0.`id` as id, T0.`Date` as Date, T0.`Intitule` as Intitule, T1.`Lieu` as Lieu, CONCAT(T3.`Prenom`, " ", T3.`Nom`) as Celebrant, CONCAT(T5.`Prenom`, " ", T5.`Nom`) as Sacristin, CONCAT(T7.`Prenom`, " ", T7.`Nom`) as Animateur, CONCAT(T9.`Prenom`, " ", T9.`Nom`) as Musicien, CONCAT(T11.`Prenom`, " ", T11.`Nom`) as EveilFoi, CONCAT(T13.`Prenom`, " ", T13.`Nom`) as Garderie, "Messe" AS Activité, "-" AS Paroissien, "OK" AS Status, 0 as Ordre, CONCAT(T15.`Prenom`, " ", T15.`Nom`) as Sono, CONCAT(T17.`Prenom`, " ", T17.`Nom`) as Projection, CONCAT(T19.`Prenom`, " ", T19.`Nom`) as Broadcast   
+	$requete = '(SELECT T0.`id` as id, T0.`Date` as Date, T0.`Intitule` as Intitule, T1.`Lieu` as Lieu, CONCAT(T3.`Prenom`, " ", T3.`Nom`) as Celebrant, CONCAT(T5.`Prenom`, " ", T5.`Nom`) as Sacristin, CONCAT(T7.`Prenom`, " ", T7.`Nom`) as Animateur, CONCAT(T9.`Prenom`, " ", T9.`Nom`) as Musicien, CONCAT(T11.`Prenom`, " ", T11.`Nom`) as EveilFoi, CONCAT(T13.`Prenom`, " ", T13.`Nom`) as Garderie, "Messe" AS Activité, "" AS Paroissien, T0.`Classement` AS Status, 0 as Ordre, CONCAT(T15.`Prenom`, " ", T15.`Nom`) as Sono, CONCAT(T17.`Prenom`, " ", T17.`Nom`) as Projection, CONCAT(T19.`Prenom`, " ", T19.`Nom`) as Broadcast   
 		FROM Rencontres T0
 		LEFT JOIN `Lieux` T1 ON T0.`Lieux_id` = T1.`id`
 		LEFT JOIN `QuiQuoi` T2 ON T0.`id` = T2.`Engagement_id` AND T2.`QuoiQuoi_id`=5  AND T2.`Activite_id`= T0.`Activite_id`
@@ -1206,7 +1187,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 		LEFT JOIN `Lieux` as T1 ON T0.`Lieu_id`=T1.`id` 
 		LEFT JOIN `Individu` as T3 ON T3.`id`=T0.`Baptise_id` 
 		LEFT JOIN `Individu` as T5 ON T5.`id`=T0.`Celebrant_id` 
-		WHERE T1.`IsParoisse` = 1 AND T0.`Date`>=(NOW() - INTERVAL 3 MONTH))
+		WHERE T1.`IsParoisse` = 1 AND T0.`Date`>=(NOW() - INTERVAL 2 MONTH))
 			
 		UNION ALL
 				
@@ -1222,21 +1203,30 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 		FROM `Fiancés` as T4
 		LEFT JOIN `Individu` AS T8 ON T8.`id`=T4.`Celebrant_id`
 		LEFT JOIN `Lieux` as T9 ON T9.`Lieu`=T4.`Lieu_mariage` 
-		WHERE T9.`IsParoisse` = 1 AND T4.`Date_mariage` >= (NOW() - INTERVAL 3 MONTH))
+		WHERE T9.`IsParoisse` = 1 AND T4.`Date_mariage` >= (NOW() - INTERVAL 2 MONTH))
 				
 		UNION ALL
 				
 		(SELECT "0" as id, T0.`date` as Date, "" as Intitule, T1.`Lieu` as Lieu, "" AS Celebrant, "" as Sacristin, "" as Animateur, "" as Musicien, "" as EveilFoi, "" as Garderie, "Messe Rec" AS Activité,  "" AS Paroissien, "OK" AS Status, -1 as Ordre, "" as Sono, "" as Projection, "" as Broadcast 
 		FROM `Celebrations_futur` as T0 
 		LEFT JOIN `Lieux` as T1 ON T0.`Lieu_id`=T1.`id` 
-		WHERE T0.`date`>=now())
+		WHERE T0.`date`>=(NOW() - INTERVAL 2 MONTH))
 		ORDER BY '.$criteria.' '.$order.' '.$SecondCriteria; //Date, Lieu, Ordre';
 
 	$MemoDateOrg="";
+	$pCompteur=0;
+	$MemoStatus="";
 	$result = mysqli_query( $eCOM_db, $requete);
 	$number = mysqli_num_rows($result);
 	$PremLine = 1;
 	$i = 1;
+	if (fCOM_Get_Autorization( $Activite_id ) >= 30 || 
+		fCOM_Get_Autorization( 51 ) >= 30 || 
+		fCOM_Get_Autorization( 16 ) >= 30) {
+		$Gestionnaire = True;
+	} else {
+		$Gestionnaire = False;
+	}
 	while($row = mysqli_fetch_assoc($result) OR ($i <= $number+1 AND $number > 0)){
 		
 		pCOM_DebugAdd($debug, "Evenements:liste - id=".$row['id']);
@@ -1255,34 +1245,43 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			$trcolor = usecolor();
 			
 			pCOM_DebugAdd($debug, "Evenements:liste - cas 1");
+			
 			if ($MemoDateOrg < date("Y-m-d H:i:s", Time() - (5*3600))) { // on laisse en visibilité pendant 5h
-				$ColorFont="#919191";
 				$compteur = $compteur + 1;
-				echo '<h6 style="display:none;"></h6><TR id="Filtrer_'.$compteur.'" style="display:none;">';		
+				pCOM_DebugAdd($debug, "Evenements:liste - cas 2 filtre la ligne");
+				echo '<h6 style="display:none;"></h6><tr id="Filtrer_'.$compteur.'" style="display:none;"  >';
+					
 			} else {
-				$ColorFont="#000000";
-				echo '<TR>';
+				pCOM_DebugAdd($debug, "Evenements:liste - cas 3");
+				//echo '<TR>';
+				echo '<tr>';
 			}
-
-			if (fCOM_Get_Autorization( $Activite_id ) >= 30 || 
-				fCOM_Get_Autorization( 51 ) >= 30 || 
-				fCOM_Get_Autorization( 16 ) >= 30) {
-				echo "<TD bgcolor=".$trcolor."><CENTER>";
-				echo "<A HREF=".$_SERVER['PHP_SELF']."?action=edit&id=".$MemoId."&Date=".addslashes(urlencode(serialize($MemoDate)))."&Lieu=".$MemoLieu."&Celebrant=".addslashes(urlencode(serialize($MemoCelebrant)))."&Intitule=".addslashes(urlencode(serialize($MemoIntitule)))."><img src=\"images/edit.gif\" border=0 alt='See Record'></A> ";
-				echo "</CENTER></TD>";
+	
+			if ($Gestionnaire) {
+				$TD_OnClick='onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=edit&id='.$MemoId.'&Date='.addslashes(urlencode(serialize($MemoDate))).'&Lieu='.$MemoLieu.'&Celebrant='.addslashes(urlencode(serialize($MemoCelebrant))).'&Intitule='.addslashes(urlencode(serialize($MemoIntitule))).'\')"';
 			} else {
-				echo "<TD></TD>";
+				$TD_OnClick='';
 			}
-
-			echo '<TD bgcolor='.$trcolor.' width=70><font face=verdana color='.$ColorFont.' size=2>'.ustr_replace(" ", "<BR>",$MemoDisplayDate).'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoLieu.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoIntitule.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoCelebrant.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoSacristin.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoAnimateur.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoMusicien.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoEveilFoi.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana color='.$ColorFont.' size=2>'.$MemoGarderie.'</TD>';
+			echo '<TD></TD>';
+			
+			pCOM_DebugAdd($debug, "Evenements: MemoStatus=".$MemoStatus);
+			if ($MemoStatus == "Annulé") {
+				$Barrer_text_debut='<s>';
+				$Barrer_text_fin='</s>';
+			} else {
+				$Barrer_text_debut='';
+				$Barrer_text_fin='';
+			}
+			
+			echo '<TD '.$TD_OnClick.'>'.$Barrer_text_debut.ustr_replace(" ", "<BR>",$MemoDisplayDate).$Barrer_text_fin.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$Barrer_text_debut.$MemoLieu.$Barrer_text_fin.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoIntitule.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoCelebrant.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoSacristin.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoAnimateur.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoMusicien.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoEveilFoi.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoGarderie.'</TD>';
 						
 			if ($Gerer_Equipe_Technique_Messe == False ) {
 				// Extraction du fichier XML
@@ -1294,10 +1293,12 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 				$xml = "";
 				$pos = strpos($MemoLieu, "Sophia-Antipolis");
 				if ( $pos !== false ) {
-					if ( date("w", fCOM_sqlDateToOut($MemoDateOrg)) == 6 ) {
+					if ( date("w", fCOM_sqlDateToOut($MemoDateOrg)) == 6 AND 
+						 date("G", fCOM_sqlDateToOut($MemoDateOrg)) == 18 ) { // Samedi 18h ou 18h30
 						pCOM_DebugAdd($debug, "Evenements:XML - Samedi");
 						$xml = $xml_SophiaAntipolis_samedi;
-					} else {
+					} elseif ( date("w", fCOM_sqlDateToOut($MemoDateOrg)) == 0 AND
+						date("G", fCOM_sqlDateToOut($MemoDateOrg)) == 11 ) { // Dimanche 11h
 						pCOM_DebugAdd($debug, "Evenements:XML - Dimanche");
 						$xml = $xml_SophiaAntipolis;
 					}
@@ -1307,13 +1308,13 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 					//print_r($xml);
 					pCOM_DebugAdd($debug, "Evenements:XML - start");
 					foreach ($xml->year->month as $month) {
-						if ( $month['year'] == strftime("%Y", sqlDateToOut($MemoDateOrg)) AND sprintf("%02d", $month['id']) == strftime("%m", sqlDateToOut($MemoDateOrg))) {
+						if ( $month['year'] == strftime("%Y", fCOM_sqlDateToOut($MemoDateOrg)) AND sprintf("%02d", $month['id']) == strftime("%m", fCOM_sqlDateToOut($MemoDateOrg))) {
 							pCOM_DebugAdd($debug, "Evenements:XML(1) - month=".sprintf("%02d", $month['id'])." année=".$month['year']);
-							pCOM_DebugAdd($debug, "Evenements:ROW(2) - month=".strftime("%m", sqlDateToOut($MemoDateOrg))." année=".strftime("%Y", sqlDateToOut($MemoDateOrg)));
+							pCOM_DebugAdd($debug, "Evenements:ROW(2) - month=".strftime("%m", fCOM_sqlDateToOut($MemoDateOrg))." année=".strftime("%Y", fCOM_sqlDateToOut($MemoDateOrg)));
 							foreach ($month->d as $day) {
 								$numDay = explode("-", $day['num']);
 								pCOM_DebugAdd($debug, "Evenements:XML - day=".$numDay[1]);
-								if ( sprintf("%02d", $numDay[1]) == strftime("%d", sqlDateToOut($MemoDateOrg)) ) {
+								if ( sprintf("%02d", $numDay[1]) == strftime("%d", fCOM_sqlDateToOut($MemoDateOrg)) ) {
 									pCOM_DebugAdd($debug, "Evenements:XML - day trouvé=".sprintf("%02d", $numDay[1]));
 									foreach ($day->user as $user) {
 										pCOM_DebugAdd($debug, "Evenements:XML - User=".$user['team']."/".$user['initial']);
@@ -1355,12 +1356,17 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 					}
 				}
 			}
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana color='.$ColorFont.' size=2>'.$Team_sono.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana color='.$ColorFont.' size=2>'.$Team_projection.'</TD>';
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana color='.$ColorFont.' size=2>'.$Team_broadcast.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$Team_sono.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$Team_projection.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$Team_broadcast.'</TD>';
 			
-			$MemoDate = strftime("%d/%m/%Y  %H:%M", sqlDateToOut($row['Date']));
-			$MemoDisplayDate = strftime("%d/%m/%y  %a %H:%M", sqlDateToOut($row['Date']));
+			//$MemoDate = strftime("%d/%m/%Y  %H:%M", fCOM_sqlDateToOut($row['Date']));
+			$MemoStatus="";
+			if ($row['Ordre']==0) {
+				$MemoStatus = $row['Status'];
+			}
+			$MemoDate = $row['Date'];
+			$MemoDisplayDate = strftime("%Y/%m/%d  %a %H:%M", fCOM_sqlDateToOut($row['Date']));
 			$MemoDateOrg = $row['Date'];
 			$MemoId = 0;
 			$MemoLieu = $row['Lieu'];
@@ -1410,8 +1416,12 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			//}
 			$MemoIntitule = Build_Intitule("", $row['Ordre'], $MemoActivité, $row['id'], $row['Paroissien'], $row['Celebrant']);
 			$PremLine = 0;
-			$MemoDate = strftime("%d/%m/%Y  %H:%M", sqlDateToOut($row['Date']));
-			$MemoDisplayDate = strftime("%d/%m/%y  %a %H:%M", sqlDateToOut($row['Date']));
+			//$MemoDate = strftime("%d/%m/%Y  %H:%M", fCOM_sqlDateToOut($row['Date']));
+			if ($row['Ordre'] == 0) {
+				$MemoStatus = $row['Status'];
+			}
+			$MemoDate = $row['Date'];
+			$MemoDisplayDate = strftime("%Y/%m/%d  %a %H:%M", fCOM_sqlDateToOut($row['Date']));
 			$MemoDateOrg = $row['Date'];
 			$MemoLieu = $row['Lieu'];
 			$MemoCelebrant = $row['Celebrant'];
@@ -1445,6 +1455,9 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			} elseif ($row['Ordre']== 1) { // "Baptême" 
 				$MemoActivité = $Liste_Type_Bapteme[$row['Activité']];
 			}
+			if ($row['Ordre']==0) {
+				$MemoStatus = $row['Status'];
+			}
 			$MemoIntitule = Build_Intitule($MemoIntitule, $row['Ordre'], $MemoActivité, $row['id'], $row['Paroissien'], $row['Celebrant']);
 			
 			if ($row['Celebrant'] != ""){$MemoCelebrant = $row['Celebrant'];}
@@ -1456,12 +1469,12 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			if ($row['Broadcast'] != ""){$Team_broadcast = $row['Broadcast'];}
 			
 			if ($row['Animateur'] != "" AND $MemoAnimateur != "" AND strpos($MemoAnimateur, $row['Animateur'])===False) {
-				$MemoAnimateur = $MemoAnimateur.' et<BR>'.$row['Animateur'];
+				$MemoAnimateur = $MemoAnimateur.' et '.$row['Animateur'];
 			} elseif ($MemoAnimateur == "") {
 				$MemoAnimateur = $row['Animateur'];
 			}
 			if ($row['Musicien'] != "" AND $MemoMusicien != "" AND strpos($MemoMusicien, $row['Musicien'])===False) {
-				$MemoMusicien = $MemoMusicien.' et<BR>'.$row['Musicien'];
+				$MemoMusicien = $MemoMusicien.' et '.$row['Musicien'];
 			} elseif ($MemoMusicien == "") {
 				$MemoMusicien = $row['Musicien'];
 			}
@@ -1473,15 +1486,19 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 		}
 		$i ++;
 	}
-	echo "</TABLE>";
+	echo "</tbody></TABLE>";
+	fMENU_bottom();
 
 
 function Build_Intitule ($pMemoIntitule, $pType, $pIntitule, $pId, $pParoissien, $pCelebrant) {
 	Global $Activite_id;
+	
 	$Build_Intitule = $pMemoIntitule;
-	if (strlen($Build_Intitule) > 0 AND strlen($pIntitule) > 0 AND $Build_Intitule!=$pIntitule) { $Build_Intitule = $Build_Intitule."<BR>"; }
+	if (strlen($Build_Intitule) > 0 AND strlen($pIntitule) > 0 AND $Build_Intitule!=$pIntitule) { 		$Build_Intitule = $Build_Intitule."<BR>"; 
+	}
 	if ($pType == 0  AND $Build_Intitule!=$pIntitule) {
 		$Build_Intitule = $Build_Intitule.$pIntitule;
+
 	} elseif ($pType==1 OR $pType==2) { // Cas du Mariage et Baptême
 		if ($pCelebrant != "En Attente") {
 			$Build_Intitule = $Build_Intitule.$pCelebrant." célèbre le ".$pIntitule." de ";
@@ -1494,16 +1511,25 @@ function Build_Intitule ($pMemoIntitule, $pType, $pIntitule, $pId, $pParoissien,
 		fCOM_Get_Autorization( 16 ) >= 30) {
 		if ($pType==2) { // Mariage
 			if (file_exists("Photos/".$pId.".jpg")) { 
-				$Build_Intitule = $Build_Intitule.'<A HREF=/Mariage.php?action=edit&id='.$pId.' class="tooltip">'.$pParoissien.'.';
-				$Build_Intitule = $Build_Intitule.'<EM><SPAN></SPAN>';
-				$Build_Intitule = $Build_Intitule."<img src='Photos/".$pId.".jpg' height='100' border='1' alt='couple_".$pId."'>";
-				$Build_Intitule = $Build_Intitule.'</EM></A>';
+				$Build_Intitule = $Build_Intitule.'<a data-toggle="tooltip" title="<img src=\'Photos/'.$pId.'.jpg\' width=\'150\'/>" HREF="/Mariage.php?action=edit&id='.$pId.'">'.$pParoissien.'<i class="fa fa-camera-retro text-secondary"></i></a>';
 			} else {
 				$Build_Intitule = $Build_Intitule.'<A HREF="/Mariage.php?action=edit&id='.$pId.'">'.$pParoissien.'.</A>';
 			}
 	
 		} elseif ( $pType==1 ) { // Baptême
 			$Build_Intitule = $Build_Intitule.'<A HREF="/Bapteme.php?action=edit&id='.$pId.'">'.$pParoissien.'.</A>';
+		}
+	} elseif (fCOM_Get_Autorization(2) >= 20 AND $pType==2) {
+		if (file_exists("Photos/".$pId.".jpg")) { 
+			$Build_Intitule = $Build_Intitule.'<a data-toggle="tooltip" title="<img src=\'Photos/'.$pId.'.jpg\' width=\'150\'/>" HREF="/Mariage.php?action=edit&id='.$pId.'">'.$pParoissien.'<i class="fa fa-camera-retro text-secondary"></i></a>';
+		} else {
+			$Build_Intitule = $Build_Intitule.'<a HREF="/Mariage.php?action=edit&id='.$pId.'">'.$pParoissien.'</a>';
+		}
+	} elseif ($pType==2) {
+		if (file_exists("Photos/".$pId.".jpg")) { 
+			$Build_Intitule = $Build_Intitule.'<a data-toggle="tooltip" title="<img src=\'Photos/'.$pId.'.jpg\' width=\'150\'/>">'.$pParoissien.'<i class="fa fa-camera-retro text-secondary"></i></a>';
+		} else {
+			$Build_Intitule = $Build_Intitule.$pParoissien;
 		}
 	} else {
 		$Build_Intitule = $Build_Intitule.$pParoissien;
@@ -1530,5 +1556,6 @@ function FiltrerLine() {
 	}
 }
 </script>
+
 <?php
 

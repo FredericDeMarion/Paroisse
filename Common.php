@@ -20,6 +20,7 @@ header( 'content-type: text/html; charset=iso-8859-1' );
 // Initialisation des variables
 if( ! isset( $action ) ) $action = ""; // l'initialiser si elle n'existe pas
 if( ! isset( $id ) ) $id = ""; // l'initialiser si elle n'existe pas
+if( ! isset( $rencontre_reset ) ) $rencontre_reset = "";
 if( ! isset( $rencontre_supprimer ) ) $rencontre_supprimer = ""; // l'initialiser si elle n'existe pas
 if( ! isset( $rencontre_delete ) ) $rencontre_delete = ""; // l'initialiser si elle n'existe pas
 if( ! isset( $rencontre_sauvegarder ) ) $rencontre_sauvegarder = ""; // l'initialiser si elle n'existe pas
@@ -162,7 +163,7 @@ function fCOM_sqlDateToOut($sqldate) {
 	$hour = substr($sqldate,11,2);
 	$min = substr($sqldate,14,2);
 
-	return mktime($hour,$min,0,$month,$day, $year);
+	return mktime($hour,$min,0,$month,$day,$year);
 }
 
 function fCOM_PrintDate($sqldate) {
@@ -230,6 +231,9 @@ function pCOM_DebugInit($pDebug){
 
 function pCOM_DebugAdd($pDebug, $pString){
 	Global $eCOM_db;
+	
+	if ( !isset($pString) ) $pString="pCOM_DebugAdd : String non définie";
+	
 	$Where = "Logbook"; // "MySQL" "Logbook"
 	$pString = '(user='.$_SESSION['USER_ID'].') '.$pString;
 	
@@ -413,7 +417,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 							$_SERVER['PHP_AUTH_USER'] = "Paroissien";
 						} else {
 							$fCOM_Get_Autorization = 0;
-							$_SERVER['PHP_AUTH_USER'] = "Pas défini";
+							$_SERVER['PHP_AUTH_USER'] = "Paroissien";
 						}
 						pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Paroissien ".$fCOM_Get_Autorization." requete = ".$Requete);
 					}
@@ -424,11 +428,40 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	return $fCOM_Get_Autorization;
 }
 
+//=========================================================
+// Print file
+//=========================================================
+function fCOM_PrintFile_Init($pHandle, $pTitle) {
+	header('Content-type: application/json; charset=utf-8');
+	fwrite($pHandle, "<html><head>");
+	fwrite($pHandle, '<meta charset="utf-8">');
+	fwrite($pHandle, "<title>".$pTitle."</title></head>");
+	fwrite($pHandle, "<body><br>");
+	fwrite($pHandle, "<h1><FONT face=verdana>".$pTitle." : </FONT></h1>\r\n");
+	fwrite($pHandle, "<FONT face=verdana size=2>");
+	fwrite($pHandle, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>\r\n");
+	fwrite($pHandle, "<p>===================================================</p><br>\r\n<table>");
+	fwrite($pHandle, "<FONT face=verdana size=2>");
+}
+
+function fCOM_PrintFile_Email($pHandle, $pNom, $pEmail) {
+	if ($pNom != "" AND $pEmail != "") {
+		$Email=str_replace(';', '> < ', $pEmail);
+		fwrite($pHandle, '"'.$pNom.'" < '.$Email.'>; ');
+	}
+}
+
+function fCOM_PrintFile_End($pHandle) {
+	fwrite($pHandle, "</TD></TR><TR><TD> </TD></TR><TR><TD> </TD></TR><TR><TD>\r\n\r\n\r\n");
+	fwrite($pHandle, "<FONT face=verdana size=2>");
+	fwrite($pHandle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
+	fwrite($pHandle, "</FONT></TD></TR></TABLE>\r\n");
+	fwrite($pHandle, "</BODY>\r\n</HTML>\r\n");
+}
 
 //=========================================================
 // Récupérer la liste des lieux
 //=========================================================
-
 
 function pCOM_Get_liste_lieu_celebration($pParoisse) {
 	Global $eCOM_db;
@@ -492,6 +525,9 @@ function fCOM_Get_Ecole($pEcoleId) {
 	
 	return $fCOM_Get_Ecole;
 }
+
+$fCOM_Liste_Confessions = array("Confession ?", "Sans", "Catéchumène", "Catholique", "Orthodoxe", "Protestant", "Musulman", "Juif", "Bouddhiste", "Autre");
+$fCOM_Liste_Genre = array(" ", "F", "M");
 
 //=========================================================
 // Récupérer la liste des serviteurs
@@ -562,8 +598,8 @@ function fCOM_Get_liste_celebrants($pCelebrant = 0) {
 		$requete = 'SELECT DISTINCT T1.`id`, T1.`Nom`, T1.`Prenom` 
 				FROM `Individu` T1 
 				WHERE T1.`id`= '.$pCelebrant.'';
-		$result_Serviteurs = mysql_query($requete);
-		while($Celebrant = mysql_fetch_array($result_Serviteurs)){
+		$result_Serviteurs = mysqli_query($eCOM_db, $requete);
+		while($Celebrant = mysqli_fetch_assoc($result_Serviteurs)){
 			$fCOM_Get_liste_celebrants[$Item] = array($Celebrant['id'], $Celebrant['Prenom'], $Celebrant['Nom']);
 			$Item =$Item + 1;
 		}
@@ -683,6 +719,35 @@ function fCOM_Get_Liste_SituationFamiliale() {
 //=========================================================
 function format_email_list( $pListeEmail, $pSeparation) {
 	$pListeEmail = strtolower(trim(str_replace(';', ' ', $pListeEmail)));
+
+	$RetourChaine="";
+	$pos = 0;
+	while (strlen($pListeEmail) > 0) {
+		$pos = strpos($pListeEmail, " ");
+		if ($pos > 0) {
+			$ChaineTrouve = substr($pListeEmail, 0, $pos);
+			if (strpos($pListeEmail, $ChaineTrouve, 1) === False) {
+				$RetourChaine .= $ChaineTrouve." ";
+			}
+			$pListeEmail = trim(substr($pListeEmail,  $pos));
+		} else {
+			$RetourChaine .= $pListeEmail;
+			$pListeEmail = "";
+		}
+	}
+	$RetourChaine = str_replace(' ', $pSeparation.' ', $RetourChaine);
+	return trim($RetourChaine);
+}
+
+function fCOM_format_email_list( $pListeEmail, $pSeparation) {
+	
+	$pListeEmail = strtolower(trim(str_replace('  ', ' ', $pListeEmail)));
+	$pListeEmail = str_replace(';', ' ', $pListeEmail);
+	$pListeEmail = str_replace('/', ' ', $pListeEmail);
+	$pListeEmail = str_replace('\\', '', $pListeEmail);
+	$pListeEmail = str_replace(' ou ', ' ', $pListeEmail);	
+	$pListeEmail = str_replace('  ', ' ', $pListeEmail);
+	$pListeEmail = str_replace('  ', ' ', $pListeEmail);
 	$RetourChaine="";
 	$pos = 0;
 	while (strlen($pListeEmail) > 0) {
@@ -756,44 +821,100 @@ function format_Telephone( $pTelNum, $pSeparator) {
 	return trim($RetourChaine);
 }
 
-function fCOM_Display_Photo($pNom, $pPrenom, $pid, $pFont_Size="1", $pCliquable=False)
+function fCOM_Display_Photo($pNom, $pPrenom, $pid, $pAction, $pCliquable=False)
 {
+	//if (fCOM_Get_Autorization( $_SESSION["Activite_id"]) >= 30) {
+	//	$pCliquable = false;
+	//}
 	
-	if (file_exists("Photos/Individu_".$pid.".jpg")) { 
-		if ($pCliquable == False) {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].' class="tooltip"><FONT SIZE="'.$pFont_Size.'">'.$pNom.'</FONT>';
-			echo '<em><span></span>';
-			echo "<img src='Photos/Individu_".$pid.".jpg' height='100' border='1' alt='Paroissien_".$pid."'>";
-			echo '<br><FONT face=verdana size=1>'.$pPrenom.' '.$pNom.'</FONT>';
-			echo '</em></A>';
-		} else {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$pid.' class="tooltip"><FONT SIZE="'.$pFont_Size.'">'.$pPrenom.' '.$pNom.'</FONT>';
-			echo '<em><span></span>';
-			echo "<img src='Photos/Individu_".$pid.".jpg' height='100' border='1' alt='Paroissien_".$pid."'>";
-			echo '<br><FONT face=verdana size=1>'.$pPrenom.' '.$pNom.'</FONT>';
-			echo '</em></A>';
-		}
+	if ($pCliquable==True) {
+		$AdresseHref ='href="'.$_SERVER['PHP_SELF'].'?action='.$pAction.'&id='.$pid.'"';
 	} else {
-		if ($pCliquable == False) {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].'>';
-			echo '<FONT SIZE='.$pFont_Size.'>'.$pPrenom.' '.$pNom.'</FONT> ';
-			echo '</A>';
-		} else {
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$pid.'>';
-			echo '<FONT SIZE='.$pFont_Size.'>'.$pPrenom.' '.$pNom.'</FONT> ';
-			echo '</A>';
-		}
+		$AdresseHref ='';
 	}
+	
+	$file_name = "";
+	if ($pAction == "edit_Individu" ) {
+		$file_name = "Individu_";
+	}
+	if (file_exists("Photos/".$file_name.$pid.".jpg")) { 
+		?>
+		<a data-toggle="tooltip" title="<img src='Photos/<?php echo $file_name.$pid?>.jpg' width='150' />" <?php echo $AdresseHref; ?>><?php echo $pPrenom.' '.$pNom?> <i class="fa fa-camera-retro text-secondary"></i></a>
+		<?php
+		
+	} else {
+		if ($pCliquable==True) {
+			echo '<A '.$AdresseHref.'>'.$pPrenom.' '.$pNom.'</A>';
+		} else {
+			echo $pPrenom.' '.$pNom;
+		}	}
 }
+
+
+
 
 //=========================================================
 // Appel à Bootstrap
 //=========================================================
 function fCOM_Bootstrap_init() {
-	echo '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">';
-	echo '<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>';
-	echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>';
-	echo '<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>';
+	
+	//Bootstrap 3.3.7
+	//---------------
+	//echo '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">';
+
+	//<!-- Optional theme -->
+	//echo '<link rel="stylesheet" href=	"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">';
+
+	//<!-- Latest compiled and minified JavaScript -->
+	//echo '<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>';
+	
+	
+	//Bootstrap 4.0.0 Alpha 6
+	//---------------
+	//echo '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">';
+	//echo '<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>';
+	//echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>';
+	//echo '<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>';
+	
+	//Bootstrap 4.0.0 beta 2
+	//---------------
+	echo '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">';
+	echo '<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>';
+	echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>';
+	
+	// ajouter le 09/02/18
+	echo '<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">';
+	
+	echo '<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>';
+	
+	//echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+
+	// used for sorting option on tables
+	//echo '<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css"/>';
+	//echo '<script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>';
+	//echo '<script src="https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>';
+
+	// V2.0
+	
+	//echo '<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>';
+    //echo '<link rel="stylesheet" type="text/css" hreh="https://cdn.datatables.net/scroller/1.4.3/css/scroller.dataTables.min.css"/>';
+
+    //code.jquery.com/jquery-1.12.4.js
+    //echo '<script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>';
+    //echo '<script src="https://cdn.datatables.net/scroller/1.4.3/js/dataTables.scroller.min.js"></script>';
+	//echo '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>';
+	
+	// V2.1
+	
+    echo '<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>';
+    echo '<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/3.1.3/css/fixedHeader.dataTables.min.css"/>';
+    echo '<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.1/css/responsive.dataTables.min.css"/>';
+
+	//echo '<script src="//code.jquery.com/jquery-1.12.4.js"></script>';
+	echo '<script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>';
+	echo '<script src="https://cdn.datatables.net/fixedheader/3.1.3/js/dataTables.fixedHeader.min.js"></script>';
+	echo '<script src="https://cdn.datatables.net/responsive/2.2.1/js/dataTables.responsive.min.js"></script>';
+	
 }
 
 
@@ -828,29 +949,27 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Configuration_Accompagnateur
 	//require("Login/sqlconf.php");
 	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
 
-	address_top();
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	fMENU_top();
+	fMENU_Title("Configuration des accompagnateurs");
 	$debug = false;
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Configuration des accompagnateurs</B><BR></TD>';
-	echo '</TR>';
-	echo '<TR>';
-	echo '<TD BGCOLOR="#EEEEEE">';
-	echo "<TABLE>";
+	
+	echo '<TABLE WIDTH="100%" BORDER="0">';
+	echo '<TR><TD BGCOLOR="#EEEEEE">';
+	
+	echo '<table id="TableauTrier" class="table table-striped table-bordered hover" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	
 	$trcolor = "#EEEEEE";
-	echo "<TH bgcolor=$trcolor><font face=verdana size=2> </font></TH>\n";
-	echo "<TH bgcolor=$trcolor><font face=verdana size=2> </font></TH>\n";
-	echo "<TH bgcolor=$trcolor><font face=verdana size=2> </font></TH>\n";
-	echo "<TH bgcolor=$trcolor><font face=verdana size=2>Prénom</font></TH>\n";
-	echo "<TH bgcolor=$trcolor><font face=verdana size=2>Nom</font></TH>\n";
+	echo '<TH width="130">Retirer / Ajouter</TH>';
+	echo '<TH>Nom</TH>';
+	echo '</tr></thead>';
+	echo '<tbody>';
 	
 	// Afficher les accompagnateurs noir='session courante'  grise='autre session'
-	$requete = 'SELECT * FROM Individu WHERE Actif=1 ORDER BY Nom, Prenom';
-	$requete = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T1.`Activite_id`, T1.`QuoiQuoi_id`, T1.`Engagement_id`, T1.`Session`, IF(T1.`Activite_id`='.$_SESSION["Activite_id"].' AND T1.`QuoiQuoi_id`=2 AND T1.`Engagement_id`=0 AND T1.`Session`="'.$_SESSION["Session"].'", 1, 0) AS Test
+	$requete = 'SELECT T0.`id`, TRIM(T0.`Nom`) AS Nom, TRIM(T0.`Prenom`) AS Prenom, T1.`Activite_id`, T1.`QuoiQuoi_id`, T1.`Engagement_id`, T1.`Session`, IF(T1.`Activite_id`='.$_SESSION["Activite_id"].' AND T1.`QuoiQuoi_id`=2 AND T1.`Engagement_id`=0 AND T1.`Session`="'.$_SESSION["Session"].'", 1, 0) AS Test
     FROM Individu T0
 	LEFT JOIN QuiQuoi T1 ON T0.`id` = T1.`Individu_id`
+	WHERE T0.`Nom` <> "" AND T0.`Prenom`<> "" AND Actif=1 
 	GROUP BY T0.`Nom`, T0.`Prenom`, Test
 	ORDER BY Test DESC, T0.`Nom`, T0.`Prenom`';
 	//
@@ -861,28 +980,28 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Configuration_Accompagnateur
 		// définition de la couleur de la ligne
 		$Accompagnateur_couleur = "";  // gris
 		if ($row['Test']==1 || $_SESSION["Session"] == "All") {
-			$Accompagnateur_couleur = "<B>"; // noir
+			$Accompagnateur_couleur = "<B>"; 
 		}
 		$trcolor = usecolor();
 		echo '<TR>';
 		
 		if ($_SESSION["Session"] <> "All") {
 			if ($Accompagnateur_couleur == "<B>") {
-				echo '<TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=accompagnateur_retirer_session&Individu_id='.$row['id'].' TITLE="Retirer de la session '.$_SESSION["Session"].' ('.$_SESSION["Activite_id"].') "><img src="images/moins.gif" border=0 alt="Supprimer"></a></TD>  ';
+				echo '<TD><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=accompagnateur_retirer_session&Individu_id='.$row['id'].' TITLE="Retirer accompagnateur de la session '.$_SESSION["Session"].'"><i class="fa fa-minus-circle text-danger"></i></a></TD>  ';
 			} else {
-				echo '<TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=accompagnateur_ajouter_session&Individu_id='.$row['id'].' TITLE="Ajouter a la session '.$_SESSION["Session"].' ('.$_SESSION["Activite_id"].') "><img src="images/plus.gif" border=0 alt="Ajouter"></a></TD>  ';
+				echo '<TD><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=accompagnateur_ajouter_session&Individu_id='.$row['id'].' TITLE="Ajouter accompagnateur à la session '.$_SESSION["Session"].'"><i class="fa fa-plus-circle text-success"></i></a></TD>  ';
 			} 
 		} else {
-			echo '<TD bgcolor='.$trcolor.'><CENTER></TD>';
+			echo '<TD><CENTER></TD>';
 		}
-		echo '<TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?Session='.$SessionEnCours.'&action=edit_Individu&id='.$row['id'].' TITLE="Editer accompagnateur"><img src="images/edit.gif": border=0 alt="Edit Record"></A></TD>';
-		echo '<TD bgcolor='.$trcolor.'><CENTER></TD>';
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$Accompagnateur_couleur.$row['Prenom'].'</FONT></TD>';
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$Accompagnateur_couleur.$row['Nom'].'</FONT></TD>';
+		echo '<TD>';
+		fCOM_Display_Photo($row['Prenom'], $row['Nom'], $row['id'], "edit_Individu", False);
+		echo '</TD>';
 		echo '</TR>';
 	}	
-	echo '<TR></TR></TABLE>';
-	fCOM_address_bottom();
+	echo '<tbody></table>';
+	echo '</TD></TR></TABLE>';
+	fMENU_bottom();
 	exit();
 }
 
@@ -892,7 +1011,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="accompagnateur_retirer_sessi
 	Global $eCOM_db;
 	$debug = false;
 	$requete = 'SELECT * FROM QuiQuoi WHERE Individu_id="'.$_GET['Individu_id'].'" and Activite_id='.$_SESSION["Activite_id"].' and Engagement_id=0 and QuoiQuoi_id=2 and Session = "'.$_SESSION["Session"].'"'; 
-	debug($requete . "<BR>\n");
 	$result = mysqli_query($eCOM_db, $requete);
 	if (mysqli_num_rows($result) >= 1 && $_SESSION["Session"] <> "All") {
 		$row = mysqli_fetch_assoc($result);
@@ -924,6 +1042,63 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="accompagnateur_ajouter_sessi
 }
 
 
+//=========================================================
+// Sélectionner un paroissien
+//=========================================================
+function fCOM_Selectionner_Paroissien ( $pTitre, $pRequete_1, $pRequete_2, $pAction_Clique)
+{
+	Global $eCOM_db;
+	$debug = False;
+
+	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+	echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>'.$pTitre.' </B><BR></TD></TR>';
+	echo '<TR><TD BGCOLOR="#EEEEEE">';
+	echo '<FONT FACE="Verdana" size="2" ><BR>';
+
+	$pAction_Clique = str_replace('<Icone_id>', '<i class="fa fa-plus-circle"></i>', $pAction_Clique);
+
+	echo '<table id="TableauSansTriero" class="table table-striped table-hover table-sm" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	echo "<TH>Status</TH>";
+	echo "<TH>Sélectionner</TH>";
+	echo "<TH>Nom</TH>";
+	echo '</tr></thead>';
+	echo '<tbody>';
+	
+	if ($pRequete_1 <> "" ) {
+		$result = mysqli_query($eCOM_db, $pRequete_1.' LIMIT 0, 10');
+		while($row = mysqli_fetch_assoc($result)){
+			$Action_Clique = str_replace('<Paroissien_id>', $row['id'], $pAction_Clique);
+			echo '<TR>';
+			echo '<TD>Derniers paroissiens modifiés</TD>';
+			echo '<TD><CENTER>'.$Action_Clique.'</CENTER></TD>  ';
+			echo '<TD>';
+			fCOM_Display_Photo($row['Prenom'], $row['Nom'], $row['id'], "edit_Individu", False);
+			echo '</TD>';
+			echo '</TR>'; 
+		}
+	}
+		
+	if ($pRequete_2 <> "" ) {
+		$result = mysqli_query($eCOM_db, $pRequete_2);
+		while($row = mysqli_fetch_assoc($result)){
+			$Action_Clique = str_replace('<Paroissien_id>', $row['id'], $pAction_Clique);
+			echo '<TR>';
+			echo '<TD>Tous les paroissiens</TD>';
+			echo '<TD><CENTER>'.$Action_Clique.'</CENTER></TD>';
+			echo '<TD>';
+			fCOM_Display_Photo($row['Prenom'], $row['Nom'], $row['id'], "edit_Individu", False);
+			echo '</TD>';
+			echo '</TR>'; 
+		}
+	}
+	echo '</tbody></TABLE>';
+	
+	echo '</TD></TR></TABLE>';
+
+}
+
+
 
 //=========================================================
 // liste des prochaines rencontres
@@ -935,76 +1110,42 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="rencontres") {
 	$debug = false;
 	pCOM_DebugAdd($debug, "Action=".$_GET['action']." ... en cours");
 	
-	address_top();
-	//$_SESSION["RetourPage"]=$_SERVER['SERVER_NAME'].$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
+	fMENU_top();
+	fMENU_Title ("Rencontres...");
+	
 	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?action=rencontres';
 
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Rencontres</B><BR>';
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-
-	echo '<TABLE>';
-	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2> </FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Date</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2> </FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Intitulé</FONT></TH>';
+	echo '<TABLE class="table table-striped table-bordered table-hover table-sm">';
+	echo '<thead><tr>';
+	echo '<TH>Date</TH>';
+	echo '<TH>Intitulé</TH>';
+	echo '</tr></thead>';
+	echo '<tbody>';
+	
 	if ($_SESSION["Session"]=="All") {
-		$requete = 'SELECT * FROM Rencontres where Activite_id='.$_SESSION["Activite_id"].' and Date < "'.date("Y-m-d H:i:s").'" ORDER BY Date';
+		$requete = 'SELECT * FROM Rencontres where Activite_id='.$_SESSION["Activite_id"].' ORDER BY Date';
 	} else {
-		$requete = 'SELECT * FROM Rencontres where Activite_id='.$_SESSION["Activite_id"].' and Session = "'.$_SESSION["Session"].'" and Date < "'.date("Y-m-d H:i:s").'" ORDER BY Date';
+		$requete = 'SELECT * FROM Rencontres where Activite_id='.$_SESSION["Activite_id"].' and Session = "'.$_SESSION["Session"].'" ORDER BY Date';
 		
 	}
 	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
 		$trcolor = usecolor();
-		echo '<TR>';
+		
 		if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
-			echo '<TD bgcolor='.$trcolor.'><CENTER>';
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=rencontres&id='.$row['id'].'><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
-			echo '</CENTER></TD>';
+			echo '<tr role="button" data-href="'.$_SERVER['PHP_SELF'].'?action=rencontres&id='.$row['id'].'">';
 		} else {
-			echo '<TD></TD>';
+			echo '<tr>';
 		}
-		echo '<TD width=120 bgcolor='.$trcolor.'><font face=verdana color=#919191 size=2>';
-		echo strftime("%d/%m/%y  %H:%M", sqlDateToOut($row['Date']));
-		echo '</TD>';
-		if ($row['Classement'] == "Préparation") {
-			echo '<TD WIDTH=10></TD><TD width=600 bgcolor='.$trcolor.'><font face=verdana color=#919191 size=1><I>'.$row['Intitule'].'</I></TD>';
+		if ($row['Date'] < date("Y-m-d H:i:s")) {
+			$foregroundcolor="#919191";
 		} else {
-			echo '<TD colspan=2 width=600 bgcolor='.$trcolor.'><font face=verdana color=#919191 size=2>'.$row['Intitule'].'</TD>';
+			$foregroundcolor="#000000";
 		}
-		echo '</TR>';
+		echo '<td width=150>'.substr($row['Date'], 0, 16).'</td>';
+		echo '<TD><font color='.$foregroundcolor.'>'.$row['Classement'].' : '.$row['Intitule'].'</FONT></TD>';
+		echo '</tr>';
 	}
-	if ($_SESSION["Session"]=="All") {
-		$requete = 'SELECT * FROM Rencontres where Date >= "'.date("Y-m-d H:i:s").'" and Activite_id='.$_SESSION["Activite_id"].' ORDER BY Date';
-	} else {
-		$requete = 'SELECT * FROM Rencontres where Session = "'.$_SESSION["Session"].'" and Date >= "'.date("Y-m-d H:i:s").'" and Activite_id='.$_SESSION["Activite_id"].' ORDER BY Date';
-	}
-	$result = mysqli_query($eCOM_db, $requete);
-	while($row = mysqli_fetch_assoc($result)){
-		$trcolor = usecolor();
-		echo '<TR>';
-		if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
-			echo '<TD bgcolor='.$trcolor.'><CENTER>';
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=rencontres&id='.$row['id'].'><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
-			echo '</CENTER></TD>';
-
-		} else {
-			echo '<TD></TD>';
-		}
-		echo '<TD width=120 bgcolor='.$trcolor.'><font face=verdana color=#000000 size=2>';
-		echo strftime("%d/%m/%y  %H:%M", fCOM_sqlDateToOut($row['Date']));
-		echo '</TD>';
-		if ($row['Classement'] == "Préparation") {
-			echo '<TD WIDTH=10></td><td width=600 bgcolor='.$trcolor.'><font face=verdana color=#000000 size=1><I>'.$row['Intitule'].'</I></TD>';
-		} else {
-			echo '<TD colspan=2 width=600 bgcolor='.$trcolor.'><font face=verdana color=#000000 size=2>'.$row['Intitule'].'</TD>';
-		}
-		echo '</TR>';
-	}	
 	echo '<TR></TR></TABLE>';
 	
 	// formulaire de saisie
@@ -1014,25 +1155,19 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="rencontres") {
 		if (isset($_GET['id'])) {$id = $_GET['id'];} else {$id = 0;}
 		
 		echo '<FORM method=post action='.$_SERVER['PHP_SELF'].'>';
-		echo '<P><TABLE WIDTH="100%" BORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-		echo '<TR BGCOLOR="#F7F7F7">';
+		echo '<div class="container-fluid">';
 		if ( $id > 0 ) {
-			echo '<TD COLSPAN="5"><FONT FACE="Verdana" SIZE="2"><BR><B>Modification d\'une rencontre</B></TD>';
+			echo '<FONT FACE="Verdana" SIZE="3"><BR><B>Modification d\'une rencontre</B>';
 		} else {
-			echo '<TD COLSPAN="5"><FONT FACE="Verdana" SIZE="2"><BR><B>Saisie d\'une nouvelle rencontre</B></TD>';
+			echo '<FONT FACE="Verdana" SIZE="3"><BR><B>Saisie d\'une nouvelle rencontre</B>';
 		}
-		echo '</TR>';
-		echo '<TR>';
-		echo '<TD width="100" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Session:</U></FONT></B></TD>';
-		echo '<TD width="120" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Date:</U></FONT></B></TD>';
-		echo '<TD width="120" bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Heure:</U></FONT></B></TD>';
-		echo '<TD bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Classement:</U></FONT></B></TD>';
-		echo '<TD bgcolor="#eeeeee"><FONT FACE="Verdana" SIZE="2"><U>Intitulé:</U></FONT></B></TD>';
-		echo '</TR>';
+		echo "<BR><BR>";
 		
-		echo '<TR>';
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<SELECT name="Session">';
+		echo '<div class="form-row">';
+
+		echo '<div class="col-form-label">';
+		echo '<label for="inputSession">Session</label>';
+		echo '<SELECT id="inputSession" class="form-control" name="Session">';
 		for ($i=2006; $i<=(intval(date("Y"))+5); $i++) {
 			if (($row['Session'] != "" && $i == intval($row['Session'])) || ($row['Session'] == "" && $i == intval($_SESSION["Session"]))) {
 				echo '<option value="'.$i.'" selected="selected">'.($i-1).' - '.$i.'</option>';
@@ -1040,7 +1175,8 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="rencontres") {
 				echo '<option value="'.$i.'">'.($i-1).' - '.$i.'</option>';
 			}
 		}
-		echo '</SELECT></TD>';
+		echo '</SELECT>';
+		echo '</div>';
 
 		if ( $id > 0 )
 		{
@@ -1048,86 +1184,76 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="rencontres") {
 			$result = mysqli_query($eCOM_db, $requete);
 			while($row = mysqli_fetch_assoc($result))
 			{
-				$DateYear=substr($row['Date'],0,4);
-				$DateMonth=substr($row['Date'],5,2);
-				$DateDay=substr($row['Date'],8,2);
-				$_DateRencontre = $DateDay."/".$DateMonth."/".$DateYear;
-				$_HeureRencontre = substr($row['Date'],11,2);
-				$_MinuteRencontre = substr($row['Date'],14,2);
+				$_DateRencontre = substr($row['Date'], 0, 10);
+				$_HeureRencontre = substr($row['Date'],11,5);
 				$_Classement = $row['Classement'];
 				$_Intitule = $row['Intitule'];
 			}
 		} else {
 			$_DateRencontre = "";
 			$_HeureRencontre = "";
-			$_MinuteRencontre = "";
 			$_Classement = "";
 			$_Intitule = "";
 		}
 		
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<input type=text id="DateRencontre" name="DateRencontre" size="8" maxlength="10" value="'.$_DateRencontre.'">';
-		?>	
-		<a href="javascript:popupwnd('calendrier.php?idcible=DateRencontre&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span>
-		<?php
-		echo '</TD>';
+		// Date
+		echo '<div class="col-form-label">';
+		echo '<label for="DateRencontre">Date</label>';
+		echo '<input type="date" id="DateRencontre" class="form-control" name="DateRencontre" size="8" maxlength="10" value="'.$_DateRencontre.'">';
+		echo '</div>';
 		
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<B><FONT FACE="Verdana" SIZE="2"></FONT></B>';
-		echo '<SELECT name="heure">';
-		for ($i=0; $i<=23; $i++) {
-			if (sprintf("%02d", $i) == sprintf("%02d", $_HeureRencontre)) {
-				echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';
+		// heure
+		echo '<div class="col-form-label mr-sm-2">';
+		echo '<label for="Heure">Heure</label>';
+		echo '<input type="time" id="Heure" class="form-control" name="heure" size="8" maxlength="10" value="'.$_HeureRencontre.'"></TD>';
+		echo '</SELECT>';
+		echo '</div>';
+		
+		// Classement
+		echo '<div class="col-form-label">';
+		echo '<label for="TypeClassement">Classement</label>';
+		echo '<SELECT id="TypeClassement" class="form-control" name="Classement">';
+		foreach (array("Parcours", "Préparation") as $Classement){
+			if ( $_Classement == $Classement ) {
+				echo '<option value="'.$Classement.'" selected="selected">'.$Classement.'</option>';
 			} else {
-				echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';
-			}
-		}
-		echo '</SELECT><FONT FACE="Verdana" SIZE="2">h</FONT>';
-		echo '<SELECT name="minute">';
-		for ($i=0; $i<=45; $i=$i+15) {
-			if (sprintf("%02d", $i) == sprintf("%02d", $_MinuteRencontre)) {
-				echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';
-			} else {
-				echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';
+				echo '<option value="'.$Classement.'">'.$Classement.'</option>';
 			}
 		}
 		echo '</SELECT>';
-		echo '</TD>';
+		echo '</div>';
 		
-		// Classement
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<SELECT name="Classement">';
-		//echo'<option value="?">?</option>';
-		if ( $_Classement == "Parcours" ) {
-			echo '<option value="Parcours" selected="selected">Parcours</option>';
-		} else {
-			echo '<option value="Parcours">Parcours</option>';
-		}
-		if ( $_Classement == "Préparation" ) {
-			echo '<option value="Préparation" selected="selected">Préparation</option>';
-		} else {
-			echo '<option value="Préparation">Préparation</option>';
-		}
-		echo '</SELECT></TD>';
+		echo '<div class="col-form-label">';
+		echo '<label for="inputCommentaire">Intitulé</label>';
+		echo '<INPUT type=text id="inputCommentaire" class="form-control" name="Intitule" size="50" maxlength="100" value="'.$_Intitule.'">';
+		echo '</div>';
 		
-		echo '<TD bgcolor="#eeeeee">';
-		echo '<INPUT type=text name="Intitule" size="50" maxlength="100" value="'.$_Intitule.'"></TD></TR>';
-		echo '<TR><TD COLSPAN="2">';
-		echo '<INPUT type="submit" name="rencontre_sauvegarder" value="Enregistrer">';
-		echo '<INPUT type="reset" name="Reset" value="Reset">';
+		echo '</div>';
+		echo '</div>';
+		
+		echo '<div class="container-fluid">';
+		
+		echo '<INPUT type="submit" class="btn btn-secondary" name="rencontre_sauvegarder" value="Enregistrer"> </button>';
+
+		echo '<a href="'.$_SERVER['PHP_SELF'].'?action=rencontres&id=0" class="btn btn-secondary" role="button">Reset</a> ';
+		
 		if ( $id > 0 ) {
-			echo '<INPUT type="submit" name="rencontre_supprimer" value="Supprimer">';
+			echo '<INPUT type="submit" class="btn btn-secondary" name="rencontre_supprimer" value="Supprimer"></button>';
 		}
+		echo '</div>';
 		echo '<INPUT type="hidden" name="id" value='.$id.'>';
 		echo '<BR></TD></TR>';
-		echo '</TABLE></P></FORM>';
+		echo '</FORM>';
 
-	} 
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	}
+	fMENU_bottom();
 	exit();
 }
 
+if ( isset( $_POST['rencontre_reset'] ) AND $_POST['rencontre_reset']=="Reset") {
+	echo '<META http-equiv="refresh" content="0; URL='.$_SERVER['PHP_SELF'].'?action=rencontres&id=0">';
+	exit();
+}
 //--------------------------------------------------------------------------------------
 //delete one rencontre by id
 //--------------------------------------------------------------------------------------
@@ -1141,7 +1267,7 @@ if ( isset( $_POST['rencontre_supprimer'] ) AND $_POST['rencontre_supprimer']=="
 	$result = mysqli_query($eCOM_db, $requete);
     pCOM_DebugAdd($debug, "Common:rencontre_supprimer - Enreg dans la table ".mysqli_num_rows( $result ));
 
-	address_top();
+	fMENU_top();
 
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<TR BGCOLOR="#F7F7F7">';
@@ -1164,8 +1290,7 @@ if ( isset( $_POST['rencontre_supprimer'] ) AND $_POST['rencontre_supprimer']=="
 	echo '<INPUT type="hidden" name="id" value='.$_POST['id'].'>';
 	echo '</FORM>';
 	
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	fMENU_bottom();
 	exit();	
 }
 
@@ -1173,6 +1298,9 @@ if ( isset( $_POST['rencontre_supprimer'] ) AND $_POST['rencontre_supprimer']=="
 if ( isset( $_POST['rencontre_delete'] ) AND $_POST['rencontre_delete']=="Oui") {
 //if ( $rencontre_delete ) {
 	Global $eCOM_db;
+	
+	fCOM_Bootstrap_init();
+
 	$debug = False;
 	$Delay = "0";
 	if ( $_POST['rencontre_delete'] == "Oui" )
@@ -1187,7 +1315,7 @@ if ( isset( $_POST['rencontre_delete'] ) AND $_POST['rencontre_delete']=="Oui") 
 				echo 'Impossible de retirer la rencontre : '.mysqli_error($eCOM_db);
 				echo '</FONT></CENTER></B>';
 			} else {
-				echo '<B><CENTER><FONT face="verdana" size="2" color=green>Rencontre supprimée avec succès</FONT></CENTER></B>';
+				echo '<div class="alert alert-success">Rencontre supprimée avec succès</div>';
 			}
 		} else {
 			echo '<B><CENTER><FONT face="verdana" size="2" color=red>';
@@ -1204,6 +1332,9 @@ if ( isset( $_POST['rencontre_delete'] ) AND $_POST['rencontre_delete']=="Oui") 
 if ( isset( $_POST['rencontre_sauvegarder'] ) AND $_POST['rencontre_sauvegarder']=="Enregistrer") {
 //if ($rencontre_sauvegarder) {
 	Global $eCOM_db;
+	
+	fCOM_Bootstrap_init();
+	
 	if (fCOM_Get_Autorization($_SESSION["Activite_id"]) <= 20)
 	{
 		echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPage"].'">';
@@ -1217,14 +1348,9 @@ if ( isset( $_POST['rencontre_sauvegarder'] ) AND $_POST['rencontre_sauvegarder'
 	pCOM_DebugAdd($debug, "Common:rencontre_sauvegarder Session = " .$_POST['Session']);
 	pCOM_DebugAdd($debug, "Common:rencontre_sauvegarder Date is " .$_POST['DateRencontre']);
 	
-	$DateTimeValue = fCOM_getSqlDate($_POST['DateRencontre'],$_POST['heure'],$_POST['minute'],0);
+	$DateTimeValue = $_POST['DateRencontre'].' '.$_POST['heure'].':00';
 	pCOM_DebugAdd($debug, "Common:rencontre_sauvegarder - DateTimeValue=".$DateTimeValue);
-	if ($DateTimeValue == NULL) {
-		pCOM_DebugAlert(True, "Erreur dans la saisie de date: Pas de sauvegarde, recommencez la saisie");
-		echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPage"].'">';
-		mysqli_close($eCOM_db);
-		exit;
-	}
+
 	$Activite_id=$_SESSION["Activite_id"];
 
 	if (isset($_POST['id'])) {$id = $_POST['id'];} else { $id = 0;}
@@ -1234,12 +1360,12 @@ if ( isset( $_POST['rencontre_sauvegarder'] ) AND $_POST['rencontre_sauvegarder'
 		mysqli_query($eCOM_db, 'UPDATE Rencontres SET Date="'.$DateTimeValue.'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
 		mysqli_query($eCOM_db, 'UPDATE Rencontres SET Classement="'.$_POST['Classement'].'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
 		mysqli_query($eCOM_db, 'UPDATE Rencontres SET Intitule="'.$_POST['Intitule'].'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Rencontre modifiée avec succès</FONT></CENTER></B>';
+		echo '<div class="alert alert-success">Rencontre modifiée avec succès</div>';
 	} else {
 		$requete = 'INSERT INTO Rencontres (Activite_id, Session, Date, Classement, Intitule, Lieux_id) VALUES ("'.$Activite_id.'","'.$_POST['Session'].'", "'.$DateTimeValue.'", "'.$_POST['Classement'].'", "'.$_POST['Intitule'].'", 0)';
 		pCOM_DebugAdd($debug, "Common:rencontre_sauvegarder - requete=".$requete);
 		mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Rencontre ajoutée avec succès</FONT></CENTER></B>';
+		echo '<div class="alert alert-success">Rencontre ajoutée avec succès</div>';
 	}
 
 	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';

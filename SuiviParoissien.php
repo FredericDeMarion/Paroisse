@@ -39,7 +39,8 @@ $debug = true;
 $Activite= 1; //All
 $SessionEnCours=$_SESSION["Session"];
 require('Common.php');
-require('templateSuiviParoissien.inc');
+require('Menu.php');
+//require('templateSuiviParoissien.inc');
 $debug = false;
 pCOM_DebugAdd($debug, 'SuiviParoissien - SessionEnCours='.$SessionEnCours . "<BR>\n");
 require('Paroissien.php');
@@ -55,7 +56,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 	Global $eCOM_db;
 	if (!isset($pEngagement)) {$pEngagement="";}
 	
-	$debug = true;	
+	$debug = false;	
 	pCOM_DebugAdd($debug, "SuiviParoissien:Lister_engagements - pTitre=".$pTitre);
 	pCOM_DebugAdd($debug, "SuiviParoissien:Lister_engagements - pChampsIndividu=".$pChampsIndividu);
 	pCOM_DebugAdd($debug, "SuiviParoissien:Lister_engagements - pEngagement=".$pEngagement);
@@ -63,7 +64,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
 
 
-	address_top();
+	fMENU_top();
 	if (date("n") <= 7 )
 	{
 		$SessionActuelle= date("Y");
@@ -71,7 +72,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		$SessionActuelle= date("Y")+1;
 	}
 
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	//echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'">';
 
@@ -100,11 +101,10 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 	echo '<TR BGCOLOR="#F7F7F7"><TD>';
 	echo '<DIV align="left">';
 	echo '<FONT FACE="Verdana" SIZE="2"><B>'.$pTitre.' : </B>';
-	echo '<SELECT name="Engagement"  >';//'.$BloquerAcces.' >';
-	//echo '<option value=" " selected="selected"> </option>';
+	echo '<SELECT name="Engagement"  >';
 	echo '<option value="All" selected="selected">All</option>';
 	pCOM_DebugAdd($debug, 'SuiviParoissien:Lister_engagements - Requete = '. $requete);
-	$result = mysqli_query($eCOM_db, $requete);//, $db);
+	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
 		if ($pChampsIndividu == "Services" ) {
 			if ($row['Lieu']=="") {
@@ -136,40 +136,45 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 	} elseif ( $pChampsIndividu == "LangueMaternelle" ) {
 		echo '<input type="submit" name="Afficher_liste_langues" value="Afficher">';
 	}
-	echo '</DIV></TR></FORM>';
+	if ($pChampsIndividu == "Services" ) {
+		echo '<BR><FONT face=verdana color=#555555# size=0>(<i class="fa fa-star text-success"></i>) Responsable &nbsp&nbsp&nbsp(<i class="fa fa-bullseye text-success"></i>) Point contact</FONT>';
+	}
+	echo '</DIV>';	
+	echo '</TR></FORM>';
 
 
 	echo '<TR><TD BGCOLOR="#EEEEEE">';
 
-	echo "<TABLE>";
-	$trcolor = "#EEEEEE";
+	echo '<table id="TableauSansTriero" class="table table-striped table-hover table-sm" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	
+	echo "<TH>Engagement</TH>";
+	echo "<TH>Nom </TH>";
+	echo "<TH>Adresse</TH>";
+	echo "<TH>Téléphone / e-mail</TH>";
+	$NbColonne=3;
 	if ($pChampsIndividu == "Services" ) {
-		echo "<TH bgcolor=".$trcolor."><FONT face=verdana size=2>Nom </FONT><BR>";
-		echo "<FONT face=verdana color=#555555# size=0>(*) Responsable</FONT><BR>";
-		echo "<FONT face=verdana color=#555555# size=0>(c) Point contact</FONT><BR></TH>";
-	} else {
-		echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>Nom </FONT><FONT face=verdana color=#555555# size=0></FONT></TH>";
-	}
-	echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>Adresse</FONT></TH>";
-	echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>Téléphone / e-mail</FONT></TH>";
-
-	if ($pChampsIndividu == "Services" ) {
-		echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>".$pChampsIndividu."</FONT></TH>";
-		echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>Ressourcements</FONT></TH>\n";
+		echo "<TH>".$pChampsIndividu."</TH>";
+		echo "<TH>Ressourcements</TH>";
+		$NbColonne=$NbColonne+2;
 	} elseif ( $pChampsIndividu == "Ressourcements" OR $pChampsIndividu == "Souhaits" ) {
-		echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>".$pChampsIndividu."</FONT></TH>";
-		echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>Services</FONT></TH>\n";
+		echo "<TH>".$pChampsIndividu."</TH>";
+		echo "<TH>Services</TH>";
+		$NbColonne=$NbColonne+2;
 	}
 	
-	if (fCOM_Get_Autorization( 0 ) >= 40 AND $pChampsIndividu != "LangueMaternelle" ) {
-		echo "<TH bgcolor=$trcolor><FONT face=verdana size=2>Denier</FONT></TH>";
+	if (fCOM_Get_Autorization( 0 ) >= 40 AND $pChampsIndividu != "LangueMaternelle" ) { // was 40
+		echo "<TH>Denier</TH>";
+		$NbColonne=$NbColonne+1;
 	}
-
+	$NbColonne=$NbColonne-2;
+	echo '</tr></thead>';
+	echo '<tbody>';
+	
 	$Total_pers = 0;
 	$aujourdhui = date("F j, Y, g:i a");
 	$File_Counter = 1;
 
-	//debug_plus('pEngagement = '. $pEngagement );
 	if ( $pEngagement == "" ||  $pEngagement == "All") {
 		$ExtraRequete = "";
 	} else {
@@ -189,20 +194,16 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 			$ExtraRequete = 'AND T0.`LangueMaternelle`="'.$pEngagement.'"';
 		}
 	}
-	//echo "Pass1 :".$ExtraRequete.'<BR>';
-	$debug = True;
+	$debug = False;
 	pCOM_DebugInit($debug);
 	pCOM_DebugAdd($debug, 'SuiviParoissien:Lister_engagements - Pass1 :'.$ExtraRequete);	
 	
 	if ($pChampsIndividu == "Services" ) {
-		//$requete = 'SELECT * FROM `Activites` T0 where T0.`Service` = 1 '.$ExtraRequete.' ORDER BY T0.`Nom`';
 		$requete = 'SELECT DISTINCT T0.`id`, T0.`Nom` As Activite, IFNULL(T2.`Lieu`, "") As Lieu, T2.`id` As Lieu_id
 			FROM Activites T0
 			LEFT JOIN QuiQuoi T1 ON T1.`Activite_id`=T0.`id`
 			LEFT JOIN Lieux T2 ON T2.`id`= T1.`Lieu_id`
 			WHERE T0.`Service`=1 AND T1.`Engagement_id`=0 '.$ExtraRequete.' '.$AddWhere.' ORDER BY T0.`Nom`, Lieu ';
-
-		//echo "Pass2 :".$requete.'<BR>';
 		pCOM_DebugAdd($debug, 'SuiviParoissien:Lister_engagements - Pass2 :'.$requete);
 	} elseif ( $pChampsIndividu == "Ressourcements" ) {
 		$requete = 'SELECT * FROM `Activites` T0 where T0.`Formation` = 1 '.$ExtraRequete.' ORDER BY T0.`Nom`';
@@ -220,8 +221,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		fwrite($handle_xml, "\n\r<paroissiens>");
 	}
 
-	//debug_plus('Requete = '. $requete );
-	$result = mysqli_query($eCOM_db, $requete);//, $db);
+	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
 		if ($pChampsIndividu == "Services" ) {
 			//$TreatedValue=$row[Valeur_int];
@@ -243,24 +243,13 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		}
 		
 		// ligne de séparation des services
-		echo '<TR><TD colspan="2" bgcolor="#A1A1A1"><font face=verdana size=2>'.$TreatedName.'</font></TD><TD bgcolor="#A1A1A1"><font face=verdana size=2> Liste <A HREF="load/ListeMail_'.$File_Counter.'.php">e_mail</A></font></TD>';
-		if ($pChampsIndividu == "Services" || $pChampsIndividu == "Ressourcements" || 
-			$pChampsIndividu == "Souhaits" ) {
-			echo '<TD bgcolor="#A1A1A1"></TD><TD bgcolor="#A1A1A1"></TD>';
-		}
-		if (fCOM_Get_Autorization( 0 ) >= 40 AND $pChampsIndividu != "LangueMaternelle") {
-			echo '<TD bgcolor="#A1A1A1"></TD>';
-		}
-				
+		//---------------------------------
+		
+		//echo '<TR><TD colspan="2" bgcolor="#A1A1A1"><font size=3>'.$TreatedName.'</font></TD><TD colspan="'.$NbColonne.'" bgcolor="#A1A1A1"><font size=2> Liste <A HREF="load/ListeMail_'.$File_Counter.'.php">e_mail</A></font></TD></TR>';
+
 		$temp = "load/ListeMail_".$File_Counter.".php";
 		$handle = fopen($temp, 'w');
-		fwrite($handle, "<HTML><HEAD><title>Liste adresses mail</title></HEAD>\r\n<BODY><br>");
-		fwrite($handle, "<h1><FONT face=verdana>Liste des adresses mail : ".$TreatedName."</FONT></h1>\r\n");
-		fwrite($handle, "<FONT face=verdana size=2>");
-		fwrite($handle, "<P>Date : ".$aujourdhui."</P>\r\n");
-		fwrite($handle, "<P>===================================================</P><BR>\r\n<TABLE>");
-		echo "<TR><TD><FONT face=verdana size=2>";
-		fwrite($handle, "<FONT face=verdana size=2>");
+		fCOM_PrintFile_Init($handle, "Liste des adresses mail : ".$TreatedName);
 		$File_Counter += 1;
 		if ($pChampsIndividu == "Services" ) {
 			$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Prenom`, T1.`Nom`, T1.`Adresse`, T1.`Telephone`, T1.`e_mail`, IFNULL(T2.Lieu, "") As Lieu, T0.`Lieu_id`, T0.`Responsable`, T0.`Point_de_contact`
@@ -277,14 +266,15 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 					LEFT JOIN `Individu` T1 ON T1.`id`=T0.`Individu_id`
 					WHERE T0.`Engagement_id`=0 AND T0.`QuoiQuoi_id`=1 AND T0.`Activite_id`='.$row['id'].' AND T0.`Session`='.$SessionActuelle.' AND T1.`Dead`=0 AND T1.`Actif`=1
 					ORDER BY T1.`Nom`, T1.`Prenom`';
+					
 		} elseif ( $pChampsIndividu == "Souhaits") {
 			$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Prenom`, T1.`Nom`, T1.`Adresse`, T1.`Telephone`, T1.`e_mail`, T0.`Responsable`
 					FROM `QuiQuoi` T0
 					LEFT JOIN `Individu` T1 ON T1.`id`=T0.`Individu_id`
 					WHERE T0.`Engagement_id`=0 AND T0.`QuoiQuoi_id`=1 AND T0.`Activite_id`='.$row['id'].' AND T0.`Session`='.$SessionActuelle.' AND T1.`Dead`=0 AND T1.`Actif`=1
 					ORDER BY T1.`Nom`, T1.`Prenom`';
+					
 		} elseif ( $pChampsIndividu == "LangueMaternelle") {
-
 			$requete2 = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T0.`Adresse`, T0.`Telephone`, T0.`e_mail` FROM `Individu` T0 where T0.`'.$pChampsIndividu.'`!="Langue Maternelle ?" and T0.`'.$pChampsIndividu.'`!="" and T0.`'.$pChampsIndividu.'`!="Autre" and T0.`'.$pChampsIndividu.'`="'.$TreatedName.'" AND T0.`Dead`=0 AND T0.`Actif`=1 ORDER BY T0.`Nom`, T0.`Prenom`';
 		}
 		
@@ -301,11 +291,9 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 						fwrite($handle_xml, "<service>".$TreatedName."</service>\n\r");
 						if ($row2['Responsable'] == 1){
 							fwrite($handle_xml, "<role>Responsable</role>\n\r");
-							$Check_Responsable = "<FONT face=verdana color=#555555# size=0><B>(*)</B></FONT> ";
 						}
 						if ($row2['Point_de_contact'] == 1) {
 							fwrite($handle_xml, "<Point_Contact>Oui</Point_Contact>\n\r");
-							$Check_Point_de_contact = "<FONT face=verdana color=#555555# size=0><B>(C)</B></FONT> ";
 						}
 						fwrite($handle_xml, "<name>".$row2['Prenom']." ".$row2['Nom']."</name>\n\r");
 						fwrite($handle_xml, "<telephone>".$row2['Telephone']."</telephone>\n\r");
@@ -313,35 +301,34 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 						fwrite($handle_xml, "</user>");
 					}
 				}
+				if ($row2['Responsable'] == 1){
+					$Check_Responsable = '<i class="fa fa-star text-success"></i> ';
+				}
+				if ($row2['Point_de_contact'] == 1) {
+					$Check_Point_de_contact = '<i class="fa fa-bullseye text-success"></i> ';
+				}
+
 			}
-			fwrite($handle, '"'.$row2['Prenom'].' '.$row2['Nom'].'"< '.$row2['e_mail'].'>; ');
-			$trcolor = usecolor();
-			echo "<TR><TD width=170 bgcolor=".$trcolor."><FONT face=verdana size=2>";
-			if (file_exists("Photos/Individu_".$row2['id'].".jpg")) { 
-				echo $Check_Responsable.$Check_Point_de_contact.'<A HREF=SuiviParoissien.php?action=edit_Individu&id='.$row2['id'].' class="tooltip">'.$row2['Nom'].' '.$row2['Prenom'].'';
-				echo "<EM><SPAN></SPAN>";
-				echo "<img src='Photos/Individu_".$row2['id'].".jpg' height='100' border='1' alt='Paroissien_".$row2['id']."'>";
-				echo '<BR><font face=verdana size=2>'.$row2['Prenom'].' '.$row2['Nom'].'</FONT>';
-				echo "</EM></A>";
-			} else {
-				echo $Check_Responsable.$Check_Point_de_contact.'<A HREF=SuiviParoissien.php?action=edit_Individu&id='.$row2['id'].'>';
-				echo "$row2[Nom] $row2[Prenom]";
-				echo "</A>";
-			}
+			fCOM_PrintFile_Email($handle, $row2['Prenom'].' '.$row2['Nom'], $row2['e_mail']);
+			//fwrite($handle, '"'.$row2['Prenom'].' '.$row2['Nom'].'"< '.$row2['e_mail'].'>; ');
+			echo '<TR>';
+			echo '<TD>'.$TreatedName.' <i class="fa fa-long-arrow-right"></i> <A HREF="load/ListeMail_'.($File_Counter - 1).'.php">e_mail</A></TD>';
+			echo "<TD>";
+			fCOM_Display_Photo($row2['Nom'].' '.$Check_Responsable.$Check_Point_de_contact, $row2['Prenom'], $row2['id'], "edit_Individu", true);
 			echo '</TD>';
 
-			echo "<TD width=200 bgcolor=".$trcolor."><font face=verdana size=2>".Securite_html($row2['Adresse'])."</TD>";
+			echo "<TD>".$row2['Adresse']."</TD>";
 			
-			echo "<TD width=70 bgcolor=".$trcolor."><font face=verdana size=2>";
+			echo '<TD width=70>';
 			echo "<A HREF='mailto:$row2[e_mail]?subject= Paroisse : ' TITLE='Envoyer un mail a ".$row2['Prenom']." ".$row2['Nom']."'>".$row2['e_mail']."</A><BR>";
-			echo Securite_html($row2['Telephone'])."</TD>";
+			echo $row2['Telephone'].'</TD>';
 
 
 			// Autres Services ou ressourcements du paroissien
 			//------------------------------------------------
 			if ($pChampsIndividu == "Services" || $pChampsIndividu == "Ressourcements" || 
 				$pChampsIndividu == "Souhaits" ) {
-				echo "<TD width=150 bgcolor=".$trcolor."><font face=verdana size=1>";
+				echo '<TD width="150" ><font size=2>';
 				if ($pChampsIndividu == "Services") {
 					//$DeltaWhere='AND T0.Lieu_id='.$row2['Lieu_id'].' AND T0.`QuoiQuoi_id`=2 AND T1.`Service`=1';
 					$DeltaWhere=' AND T0.`Session`='.$SessionActuelle.' AND T0.`QuoiQuoi_id`=2 AND T1.`Service`=1';
@@ -365,13 +352,12 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 
 			// Les ressourcements ou Services du paroissien
 			//------------------------------------------------
-				echo "<TD width=150 bgcolor=".$trcolor."><font face=verdana size=1>";
+				echo '<TD width="150"><font size=2>';
 				if ($pChampsIndividu == "Services") {
 					// les ressourcements
 					$DeltaWhere='AND T0.`Session`='.$SessionActuelle.' AND T0.`QuoiQuoi_id`=1 AND T1.`Formation`=1';
 				} elseif ($pChampsIndividu == "Ressourcements" OR $pChampsIndividu == "Souhaits") {
 					// les services
-					//$DeltaWhere='AND T0.Lieu_id='.$row2['Lieu_id'].' AND T0.`QuoiQuoi_id`=2 AND T1.`Service`=1';
 					$DeltaWhere='AND T0.`Session`='.$SessionActuelle.' AND T0.`QuoiQuoi_id`=2 AND T1.`Service`=1';
 				}
 				$requete3 = 'SELECT DISTINCT T1.`Nom`
@@ -379,7 +365,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 					LEFT JOIN `Activites` T1 ON T1.`id`=T0.`Activite_id`
 					WHERE T0.`Individu_id`='.$row2['id'].' AND T0.`Engagement_id`=0 AND T0.`Activite_id`<>'.$row['id'].' '.$DeltaWhere.' ORDER BY T1.`Nom`';			
 
-				$result3 = mysqli_query($eCOM_db, $requete3);//, $db);	
+				$result3 = mysqli_query($eCOM_db, $requete3);
 				while($row3 = mysqli_fetch_assoc($result3)){
 					echo '- '.$row3['Nom'].'<BR>';
 				}
@@ -389,10 +375,10 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 			// denier
 			//--------
 			
-				if (fCOM_Get_Autorization( 0 ) >= 40) {
-					echo "<TD width=160 bgcolor=".$trcolor."><FONT face=verdana size=1>";
+				if (fCOM_Get_Autorization( 0 ) >= 40) { // was 40
+					echo '<TD width="160"><FONT size=2>';
 					$requete3 = 'SELECT T0.`Date` As Date, T0.`Montant` As Montant FROM `Denier` T0 where T0.`Paroissien_id`='.$row2['id'].' ORDER BY T0.`Date`';
-					$result3 = mysqli_query($eCOM_db, $requete3);//, $db);
+					$result3 = mysqli_query($eCOM_db, $requete3);
 					while($row3 = mysqli_fetch_assoc($result3)){
 						echo '['.$row3['Montant'].' € le '.date("d/m/Y", strtotime($row3['Date'])).']<BR>';
 					}
@@ -402,11 +388,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 
 			echo "</TR>";
 		}
-		fwrite($handle, "</TD></TR><TR><TD> </TD></TR><TR><TD> </TD></TR><TR><TD><BR><BR><BR>");
-		fwrite($handle, "<FONT face=verdana size=2>");
-		fwrite($handle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-		fwrite($handle, "</FONT></TD></TR></TABLE>");
-		fwrite($handle, "</BODY></HTML>");
+		fCOM_PrintFile_End($handle);
 		fclose($handle);
 	}
 			
@@ -415,9 +397,10 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		fclose($handle_xml);
 	}
 	
-	echo "</TABLE><br>";
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo "</tbody></TABLE>"; 
+	echo "</TD></TR></TABLE>";
+
+	fMENU_bottom();
 	exit();
 }
 
@@ -485,7 +468,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_evenements") {
 	Global $eCOM_db;
 	$debug = false;
 
-	address_top();
+	fMENU_top();
 
 	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
@@ -556,7 +539,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_evenements") {
 		echo '</TD></TR>';
 	}
 	echo "</TABLE><BR>";
-	fCOM_address_bottom();
+	fMENU_bottom();
 	mysqli_close($eCOM_db);
 	exit();
 }
@@ -577,23 +560,37 @@ if (( isset( $_GET['action'] ) AND $_GET['action']=="AfficherParoissiensParAge")
 	pCOM_DebugAdd($debug, "SuiviParoissien:AfficherParoissiensParAge - AgeMini=".$_POST['AgeMini']);
 	pCOM_DebugAdd($debug, "SuiviParoissien:AfficherParoissiensParAge - AgeMax=".$_POST['AgeMax']);
 	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?action=AfficherParoissiensParAge&AgeMini='.$_POST['AgeMini'].'&AgeMax='.$_POST['AgeMax'];
-	address_top();
+	fMENU_top();
+	fMENU_Title ("Rechercher des paroissiens par age");
 
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Rechercher des paroissiens par age</B><BR></TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE"><FONT face=verdana size=1>';
-	$trcolor = "#EEEEEE";
-	echo '<FORM action="'.$_SERVER['PHP_SELF'].'" method=POST>';
-	echo '<B>Trouver des résultats avec : </B><BR> <BR>';
-	echo ' <INPUT type="text" length=40 name="AgeMini" value="'.$_POST['AgeMini'].'"> ';
-	echo '<= Age < <INPUT type="text" length=40 name="AgeMax" value="'.$_POST['AgeMax'].'"> ';
-	echo '<INPUT type="submit" name="AfficherParoissiensParAge" value="Lancer recherche">';
-	echo '</FORM></FONT>';
+	echo '<TD BGCOLOR="#EEEEEE">';
+	
+	echo '<FORM method=POST action="'.$_SERVER['PHP_SELF'].'">';
+	echo '<div class="container-fluid">';
+	echo '<div class="form-row">';
+	
+	echo '<div class="col-form-label">';
+	echo '<label for="AgeMini">Age mini</label>';
+	echo ' <INPUT type="text" id="AgeMini" class="form-control" length=10 name="AgeMini" value="'.$_POST['AgeMini'].'" size="5" >';
+	echo '</div>';
+	
+	echo '<div class="col-form-label">';
+	echo '<label for="AgeMaxi">Age maxi</label>';
+	echo '<INPUT type="text" id="AgeMaxi" class="form-control" length=10 name="AgeMax" value="'.$_POST['AgeMax'].'" size="5" >';
+	echo '</div>';
+	
+	echo '<div class="col-form-label">';
+	echo '<INPUT type="submit" class="btn btn-secondary mt-4" name="AfficherParoissiensParAge" value="Lancer recherche">';
+	echo '</div>';
+	
+	echo '</div></div>';
+	echo '</FORM>';
+	
 	fAfficherParoissiensParAge($_POST['AgeMini'], $_POST['AgeMax']);
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo '</TD></TR></TABLE>';
+	fMENU_bottom();
 	exit;
 
 }
@@ -627,70 +624,66 @@ Function fAfficherParoissiensParAge($pAgeMini, $pAgeMax) {
 	pCOM_DebugAdd($debug, "SuiviParoissien:fAfficherParoissiensParAge - AgeMini=".$AgeMini);
 	pCOM_DebugAdd($debug, "SuiviParoissien:fAfficherParoissiensParAge - AgeMax=".$AgeMax);
 	
-	echo '<TABLE>';
-
+	echo '<table id="TableauTrier" class="table table-striped table-hover table-sm" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
 	$trcolor = "#EEEEEE";
 	//echo "<TH bgcolor=$trcolor><font face=verdana size=2> </font></TH>\n";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Nom / Prénom</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Naissance</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Adresse</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Téléphone / <A HREF="load/ListeMail_Paroissien.php">e_mail</A></font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Services</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Ressourcements</font></TH>';
-	if (fCOM_Get_Autorization( 0 ) >= 40) {
-		echo "<TH bgcolor=$trcolor><font face=verdana size=2>Denier</font></TH>\n";
+	echo '<TH>Nom / Prénom</TH>';
+	echo '<TH>Naissance</TH>';
+	echo '<TH width="200">Adresse</TH>';
+	echo '<TH width="180">Téléphone / <A HREF="load/ListeMail_Paroissien.php">e_mail</A>';
+	if ($AgeMini < 18) {
+		echo '<BR>ou <A HREF="load/ListeMailParents_Paroissien.php">e_mail Parents</A>';
 	}
+	echo '</TH>';
+	echo '<TH>Services</font></TH>';
+	echo '<TH>Ressourcements</font></TH>';
+	if (fCOM_Get_Autorization( 0 ) >= 40) {  // Was 40
+		echo '<TH width="180">Denier</TH>';
+	}
+	echo '</tr></thead>';
+	echo '<tbody>';
 	
 	setlocale(LC_TIME, "fr_FR");
 	$temp = "load/ListeMail_Paroissien.php";
 	$handle = fopen($temp, 'w');
-	fwrite($handle, "<html><head><title>Liste adresses mail</title></head>\r\n<body><br>");
-	fwrite($handle, "<h1><FONT face=verdana>Liste des adresses mail : </FONT></h1>\r\n");//".$TreatedName."</FONT></h1>\r\n");
-	fwrite($handle, "<FONT face=verdana size=2>");
-	fwrite($handle, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>\r\n");
-	fwrite($handle, "<p>===================================================</p><br>\r\n<table>");
-	fwrite($handle, "<FONT face=verdana size=2>");
+	$temp = "load/ListeMailParents_Paroissien.php";
+	$handleParent = fopen($temp, 'w');
+	fCOM_PrintFile_Init($handle,"Liste des adresses mail");
+	fCOM_PrintFile_Init($handleParent,"Liste des adresses mail des parents");
 
 	// Afficher les accompagnateurs noir='session courante'  grise='autre session'
-	$requete="SELECT id, Prenom, Nom, Adresse, Naissance, e_mail, Telephone FROM Individu WHERE DATE_ADD(Naissance, INTERVAL ".$AgeMax." YEAR)>=CURDATE() and DATE_ADD(Naissance, INTERVAL ".$AgeMini." YEAR)<=CURDATE() ORDER BY Nom, Prenom";
+	$requete="SELECT T0.`id`, T0.`Prenom`, T0.`Nom`, T0.`Adresse`, T0.`Naissance`, T0.`e_mail`, T0.`Telephone`, T1.`e_mail` as Pere_Email, T2.`e_mail` as Mere_Email
+		FROM Individu T0
+		LEFT JOIN  `Individu` T1 ON T0.`Pere_id` = T1.`id` 
+		LEFT JOIN  `Individu` T2 ON T0.`Mere_id` = T2.`id`
+		WHERE DATE_ADD(T0.`Naissance`, INTERVAL ".$AgeMax." YEAR)>=CURDATE() AND DATE_ADD(T0.`Naissance`, INTERVAL ".$AgeMini." YEAR)<=CURDATE() 
+		ORDER BY Nom, Prenom";
 	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
 	
-		// définition de la couleur de la ligne
-		$Accompagnateur_couleur = "919191";  // gris
-		//if ($row['Services'] > 0 ) {
-		//	$Accompagnateur_couleur = "000000"; // noir
-		//}
-		$trcolor = usecolor();
 		echo '<TR>';
-		echo '<TD width=150 bgcolor='.$trcolor.'><font face=verdana color=#'.$Accompagnateur_couleur.' size=2>';
-		if (file_exists("Photos/Individu_".$row['id'].".jpg")) { 
-			echo '<A HREF=SuiviParoissien.php?action=edit_Individu&id='.$row['id'].' class="tooltip"><font face=verdana size=2>'.Securite_html($row['Nom']).' '.Securite_html($row['Prenom']).' ';
-			echo '<em><span></span>';
-			echo '<img src="Photos/Individu_'.$row['id'].'.jpg" height="100" border="1" alt="Paroissien('.$row['id'].')">';
-			echo '<br>'.Securite_html($row['Nom']).' '.Securite_html($row['Prenom']).' ';
-			echo '</em></A></TD>';
-		} else {
-			echo '<A HREF=SuiviParoissien.php?action=edit_Individu&id='.$row['id'].'>';
-			echo '<FONT face=verdana size=2>'.Securite_html($row['Nom']).' '.Securite_html($row['Prenom']).'</FONT>';
-			echo '</A></TD>';
-		}
-		
-		echo "<TD bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
+		echo '<TD>';
+		fCOM_Display_Photo($row['Nom'], $row['Prenom'], $row['id'], "edit_Individu", true);
+		echo '</TD>';
+		echo "<TD>";
 		echo Securite_html(strftime("%d/%m/%Y", fCOM_sqlDateToOut($row['Naissance']))).'</TD>';
-		echo "<TD bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
+		echo "<TD>";
 		echo Securite_html($row['Adresse']).'</TD>';
-		echo "<TD width=70 bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
+		echo "<TD>";
 		echo Securite_html($row['Telephone']).'<BR>';
-		//echo "<TD width=70 bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
-		
+
 		if ( $row['e_mail'] != "" ) {
-			fwrite($handle, '"'.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"< '.Securite_html($row['e_mail']).'>; ');
+			fCOM_PrintFile_Email($handle, Securite_html($row['Prenom']).' '.Securite_html($row['Nom']), fCOM_format_email_list($row['e_mail'], ';'));
+			//fwrite($handle, '"'.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"< '.Securite_html($row['e_mail']).'>; ');
 		}
-		echo '<A HREF="mailto:'.Securite_html($row['e_mail']).'?subject= Paroisse '.pCOM_Get_NomParoisse().' : " TITLE="Envoyer un mail a '.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"><FONT face=verdana size=2>'.Securite_html($row['e_mail']).'</FONT></A></TD>';
+		if ( $row['Pere_Email'] != "" OR $row['Mere_Email'] != "" ) {
+			fCOM_PrintFile_Email($handleParent, Securite_html($row['Prenom']).' '.Securite_html($row['Nom']), fCOM_format_email_list($row['Mere_Email'].' '.$row['Pere_Email'], ';'));
+		}
+		echo '<A HREF="mailto:'.Securite_html($row['e_mail']).'?subject= Paroisse '.pCOM_Get_NomParoisse().' : " TITLE="Envoyer un mail a '.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"><FONT face=verdana size=2>'.fCOM_format_email_list(Securite_html($row['e_mail']),';').'</FONT></A></TD>';
 
 		// Services
-		echo '<TD width=170 bgcolor='.$trcolor.'><FONT face=verdana size=1>';
+		echo '<TD>';
 		$requete2 = 'SELECT DISTINCT T1.`Nom`, T0.`Session`
 					FROM `QuiQuoi` T0
 					LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id`
@@ -703,10 +696,10 @@ Function fAfficherParoissiensParAge($pAgeMini, $pAgeMax) {
 			echo '- '.$row2['Nom'].' ['.$row2['Session'].']';
 			$counter = 2;
 		}
-		echo '</FONT></TD>';
+		echo '</TD>';
 		
 		// Ressourcement
-		echo '<TD width=170 bgcolor='.$trcolor.'><FONT face=verdana size=1>';
+		echo '<TD>';
 		$requete2 = 'SELECT DISTINCT CONCAT(T1.`Nom`," [",T0.`Session`,"]") AS list_Ressourcements, T1.`Nom`, T0.`Session`
 					FROM `QuiQuoi` T0
 					LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id`
@@ -720,27 +713,25 @@ Function fAfficherParoissiensParAge($pAgeMini, $pAgeMax) {
 			echo '- '.$row2['Nom'].' ['.$row2['Session'].']';
 			$counter = 2;
 		}
-		echo "</FONT></TD>";
+		echo "</TD>";
 		
 		// denier
-		if (fCOM_Get_Autorization( 0) >= 40) {
-			echo "<TD width=150 bgcolor=$trcolor><FONT face=verdana size=1>";
+		if (fCOM_Get_Autorization( 0) >= 40) {  // was 40
+			echo "<TD>";
 			$requete2 = 'SELECT T0.`Date` As Date, T0.`Montant` As Montant FROM `Denier` T0 where T0.`Paroissien_id`='.$row['id'].' ORDER BY T0.`Date`';
 			$result2 = mysqli_query($eCOM_db, $requete2);
 			while($row2 = mysqli_fetch_assoc($result2)){
 				echo '['.$row2['Montant'].' € le '.date("d/m/Y", strtotime($row2['Date'])).'] ';
 			}
-			echo '</FONT></TD>';
+			echo '</TD>';
 		}
 		echo "</TR>";
 	}	
-	echo '</TABLE>';
-	fwrite($handle, "</TD></TR><TR><TD> </TD></TR><TR><TD> </TD></TR><TR><TD>\r\n\r\n\r\n");
-	fwrite($handle, "<FONT face=verdana size=2>");
-	fwrite($handle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-	fwrite($handle, "</FONT></TD></TR></TABLE>\r\n");
-	fwrite($handle, "</BODY>\r\n</HTML>\r\n");
+	echo "</tbody></TABLE>";
+	fCOM_PrintFile_End($handle);
+	fCOM_PrintFile_End($handleParent);
 	fclose($handle);
+	fclose($handleParent);
 
 }
 
@@ -782,19 +773,20 @@ Function AfficherParoissiensRecherche($pAny, $pAll, $pNone) {
 	//if ($num_rows == 0) { exit;}
 	pCOM_DebugAdd($Debug, 'Suivi Paroissien:AfficherParoissiensRecherche requete_01='.$requete);
 	
-	echo '<TABLE>';
+	echo '<TABLE id="TableauTrier" class="table table-striped table-hover table-sm">';
+	echo '<thead><tr>';
 
 	$trcolor = "#EEEEEE";
-	//echo "<TH bgcolor=$trcolor><font face=verdana size=2> </font></TH>\n";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Nom / Prénom</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Adresse</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Téléphone / <A HREF="load/ListeMail_Paroissien.php">e_mail</A></font></TH>';
-	//echo "<TH bgcolor=$trcolor><font face=verdana size=2>e_mail</font></TH>\n";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Services</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Ressourcements</font></TH>';
-	if (fCOM_Get_Autorization( 0 ) >= 40) {
-		echo "<TH bgcolor=$trcolor><font face=verdana size=2>Denier</font></TH>\n";
+	echo '<TH scope="col">Nom / Prénom</TH>';
+	echo '<TH scope="col">Adresse</TH>';
+	echo '<TH scope="col">Téléphone / <A HREF="load/ListeMail_Paroissien.php">e_mail</A></TH>';
+	echo '<TH scope="col">Services</TH>';
+	echo '<TH scope="col">Ressourcements</TH>';
+	if (fCOM_Get_Autorization( 0 ) >= 40) { // Was 40
+		echo '<TH scope="col">Denier</TH>';
 	}
+	echo '</tr></thead>';
+	echo '<tbody>';
 	
 	setlocale(LC_TIME, "fr_FR");
 	$temp = "load/ListeMail_Paroissien.php";
@@ -820,33 +812,23 @@ Function AfficherParoissiensRecherche($pAny, $pAll, $pNone) {
 	
 		// définition de la couleur de la ligne
 		$Accompagnateur_couleur = "818181";  // gris
-		//if ($row['Services'] > 0 ) {
-		//	$Accompagnateur_couleur = "000000"; // noir
-		//}
+
 		$trcolor = usecolor();
-		echo '<TR>';
-		echo '<TD width=150 bgcolor='.$trcolor.'><font face=verdana color=#'.$Accompagnateur_couleur.' size=2>';
+		echo '<TR  onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$row['id'].'\')">';
+
+		echo '<TD>';
 		if ( Securite_html($row['Nom'])=="" AND Securite_html($row['Prenom'])=="") {
 			$Identite = "-";
 		} else {
 			$Identite = Securite_html($row['Nom']).' '.Securite_html($row['Prenom']);
 		}
-		if (file_exists("Photos/Individu_".$row['id'].".jpg")) { 
-			echo '<A HREF=SuiviParoissien.php?action=edit_Individu&id='.$row['id'].' class="tooltip"><font face=verdana size=2>'.$Identite.' ';
-			echo '<em><span></span>';
-			echo '<img src="Photos/Individu_'.$row['id'].'.jpg" height="100" border="1" alt="Paroissien('.$row['id'].')">';
-			echo '<br>'.$Identite.' ';
-			echo '</em></A></TD>';
-		} else {
-			echo '<A HREF=SuiviParoissien.php?action=edit_Individu&id='.$row['id'].'>';
-			echo '<FONT face=verdana size=2>'.$Identite.'</FONT>';
-			echo '</A></TD>';
-		}
-		echo "<TD bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
+		fCOM_Display_Photo($Identite, "", $row['id'], "edit_Individu", false);
+		echo '</TD>';
+
+		echo "<TD>";
 		echo Securite_html($row['Adresse']).'</TD>';
-		echo "<TD width=70 bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
+		echo "<TD>";
 		echo Securite_html($row['Telephone']).'<br>';
-		//echo "<TD width=70 bgcolor=$trcolor><font face=verdana color=#".$Accompagnateur_couleur." size=2>";
 		
 		if ( $row['e_mail'] != "" ) {
 			fwrite($handle, '"'.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"< '.Securite_html($row['e_mail']).'>; ');
@@ -854,11 +836,11 @@ Function AfficherParoissiensRecherche($pAny, $pAll, $pNone) {
 		echo '<A HREF="mailto:'.Securite_html($row['e_mail']).'?subject= Paroisse '.pCOM_Get_NomParoisse().' : " TITLE="Envoyer un mail a '.Securite_html($row['Prenom']).' '.Securite_html($row['Nom']).'"><FONT face=verdana size=2>'.Securite_html($row['e_mail']).'</FONT></A></TD>';
 
 		// Services
-		echo '<TD width=170 bgcolor='.$trcolor.'><FONT face=verdana size=1>';
+		echo '<TD width=170 ><FONT face=verdana size=1>';
 		$requete2 = "SELECT DISTINCT CONCAT(T1.`Nom`, ' [', T0.`Session`, ']') AS list_Services
 					FROM `QuiQuoi` T0
 					LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id`
-					WHERE T1.`Service`=1 AND T0.`Individu_id`=".$row['id']." AND Session > (".$SessionActuelle."-3) AND (T0.`QuoiQuoi_id`=2 OR (T0.`QuoiQuoi_id`>=5 AND T0.`QuoiQuoi_id`<=10))
+					WHERE T0.`Individu_id`=".$row['id']." AND Session > (".$SessionActuelle."-3) AND T1.`Service`=1 AND (T0.`QuoiQuoi_id`=2 OR (T0.`QuoiQuoi_id`>=5 AND T0.`QuoiQuoi_id`<=10))
 					ORDER BY T1.`Nom`, T0.`Session` DESC"; 
 		pCOM_DebugAdd($Debug, 'Suivi Paroissien:AfficherParoissiensRecherche requete_03='.$requete2);
 		$counter=1;
@@ -872,11 +854,11 @@ Function AfficherParoissiensRecherche($pAny, $pAll, $pNone) {
 		echo '</FONT></TD>';
 		
 		// Ressourcement
-		echo '<TD width=170 bgcolor='.$trcolor.'><FONT face=verdana size=1>';
+		echo '<TD width=170 ><FONT face=verdana size=1>';
 		$requete2 = "SELECT DISTINCT CONCAT(T1.`Nom`, ' [', T0.`Session`, ']') AS list_Ressourcements
 					FROM `QuiQuoi` T0
 					LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id`
-					WHERE T1.`Formation`=1 AND T0.`Individu_id`=".$row['id']." AND Session >(".$SessionActuelle."-3) AND T0.`QuoiQuoi_id`=1
+					WHERE T0.`Individu_id`=".$row['id']." AND Session >(".$SessionActuelle."-3) AND T1.`Formation`=1 AND T0.`QuoiQuoi_id`=1
 					ORDER BY T1.`Nom`, T0.`Session` DESC"; 
 		pCOM_DebugAdd($Debug, 'Suivi Paroissien:AfficherParoissiensRecherche requete_04='.$requete2);
 		$result2 = mysqli_query($eCOM_db, $requete);
@@ -894,8 +876,8 @@ Function AfficherParoissiensRecherche($pAny, $pAll, $pNone) {
 		echo "</FONT></TD>";
 		
 		// denier
-		if (fCOM_Get_Autorization( 0 ) >= 40) {
-			echo "<TD width=150 bgcolor=".$trcolor."><FONT face=verdana size=1>";
+		if (fCOM_Get_Autorization( 0 ) >= 40) { // was 40
+			echo "<TD width=150 ><FONT face=verdana size=1>";
 			$requete2 = 'SELECT T0.`Date` As Date, T0.`Montant` As Montant FROM `Denier` T0 where T0.`Paroissien_id`='.$row['id'].' ORDER BY T0.`Date`';
 			pCOM_DebugAdd($Debug, "SuiviParoissien:AfficherParoissiensRecherche - requete_05=".$requete2);
 			$result2 = mysqli_query($eCOM_db, $requete2);
@@ -925,7 +907,7 @@ echo '</HEAD>';
 echo '<BODY>';
 	
 	Global $eCOM_db;
-	address_top();
+	fMENU_top();
 	$debug = false;
 
 	if (isset($_POST['any'])) {
@@ -970,7 +952,7 @@ echo '<BODY>';
 		AfficherParoissiensRecherche($any, $all, $none);
 	}
 	
-	fCOM_address_bottom();
+	fMENU_bottom();
 	mysqli_close($eCOM_db);
 	
 echo '</BODY>';

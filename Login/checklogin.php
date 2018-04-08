@@ -43,16 +43,31 @@ function debug_plus($ch) {
 	$myusername = stripslashes($myusername);
 	$mypassword = stripslashes($mypassword);
 	
-	$LDAP_Pointeur = ldap_connect('local4host',389) or die("Cas con");
-	$ldapbind = ldap_bind($LDAP_Pointeur, $myusername, $mypassword);
+	$LDAP_username="cn=".$myusername.",ou=users,dc=ndsagesse,dc=com";
+	//error_log("LDAP parametre = '".$LDAP_username."' password= '".$mypassword."'");
+	$LDAP_Pointeur = ldap_connect('localhost',389) or die("Connection LDAP impossible");
+	ldap_set_option($LDAP_Pointeur, LDAP_OPT_PROTOCOL_VERSION, 3);
+	$ldapbind = ldap_bind($LDAP_Pointeur, $LDAP_username, $mypassword);
 	
 	if ( $ldapbind) {
 		$_SESSION["LDAP_Actif"] = True;
-		error_log("Cas 2");
-	} else {	
-		$mypassword = sha1(sha1($mypassword)."f8S61HFds1");		
-		$_SESSION["LDAP_Actif"] = False;
-		error_log("Cas 1");
+		error_log("LDAP actif Cas 2");
+	} else {
+		$ldapbind = ldap_bind($LDAP_Pointeur, $LDAP_username, "freddoetbenoittravaillentleLDAP06");
+		if ( $ldapbind) {
+			$_SESSION["LDAP_Actif"] = True;
+			error_log("LDAP actif Cas 1.1");
+			// initier le mot de passe dans LDAP
+			if (ldap_mod_replace($LDAP_Pointeur, $LDAP_username, array("userPassword"=>$mypassword))) {
+				error_log("LDAP Mot de passe modifié avec succes");
+			} else {
+				error_log("LDAP Mot de passe modifié avec échec");
+			}
+		} else {		
+			$mypassword = sha1(sha1($mypassword)."f8S61HFds1");		
+			$_SESSION["LDAP_Actif"] = False;
+			error_log("LDAP inactif Cas 1.2");
+		}
 	}
 	
 	if (isset($_POST['mynaissance'])) {
@@ -92,7 +107,11 @@ function debug_plus($ch) {
 		// sauvegarde de l'adresse IP et de l'horodate de connexion
 
 		//$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" and Naissance="'.$mynaissance.'"';
-		$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" ';		
+		if ($ldapbind) {
+			$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'"';
+		} else {
+			$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" ';
+		}
 		$result=mysqli_query($db, $requete);
 		while($row = mysqli_fetch_assoc($result)){
 			if( isset( $_POST['myid'] ) ) {
@@ -106,8 +125,8 @@ function debug_plus($ch) {
 	
 		require('counter.php');
 		//error_log("Checklogin : counter.php passed");
-		echo '<META http-equiv="refresh" content="0; URL=/index.php">';
-		//header("location:../index.php");
+		//echo '<META http-equiv="refresh" content="0; URL=/index.php">';
+		header("location:/index.php");
 		exit;
 
 	} elseif ($_POST['mypassword'] != "" AND $_SESSION["LDAP_Actif"] == False) {
@@ -133,7 +152,8 @@ function debug_plus($ch) {
 				$_SESSION['USER_ID']= $row['Individu_id'];
 			}
 			error_log("Checklogin : 1er Login 00 de ".$_SESSION['USER_ID']." -> ".$myusername);
-			echo '<META http-equiv="refresh" content="0; URL=/index.php">';
+			//echo '<META http-equiv="refresh" content="0; URL=/index.php">';
+			header("location:/index.php");
 			exit;
 
 		} else {

@@ -17,7 +17,34 @@ if( ! isset( $SauvegarderParticipation ) ) $SauvegarderParticipation = "";
 if( ! isset( $retirer_fiche_Participant ) ) $retirer_fiche_Participant = ""; 
 if( ! isset( $retirer_fiche_Participant_confirme ) ) $retirer_fiche_Participant_confirme = ""; 
 if( ! isset( $delete_fiche_invite_Fraternite ) ) $delete_fiche_invite_Fraternite = ""; 
-if( ! isset( $delete_fiche_invite_Fraternite_confirme ) ) $delete_fiche_invite_Fraternite_confirme = ""; 
+if( ! isset( $delete_fiche_invite_Fraternite_confirme ) ) $delete_fiche_invite_Fraternite_confirme = "";
+if( isset ($_GET['Service']) ) $_SESSION["Activite_id"] = $_GET['Service'];
+
+// Inistialiser fonction accompagnateur ou pas avec ce service
+if (($_SESSION["Activite_id"] == 26) OR // Aumônerie Lycée et collège
+	($_SESSION["Activite_id"] == 22) OR // Emmaüs
+	($_SESSION["Activite_id"] == 12) OR // Cathéchèse
+	($_SESSION["Activite_id"] ==  4)) { // Alpha Classic
+	$Fct_Accompagnateur_actif = true;
+	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		$Titre_Accompagnateur = 'Catéchiste';
+	} else {
+		$Titre_Accompagnateur = 'Accompagnateur';
+	}
+} else {
+	$Fct_Accompagnateur_actif = false;
+	$Titre_Accompagnateur = 'Accompagnateur';
+}
+
+// Inistialiser fonction accompagnateur ou pas avec ce service
+if (($_SESSION["Activite_id"] == 26) OR // Aumônerie Lycée et collège
+	($_SESSION["Activite_id"] == 4) OR // Parcours Alpha
+	($_SESSION["Activite_id"] == 22) OR // Emmaüs
+	($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+	$Fct_Frat_actif = true;
+} else {
+	$Fct_Frat_actif = false;
+}
 
 function debug($ch) {
    global $debug;
@@ -73,7 +100,8 @@ if ($_SESSION["Session"]=="All") {
 	$ComplementRequete = ' AND MID(T0.`Session`,1,4)="'.$SessionEnCours.'" ';
 }
 
-require('templateFraternite.inc');
+require('Menu.php');
+//require('templateFraternite.inc');
 require('Common.php');
 
 $debug = false;
@@ -96,30 +124,28 @@ require('Paroissien.php');
 if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accomp") {
 //if ($action == "list_accomp") {
 	Global $eCOM_db;
+	Global $Titre_Accompagnateur, $Fct_Accompagnateur_actif;
 	$debug = false;
 
-	address_top();
+	fMENU_top();
+	fMENU_Title('Liste '.$Titre_Accompagnateur.'s ...');
 	
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Liste accompagnateurs</B><BR>';
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	
-	echo "<TABLE>";
-	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Accompagnateurs</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Adresse</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Téléphone / e-mail</font></TH>';
+    echo '<table id="TableauTrier" class="table table-striped hover ml-1 mr-1" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	echo '<TH> </TH>';
+	echo '<TH>'.$Titre_Accompagnateur.'s</TH>';
+	echo '<TH>Adresse</TH>';
+	echo '<TH>Téléphone / e-mail</TH>';
 	//echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>e-mail</font></TH>';
-	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Enfant</font></TH>';
+	if ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
+		echo '<TH>Adolescent</TH>';
+	} elseif ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		echo '<TH>Enfant</TH>';
 	} else {
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Invité</font></TH>';
+		echo '<TH>Invité</TH>';
 	}
-	//echo "<TH bgcolor=$trcolor><font face=verdana size=2>Couverts</font></TH>\n";
+	echo '</tr></thead>';
+	echo '<tbody>';
 	$Activite_id=$_SESSION["Activite_id"];
 	
 	if ( $_SESSION["Session"] == "All" ) {
@@ -146,15 +172,13 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accomp") {
 		if ( ($row['Individu_id'] != $Memo_Individu_id) || ($row['Individu_id'] == $Memo_Individu_id && $row['Engagement_id'] != 0) ) {
 			$Memo_Individu_id = $row['Individu_id'];
 			$trcolor = usecolor();
-			echo '<TR><TD width=100 bgcolor='.$trcolor.'><font face=verdana size=2>';
-			Display_Photo($row['Nom'], $row['Prenom'], $row['Individu_id'], 2);
+			echo '<TR><td></td><TD>';
+			fCOM_Display_Photo($row['Nom'], $row['Prenom'], $row['Individu_id'], "edit_Individu", true);
 			echo '</TD>';
-			echo '<TD width=250 bgcolor='.$trcolor.'><font face=verdana size=2>'.Securite_html($row['Adresse']).'</TD>';
-			echo '<TD width=70 bgcolor='.$trcolor.'><font face=verdana size=2>'.Securite_html($row['Telephone']).'<BR>';
-			//echo '<TD width=70 bgcolor='.$trcolor.'><font face=verdana size=2>';
+			echo '<TD>'.$row['Adresse'].'</TD>';
+			echo '<TD>'.$row['Telephone'].'<BR>';
 			echo "<A HREF='mailto:$row[e_mail]?subject= Paroisse ND Sagesse : ' TITLE='Envoyer un mail a $row[Prenom] $row[Nom]'>$row[e_mail]</A></TD>";
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana size=1>';
-			//echo ' '.$row[`id`]. '';
+			echo '<TD>';
 			if ($row['id'] != 0) {
 				$requete3 = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T2.`NoFrat`, MID(T2.`Session`,1,4) AS Session
 							FROM `Individu` T0 
@@ -162,7 +186,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accomp") {
 							LEFT JOIN `Fraternite` T2 ON T2.`id`=T1.`Engagement_id` 
 							WHERE T1.`QuoiQuoi_id`=1 and T2.`id`='.$row['id'].' AND T1.`Activite_id`='.$Activite_id.'  
 							ORDER BY Session, Prenom, Nom';
-				//$debug = true;
 				pCOM_DebugAdd($debug, "Fraternite:list_accomp - requete3=".$requete3);
 				$result3 = mysqli_query($eCOM_db, $requete3);
 				$retour_Chariot = '';
@@ -171,16 +194,15 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accomp") {
 					if ( $_SESSION["Session"] == "All" ) {
 						echo $row3['Session'].' ';
 					}
-					Display_Photo(Securite_html($row3['Nom']), Securite_html($row3['Prenom']), $row3['id'], 2);
+					fCOM_Display_Photo($row3['Nom'], $row3['Prenom'], $row3['id'], "edit_Individu", true);
 					$retour_Chariot = '<BR>';
 				}
 			}
 			echo "</TD></TR>";
 		}
 	}
-	echo "</TABLE><BR>";
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo '</tbody></TABLE><BR>';
+	fMENU_bottom();
 	exit();
 }
 
@@ -216,42 +238,42 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_fraternite") {
 //if ($action == "list_fraternite") {
 	global $ComplementRequete;
 	Global $eCOM_db;
+	Global $Titre_Accompagnateur, $Fct_Accompagnateur_actif;
 	$debug = False;
 
-	address_top();
+	fMENU_top();
+	fMENU_Title("Composition des fraternités :");
 
-	echo '<LINK rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Composition des fraternités</B><BR>';
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-
-	echo '<TABLE>';
-	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Lieux</font></TH>';
-	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-		($_SESSION["Activite_id"] == 22) || // Emmaüs
-		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-	} else {
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Date</font></TH>';
+    echo '<table id="TableauTrier" class="table table-striped table-bordered hover ml-1 mr-1" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	echo '<TH> </TH>';
+	
+	echo '<TH>Lieux</TH>';
+	if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
+		echo '<TH>Date</TH>';
 	}
 	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Jour</font></TH>';
+		echo '<TH>Jour</TH>';
 	}
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Fraternité</font></TH>';
+	echo '<TH>Fraternité</TH>';
 	if ( $_SESSION["Session"] == "All" ) {
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Session</font></TH>';
+		echo '<TH>Session</TH>';
 	}
-	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Catéchistes</font></TH>';
+	if ($Fct_Accompagnateur_actif) { // Cathéchèse
+		echo '<TH>'.$Titre_Accompagnateur.'s</TH>';
+	}
+	if ($_SESSION["Activite_id"] == 4 ) { // Parcours Alpha
+		echo '<TH>Invité</TH>';
+	} elseif ( $_SESSION["Activite_id"] == 12 OR // Cathéchèse
+			   $_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
+		echo '<TH>Enfants</TH>';
 	} else {
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Accompagnateurs</font></TH>';
+		echo '<TH>Paroissien</TH>';
 	}
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Invité</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Couverts</font></TH>';
-	echo '</TR>';
+	echo '<TH>Couverts</TH>';
+	echo '</tr></thead>';
+	echo '<tbody>';
 	$Activite_id=$_SESSION["Activite_id"];
 	$Total_pers = 0;
 	$MemoDateParcours ="";
@@ -273,60 +295,62 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_fraternite") {
 	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
 		$trcolor = usecolor();
-
+		$TD_Click=' onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=edit&id='.$row['id'].'\')"';
+		
 		$LieuParcours=$row['Lieu']; //fCOM_get_lieu($row['Lieu_id']);;
-		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+		if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
 			$DateParcours=$row['Jour']; //fCOM_get_lieu($row['Lieu_id']);;
 
-			} else {
-			if (strftime("%d/%m/%y", sqlDateToOut($row['Date'])) == "01/01/70" ) {
+		} elseif ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
+			if (strftime("%d/%m/%y", fCOM_sqlDateToOut($row['Date'])) == "01/01/70" ) {
 				$DateParcours="-";
 			} else {
 				setlocale(LC_TIME,"fr_FR");
-				if (intval(strftime("%k", sqlDateToOut($row['Date'])))>17 ) {
-					$DateParcours=ucwords(strftime("%B", sqlDateToOut($row['Date'])))." Soirée";
-				} elseif (intval(strftime("%k", sqlDateToOut($row['Date'])))>13 ) {
-					$DateParcours=ucwords(strftime("%B", sqlDateToOut($row['Date'])))." Après-midi";
-				} elseif (intval(strftime("%k", sqlDateToOut($row['Date'])))>11 ) {
-					$DateParcours=ucwords(strftime("%B", sqlDateToOut($row['Date'])))." Midi";
+				if (intval(substr($row['Date'], 11, 2))>17 ) {
+					$DateParcours=ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($row['Date'])))." soir";
+				} elseif (intval(substr($row['Date'], 11, 2))>13 ) {
+					$DateParcours=ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($row['Date'])))." après-midi";
+				} elseif (intval(substr($row['Date'], 11, 2))>11 ) {
+					$DateParcours=ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($row['Date'])))." midi";
 				} else {
-					$DateParcours=ucwords(strftime("%B", sqlDateToOut($row['Date'])))." Matin";
+					$DateParcours=ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($row['Date'])))." matin";
 				}
 			}
+			if ($MemoDateParcours == "") {$MemoDateParcours = $DateParcours;};
 		}
 			
 		// Ligne de synthèse entre chaque parcours
 		if (($MemoDateParcours != $DateParcours && $MemoDateParcours != "") || 
 			($MemoLieuParcours != $LieuParcours && $MemoLieuParcours != ""))   {
 	
-			echo '<TR><TD align="center" bgcolor="#A1A1A1"><FONT face=verdana size=2>'.$MemoLieuParcours.'</FONT></TD>';
+			echo '<TR bgcolor="#A1A1A1"><TD bgcolor="#A1A1A1"></TD><TD bgcolor="#A1A1A1">'.$MemoLieuParcours.'</TD>';
 			if ($_SESSION["Activite_id"] != 22) { // Emmaüs
-				echo '<TD align="center" bgcolor="#A1A1A1"><FONT face=verdana size=2>'.$MemoDateParcours.'</FONT></TD>';
+				echo '<TD bgcolor="#A1A1A1">'.$MemoDateParcours.'</TD>';
 			}
-			echo '<TD align="center" bgcolor="#A1A1A1" colspan=4>';
-			echo '<FONT face=verdana size=2>Prévoir '.$Total_pers.' couverts ( ajouter prêtres et secrétariat suivant disponibilité).</FONT></TD></TR>';
+			echo '<TD bgcolor="#A1A1A1">';
+			echo '<FONT face=verdana size=2>Prévoir '.$Total_pers.' couverts.</FONT></TD>';
+			echo '<TD bgcolor="#A1A1A1"></TD>';
+			echo '<TD bgcolor="#A1A1A1"></TD>';
+			echo '<TD bgcolor="#A1A1A1"></TD>';
+			echo '</TR>';
 			$Total_pers = 0;
 			$MemoDateParcours = $DateParcours;
 		}
 		
 		echo '<TR>';
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Lieu'].'</FONT></TD>';
+		echo '<TD></TD>';
+		echo '<TD '.$TD_Click.'>'.$row['Lieu'].'</TD>';
 		$MemoLieuParcours=$LieuParcours;
 		
-		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-			($_SESSION["Activite_id"] == 22) || // Emmaüs
-			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		} else {
-			echo '<TD width=90 align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$DateParcours.'</FONT></TD>';
+		if ($_SESSION["Activite_id"] == 4 ) { // Parcours Alpha
+			echo '<TD '.$TD_Click.'>'.$DateParcours.'</TD>';
 		}
 		
-		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.fCOM_Get_JourSemaine($row['Jour']).'</FONT></TD>';
+		if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+			echo '<TD '.$TD_Click.'>'.fCOM_Get_JourSemaine($row['Jour']).'</TD>';
 		}
 		
-		echo '<TD align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2>';
+		echo '<TD '.$TD_Click.'>';
 		if ($row['NoFrat'] == ""){
 			$NoFrat = "-";
 		} else {
@@ -334,40 +358,42 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_fraternite") {
 		}
 		
 		echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$row['id'].'>'.$NoFrat.'</A>';
-		echo '</FONT></TD>';
+		echo '</TD>';
 		
 		
 		if ( $_SESSION["Session"] == "All" ) {
-			echo '<TD align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Session'].'</FONT></TD>';
+			echo '<TD '.$TD_Click.'>'.$row['Session'].'</TD>';
 		}
 		
-		echo '</FONT></TD>';
+		//echo '</TD>';
 
 		$nb_personnes = 0;
 		// Liste des accompagnateurs
 		//-------------------------------------
 		$retour_Chariot = '';
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>';
-		$requete2 = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T0.`Adresse`, T0.`Telephone`, T0.`e_mail`, T2.`NoFrat` FROM `Individu` T0 
+		if ($Fct_Accompagnateur_actif) {
+			echo '<TD '.$TD_Click.'>';
+			$requete2 = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T0.`Adresse`, T0.`Telephone`, T0.`e_mail`, T2.`NoFrat` FROM `Individu` T0 
 					LEFT JOIN `QuiQuoi` T1 ON T0.`id`=T1.`Individu_id` 
 					LEFT JOIN `Fraternite` As T2 ON T2.`id`=T1.`Engagement_id` 
 					WHERE T1.`Activite_id`='.$Activite_id.' and T1.`QuoiQuoi_id`=2 and T2.`id`='.$row['id'].' 
 					ORDER BY T0.`Prenom`, T0.`Nom`';
-		$debug = False;
-		pCOM_DebugAdd($debug, "Fraternite:list_fraternite - requete2=".$requete2);
+			$debug = False;
+			pCOM_DebugAdd($debug, "Fraternite:list_fraternite - requete2=".$requete2);
 
-		$result2 = mysqli_query($eCOM_db, $requete2);
-		while($row2 = mysqli_fetch_assoc($result2)){
-			echo "".$retour_Chariot."- ";
-			Display_Photo(Securite_html($row2['Nom']), Securite_html($row2['Prenom']), $row2['id'], 2);
-			$retour_Chariot = '<BR>';
-			$nb_personnes = $nb_personnes + 1;
+			$result2 = mysqli_query($eCOM_db, $requete2);
+			while($row2 = mysqli_fetch_assoc($result2)){
+				echo "".$retour_Chariot."- ";
+				fCOM_Display_Photo(Securite_html($row2['Nom']), Securite_html($row2['Prenom']), $row2['id'], "edit_Individu", true);
+				$retour_Chariot = '<BR>';
+				$nb_personnes = $nb_personnes + 1;
+			}
+			echo '</TD>';
 		}
-		echo '</TD>';
 			
 		// Liste des Participants
 		//-----------------------------
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=1>';
+		echo '<TD '.$TD_Click.'>';
 		$requete3 = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T2.`NoFrat` 
 					 FROM `Individu` T0 
 					 LEFT JOIN `QuiQuoi` T1 ON T0.`id`=T1.`Individu_id` 
@@ -380,122 +406,37 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_fraternite") {
 		while($row3 = mysqli_fetch_assoc($result3)){
 			// Liste des participants
 			echo "".$retour_Chariot."- ";
-			Display_Photo(Securite_html($row3['Nom']), Securite_html($row3['Prenom']), $row3['id'], 2);
+			fCOM_Display_Photo(Securite_html($row3['Nom']), Securite_html($row3['Prenom']), $row3['id'], "edit_Individu", true);
 			$retour_Chariot = '<BR>';
 			$nb_personnes = $nb_personnes + 1;
 		}
 		echo '</TD>';
-		echo '<TD bgcolor='.$trcolor.'>';
-		if ($nb_personnes > 0) { echo '<font face=verdana size=2>'.$nb_personnes.'</font>';}
+		echo '<TD '.$TD_Click.'>';
+		if ($nb_personnes > 0) { echo $nb_personnes;}
 		echo '</TD></TR>';
 		$Total_pers = $Total_pers + $nb_personnes;
 	}
-	echo '<TR>';
+	echo '<TR bgcolor="#A1A1A1" >';
 	// Dernière ligne de synthèse entre chaque parcours
-	echo '<TD align="center" bgcolor="#A1A1A1"><font face=verdana size=2>'.$LieuParcours.'</font></TD>';
+	echo '<td bgcolor="#A1A1A1"></td>';
+	echo '<TD bgcolor="#A1A1A1">'.$LieuParcours.'</TD>';
 	if ($_SESSION["Activite_id"] != 22) { // Emmaüs
-		echo '<TD align="center" bgcolor="#A1A1A1"><FONT face=verdana size=2>'.$DateParcours.'</FONT></TD>';
+		echo '<TD bgcolor="#A1A1A1">'.$DateParcours.'</TD>';
 	}
-	echo '<TD align="center" bgcolor="#A1A1A1" colspan=4>';
-	echo '<font face=verdana size=2>Prévoir '.$Total_pers.' couverts (ajouter prêtres et secrétariat suivant disponibilité).</font></TD></TR>';
-		
-	echo '</TABLE><BR>';
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo '<TD bgcolor="#A1A1A1">';
+	echo '<FONT face=verdana size=2>Prévoir '.$Total_pers.' couverts.</FONT></TD>';
+	echo '<TD bgcolor="#A1A1A1"></TD>';
+	echo '<TD bgcolor="#A1A1A1"></TD>';
+	echo '<TD bgcolor="#A1A1A1"></TD>';
+	echo '</TR>';
+	echo '</tbody></TABLE><BR>';
+	fMENU_bottom();
 	exit();
 }
 
 //======================================
 // Vue Financiere
 //======================================
-if ( isset( $_GET['action'] ) AND $_GET['action']=="vue_financiere_old") {
-//if ($action == "vue_financiere_old") {
-	Global $eCOM_db;
-	$debug = false;
-
-	address_top();
-	
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Vue financière</B><BR>';
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	
-	echo '<TABLE>';
-	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Invité</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Session</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Accompagnateurs</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Date</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=3>€</font></TH>';
-	if ($_SESSION["Session"]=="All") {
-		$requete = 'SELECT T0.`id` AS T0id, T1.`id` AS T1id, T0.`Session` AS Session, T1.`Nom`, T1.`Prenom`, T0.`Finance` AS Finance, T3.`Nom` AS Accompagnateur, T0.`date` AS Date, T4.`Lieu` As Lieu 
-				FROM `Fraternite` T0 
-				LEFT JOIN `Individu` T1 ON T0.`Invite_id`=T1.`id` 
-				LEFT JOIN `Individu` T3 ON T0.`Accompagnateur_id`=T3.`id` 
-				LEFT JOIN `Lieux` T4 ON T0.`Lieu_id`=T4.`id` 
-				ORDER BY T0.`date` DESC';
-	} else {
-		$requete = 'SELECT T0.`id` AS T0id, T1.`id` AS T1id, T0.`Session` AS Session, T1.`Nom`, T1.`Prenom`, T0.`Finance` AS Finance, T3.`Nom` AS Accompagnateur, T0.`date` AS Date, T4.`Lieu` As Lieu 
-				FROM `Fraternite` T0 
-				LEFT JOIN `Individu` T1 ON T0.`Invite_id`=T1.`id` 
-				LEFT JOIN `Individu` T3 ON T0.`Accompagnateur_id`=T3.`id` 
-				LEFT JOIN `Lieux` T4 ON T0.`Lieu_id`=T4.`id` 
-				WHERE MID(T0.`Session`,1,4)=' . $_SESSION["Session"] .'  
-				ORDER BY T0.`date` DESC';
-	}
-
-	pCOM_DebugAdd($debug, "Fraternite:vue_financiere_old - requete01 =".$requete);
-	$result = mysqli_query($eCOM_db, $requete);
-	debug($result. "<BR>\n");
-	$total = 0;
-	while($row = mysqli_fetch_assoc($result)){
-		$trcolor = usecolor();
-		echo "<TR>";
-		echo "<TD bgcolor=$trcolor><font face=verdana size=2>";
-		
-		echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$row['T0id'].' class="tooltip">'.$row['Prenom'].' '.strtoupper($row['Nom']).'';
-		echo '<EM><span></span>';
-		echo '<IMG src="Individu_'.$row['id'].'.jpg" height="100" border="1" alt="Individu_'.$row['id'].'">';
-		echo '<BR>'.$row['Prenom'].' '.$row['Nom'].'</EM></a>';
-		echo '</FONT></TD>';
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.substr($row['Session'],4).'</FONT></TD>';
-		$requete = 'SELECT T0.`id`, T1.`Nom`, T1.`Prenom`, T1.`Sex` 
-				FROM `QuiQuoi` T0 
-				LEFT JOIN `Individu` T1 ON T1.`id` = T0.`Individu_id` 
-				WHERE T0.`Activite_id`='.$_SESSION["Activite_id"].' and T0.`Engagement_id`='.$row['T0id'].' and T0.`QuoiQuoi_id`=2 
-				ORDER BY T1.`Nom`, T1.`Sex` DESC';
-		pCOM_DebugAdd($debug, "Fraternite:vue_financiere_old - requete02 =".$requete);
-		$resultat = mysqli_query($eCOM_db,  $requete );
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>';
-		$Nom = "";
-		while( $Row_Accomp = mysqli_fetch_assoc( $resultat ))
-		{
-			if ($Nom == $Row_Accomp['Nom']) {
-				echo " et ".Securite_html($Row_Accomp['Prenom'])."";
-			} else {
-				if ($Nom != "") {echo "<br>";}
-				echo "".Securite_html($Row_Accomp['Nom'])." ".Securite_html($Row_Accomp['Prenom'])."";
-				$Nom = Securite_html($Row_Accomp['Nom']);
-			}
-		}
-		echo '</FONT></TD>';
-		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>';
-		echo strftime("%d/%m/%y &nbsp  %H:%M", sqlDateToOut($row['Date']));
-		echo '</FONT></TD>';
-		echo '<TD align="right" width="35" bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Finance'].'</FONT></TD>';
-		$total = $total + $row['Finance'];
-		echo '</TR>';
-	}
-	$trcolor = usecolor();
-	echo '<TR><TD></TD><TD></TD><TD></TD><TD></TD><TD bgcolor='.$trcolor.'><font face=verdana size=2><B>Total</B></font></TD><TD bgcolor='.$trcolor.'><font face=verdana size=2><B>'.$total.'</B></font></TD></font></TR>';
-	echo '</table>';
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
-	exit();
-}
-
 
 
 //view profiles
@@ -534,6 +475,8 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="printall") {
 if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 //if ($action == "edit") { 
 	Global $eCOM_db;
+	Global $Titre_Accompagnateur, $Fct_Accompagnateur_actif;
+	
 	$debug = false;
 	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
 
@@ -580,42 +523,50 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	//while($row = mysqli_fetch_assoc($result))
 	$row = mysqli_fetch_assoc($result);
 		
-	address_top();
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { 
 		$BloquerAcces="";
+		$IsGestionnaire = true;
 	} else {
 		$BloquerAcces="disabled='disabled'";
-	}
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Edition: ';
-	if ($id == 0) {
-		echo 'Nouvelle fiche</B></FONT></TD>';
-	} else {
-		echo 'Fiche No '.$row['id'].'</B></FONT></TD>'; 
-		if (strftime("%d/%m/%y", sqlDateToOut($row['MAJ'])) != "01/01/70" ) {
-			echo '<TD align="right"><FONT FACE="Verdana" SIZE="1"> (Dernière modification au '.strftime("%d/%m/%Y %T", sqlDateToOut($row['MAJ'])).')</TD>';
-		}
-	}
-	echo '</TR>';
+		$IsGestionnaire = false;
+	}	
 	
-	echo '<TR>';
-	echo '<TD BGCOLOR="#EEEEEE" Colspan="2">';
-	echo '<CENTER><font face="verdana" size="2">';
-	echo '<TABLE border="0" cellpadding="2" cellspacing="0">';
-	echo '<TR><TD bgcolor="#eeeeee">';
-	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'"><B><FONT SIZE="3"> </FONT></B></TD></TR>';
+	fMENU_top();
+
+	if ($id == 0) {
+		$Titre1= "Edition: Nouvelle fiche";
+		$Titre2="";
+	} else {
+		$Titre1= 'Edition: Fiche No '.$row['id'].'</B></FONT></TD>'; 
+		$Titre2= '(Dernière modification au '.substr($row['MAJ'], 0, 16).')';
+	}
+	fMENU_Title($Titre1, $Titre2);
+	//echo '</TR>';
+	
+	//echo '<TABLE bgcolor="#eeeeee"><TR>';
+	//echo '<TD align="center">';
+	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+	echo '<TR><TD BGCOLOR="#EEEEEE" Colspan="2">';
+	echo '<CENTER>';
+	
+	echo '<TABLE border="0" cellpadding="2" cellspacing="0" bgcolor="#eeeeee">';
+	echo '<TR bgcolor="#eeeeee"><TD>';
+	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'"></TD></TR>';
 	
 	// Table ou No Frat =================================
-	echo '<TR><TD><b><FONT SIZE="2">Nom de Fraternité:</FONT></b></TD>';
-	echo '<TD bgcolor="#eeeeee"><input type=text name="NoFrat" placeholder="........" value ="'.$row['NoFrat'].'" size="10" maxlength="10" '.$BloquerAcces.'></TD></TR>';
+	echo '<TR><TD><b>Nom de Fraternité</b></TD>';
+	echo '<TD>';
+	echo '<div class="row">';
+	echo '<input class="form-control" type="text" name="NoFrat" placeholder="........" value ="'.$row['NoFrat'].'" size="10" maxlength="10" '.$BloquerAcces.'>';
+	echo '</div>';
+	echo '</TD></TR>';
 	
 	// Session ==========================================
 	$debug = False;
 	echo '<TR><TD>';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Session:</FONT></B></TD><TD>';
-	echo '<SELECT name="PSession">';
+	echo '<B>Session</B></TD><TD>';
+	echo '<div class="row">';
+	echo '<SELECT class="form-control" name="PSession">';
 	for ($i=2006; $i<=(intval(date("Y"))+5); $i++) {
 		if (($row['Session'] != "" && $i == intval($row['Session'])) || ($row['Session'] == "" && $i == intval($_SESSION["Session"]))) {
 			echo '<option value="'.$i.'" selected="selected">'.($i-1).' - '.$i.'</option>';
@@ -624,14 +575,15 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 	}
 	echo '</SELECT>';
+	echo '</div>';
 	echo '</TD></TR>';
 	
 	// Groupe de KT / Sous-Session pour Alpha ======================================
-	if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
-		echo '<INPUT type=hidden name="ss_session" value=" ">';
-	} else {
-		echo '<TR><TD valign="top" bgcolor="#eeeeee"><B><FONT SIZE="2">Groupe:</FONT></B></TD><TD>';
-		echo '<SELECT name="ss_session" '.$BloquerAcces.' >';
+
+	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		echo '<TR><TD valign="top"><B>Groupe</B></TD><TD>';
+		echo '<div class="row">';
+		echo '<SELECT class="form-control" name="ss_session" '.$BloquerAcces.' >';
 		$Liste_Groupe_KT = fCOM_Get_Liste_Groupe_KT();
 		foreach ($Liste_Groupe_KT as $Groupe_KT){
 			list($Groupe_id, $Groupe_nom) = $Groupe_KT;
@@ -642,15 +594,20 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			echo '<option value="'.$Groupe_id.'"'.$SelectionDefault.'>'.$Groupe_nom.'</option>';
 		}
 		echo '</SELECT>';
+		echo '</div>';
 		echo '</TD></TR>';
-		echo '<TD></TD><TD></TD></TR>';
+		echo '<TR><TD></TD><TD></TD></TR>';
+	} else {
+		echo '<INPUT type=hidden name="ss_session" value=" ">';
 	}
 	
 	// Date / jour et heure =====================================
-	if (($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		echo '<TR><TD valign="top" bgcolor="#eeeeee"><B><FONT SIZE="2">Jour et heure des rencontres :</FONT></B></TD><TD>';
+
+	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		echo '<TR><TD valign="top" bgcolor="#eeeeee"><B>Jour et heure des rencontres</B></TD><TD bgcolor="#eeeeee">';
+		echo '<div class="row">';
 		$Liste_Jour = fCOM_Get_Liste_JoursSemaine();
-		echo '<SELECT name="JourSemaine" '.$BloquerAcces.' >';
+		echo '<SELECT class="form-control" name="JourSemaine" '.$BloquerAcces.' >';
 		$Jour = 0;
 		if ($row['Jour']>=1 AND $row['Jour']<=7) {
 			$Jour = $row['Jour'];
@@ -665,51 +622,41 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			echo '<option value="'.$i.'"'.$SelectionDefault.'>'.$Liste_Jour[$i].'</option>';
 		}
 		echo '</SELECT>';
+		echo '<b>&nbsp Heure&nbsp</b>';
+		$hour = substr($row['Date'],11,5);
+		echo '<input class="form-control" type="time" id="heure" name="heure" value ="'.$hour.'" size="9" maxlength="10" style="width:150px" '.$BloquerAcces.'>';
+		echo '</div>';
+		echo '</TD></TR>';
 
-	} else {
+	} elseif ($_SESSION["Activite_id"] == 4 OR // Parcours Alpha
+			  $_SESSION["Activite_id"] == 26 OR // Aumônerie
+			  $_SESSION["Activite_id"] == 22) { // Emmaüs
 		echo '';
-		if (! empty($row['Date'])) {
-			//$DateYear=substr($row['Date'],0,4);
-			//$DateMonth=substr($row['Date'],5,2);
-			//$DateDay=substr($row['Date'],8,2);
-			//$DateValue = $DateDay."/".$DateMonth."/".$DateYear;
-			$DateValue = fCOM_PrintDate($row['Date']);
-		} else {
-			$DateValue ="";
-		}
+		$DateValue = substr($row['Date'], 0, 10);
 
-		echo '<TR><TD valign="top" bgcolor="#eeeeee"><B><FONT SIZE="2">Date et heure de la 1ère rencontre :</FONT></B></TD>';
-		echo '<TD width="225" bgcolor="#eeeeee" colspan="2">';
-		echo '<input type=text id="Date" name="Date" value ="'.$DateValue.'" size="9" maxlength="10" '.$BloquerAcces.'>';
-		if ($BloquerAcces=="") { 
-			?>
-			<a href="javascript:popupwnd('calendrier.php?idcible=Date&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span>
-			<?php
-		}
-		echo '</SELECT>';
-	}
+		echo '<TR><TD valign="top" bgcolor="#eeeeee"><B>Date / heure 1ère rencontre</B></TD>';
+		echo '<TD bgcolor="#eeeeee">';
+		echo '<div class="row">';
+		echo '<input class="form-control" type="date" id="Date" name="Date" value ="'.$DateValue.'" size="9" maxlength="10" style="width:150px" '.$BloquerAcces.'>';
+		
+		echo '<b>&nbsp Heure&nbsp</b>';
+		$hour = substr($row['Date'],11,5);
+		echo '<input class="form-control" type="time" id="heure" name="heure" value ="'.$hour.'" size="9" maxlength="10" style="width:130px" '.$BloquerAcces.'>';
+		echo '</div>';
+		echo '</TD></TR>';
 	
-		echo '<b><FONT SIZE="2">  Heure </FONT></b>';
-		$hour = substr($row['Date'],11,2);
-		echo '<SELECT name="heure" '.$BloquerAcces.' >';
-		for ($i=7; $i<=23; $i++) {
-			if ($i == intval($hour)) {echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';} else {echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';}
-		}
-		echo '</SELECT>:';
-
-		$min = substr($row['Date'],14,2);
-		echo '<SELECT name="minute" '.$BloquerAcces.' >';
-		for ($i=0; $i<=45; $i=$i+15) {
-			if ($i == intval($min)) {	echo '<option value="'.sprintf("%02d", $i).'" selected="selected">'.sprintf("%02d", $i).'</option>';} else {echo '<option value="'.sprintf("%02d", $i).'">'.sprintf("%02d", $i).'</option>';}
-		}
-		echo '</SELECT></TD></TR>';
+	} else {
+		echo '<INPUT type=hidden name="Date" value="0000/00/00">';
+		echo '<INPUT type=hidden name="heure" value="00:00:00">';
+	}
 	
 
 	// Lieux ==========================================
 	$debug = False;
-	echo '<TR><TD>';
-	echo '<B><FONT FACE="Verdana" SIZE="2">Lieu:</FONT></B></TD><TD>';
-	echo '<SELECT name="Lieux_id">';
+	echo '<TR><TD valign="top">';
+	echo '<B>Lieu</B></TD><TD>';
+	echo '<div class="row">';
+	echo '<SELECT class="form-control" name="Lieux_id">';
 	pCOM_DebugAdd($debug, 'Fraternite:Edit Lieu_name='.$row['Lieu']);
 	pCOM_DebugAdd($debug, 'Fraternite:Edit Lieu_id='.$row['Lieu_id']);
 	$Liste_Lieu_Celebration = pCOM_Get_liste_lieu_celebration(1);
@@ -722,12 +669,27 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 	}
 	echo '</SELECT>';
+	echo '</div>';
 	
 
 	// invité / Participant ==========================================
 	echo '<TR><TD valign="top">';
 	if ( $id > 0 ) {
-		echo '<div><input type="submit" name="Selectionner_Individue" value="Participant(s)"></TD>';
+		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
+			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+			if ( $IsGestionnaire ) {
+				$Bouton="Ajouter un enfant";
+			} else {
+				$Bouton="Liste des enfants";
+			}
+		} else {
+			if ( $IsGestionnaire ) {
+				$Bouton="Ajouter un participant";
+			} else {
+				$Bouton="Liste des participants";
+			}
+		}
+		echo '<div><input type="submit" name="Selectionner_Individue" value="Participant(s)" class="btn btn-outline-secondary btn-sm" ></TD>';
 		$requete = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom` 
 					FROM `Individu` T0 
 					LEFT JOIN `QuiQuoi` T1 ON T0.`id`=T1.`Individu_id` 
@@ -740,12 +702,11 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 			if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 				($_SESSION["Activite_id"] == 22) || // Emmaüs
 				($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-				echo "<A HREF=".$_SERVER['PHP_SELF']."?action=RetirerParticipantDeFraternite&Qui_id=$row2[id]&Invite_id=$id TITLE='Retirer Participant de la fraternité'><img src=\"images/moins.gif\" border=0 alt='Retirer Participant'></a>  ";
+				echo '<A HREF='.$_SERVER["PHP_SELF"].'?action=RetirerParticipantDeFraternite&Qui_id='.$row2['id'].'&Invite_id='.$id.' TITLE="Retirer Participant de la fraternité"><i class="fa fa-minus-circle text-danger"></i></a>  ';
 			} else {
-				echo "<A HREF=".$_SERVER['PHP_SELF']."?action=RetirerParticipant&Qui_id=".$row2['id']."&Invite_id=".$id."&TITLE='Retirer Participant'><img src=\"images/moins.gif\" border=0 alt='Retirer Participant'></a>  ";
+				echo '<A HREF='.$_SERVER["PHP_SELF"].'?action=RetirerParticipant&Qui_id='.$row2['id'].'&Invite_id='.$id.'&TITLE="Retirer Participant"><i class="fa fa-minus-circle text-danger"></i></a>  ';
 			}
-			Display_Photo(Securite_html($row2['Nom']), Securite_html($row2['Prenom']), $row2['id'], 2);
-			//echo '</TR><TR><TD></TD><TD>';
+			fCOM_Display_Photo(Securite_html($row2['Nom']), Securite_html($row2['Prenom']), $row2['id'], "edit_Individu", true);
 			echo '<BR>';
 		}
 		echo '</TD>';
@@ -755,37 +716,40 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	echo '<TR><TD height="10"></TD></TR>';
 	
 	// Accompagnateur ==========================================
-	echo '<TR><TD valign="top">';
-	$nom_accompagnateur = "Accompagnateur(s)";
-	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
-		$nom_accompagnateur = "Catéchiste(s)";
-	}
-	if ( $id > 0 ) {
-		echo '<div><input type="submit" name="Selectionner_Individue" value="Accompagnateur(s)"></td>';
-		$requete = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom` 
+	if ($Fct_Accompagnateur_actif) {
+		echo '<TR><TD valign="top">';
+		$nom_accompagnateur = $Titre_Accompagnateur.'(s)';
+
+		if ( $id > 0 ) {
+			if ( $IsGestionnaire ) {
+				$Bouton="Ajouter un accompagnateur";
+			} else {
+				$Bouton="Liste des accompagnateurs";
+			}
+			echo '<div><input type="submit" name="Selectionner_Individue" value="Accompagnateur(s)" class="btn btn-outline-secondary btn-sm" ></td>';
+			$requete = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom` 
 					FROM `Individu` T0 
 					LEFT JOIN `QuiQuoi` T1 ON T0.`id`=T1.`Individu_id` 
 					WHERE T1.`Activite_id`='.$_SESSION["Activite_id"].' AND T1.`QuoiQuoi_id`=2 and T1.`Engagement_id`='.$id.'
 					ORDER BY Prenom, Nom';
-		$result = mysqli_query($eCOM_db, $requete);
-		echo '<TD>';
-		while( $row2 = mysqli_fetch_assoc( $result ))
-		{
-			echo "<A HREF=".$_SERVER['PHP_SELF']."?action=RetirerAccompagnateur&Qui_id=$row2[id]&Invite_id=$id TITLE='Retirer Accompagnateur'><img src=\"images/moins.gif\" border=0 alt='Delete Accompagnateur'></a>  ";
-			Display_Photo(Securite_html($row2['Nom']), Securite_html($row2['Prenom']), $row2['id'], 2);
-			//echo '</TR><TR><TD></TD><TD>';
-			echo '<BR>';
+			$result = mysqli_query($eCOM_db, $requete);
+			echo '<TD>';
+			while( $row2 = mysqli_fetch_assoc( $result )) {
+				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerAccompagnateur&Qui_id='.$row2['id'].'&Invite_id='.$id.' TITLE="Retirer Accompagnateur"><i class="fa fa-minus-circle text-danger"></i></a>  ';
+				fCOM_Display_Photo(Securite_html($row2['Nom']), Securite_html($row2['Prenom']), $row2['id'], "edit_Individu", true);
+				echo '<BR>';
+			}
+			echo '</TD>';
 		}
-		echo '</TD>';
+		echo '</TD></TR>';
 	}
-	echo '</TD></TR>';
 	
 	// Commentaire ==========================================
-	echo '<TR><TD colspan="2" bgcolor="#eeeeee">';
-	echo '<B><FONT SIZE="2">Commentaires:</FONT></B>';
+	echo '<TR><TD colspan="2" >';
+	echo '<B>Commentaires</B>';
 	echo '<br>';
 	if ( $id > 0 ) {
-		echo '<textarea cols=80 rows=5 name="Commentaire" maxlength="350" value ="'.Securite_html($row['Commentaire']).'">'.Securite_html($row['Commentaire']).'</textarea>';
+		echo '<textarea cols=60 rows=5 name="Commentaire" maxlength="350" value ="'.Securite_html($row['Commentaire']).'">'.Securite_html($row['Commentaire']).'</textarea>';
 	}
 
 	echo '<BR></TR><TD> </TD></TR>';
@@ -793,21 +757,22 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	echo '<INPUT type=hidden name="Invite_id" value='.$id.'>';
 	echo '<TR><TD>';
 	if ( $id > 0 ) {
-		echo '<div align="center"><INPUT type="submit" name="edit" value="Enregistrer">';
+		echo '<div align="center"><INPUT type="submit" name="edit" value="Enregistrer" class="btn btn-secondary btn-sm">';
 	}
 	//echo '<input type="reset" name="Reset" value="Reset">';
 	if (fCOM_Get_Autorization( $Activite_id ) >= 50) {
-		echo '</TD><TD><INPUT type="submit" name="delete_fiche_invite_Fraternite" value="Détruire la fiche">';
+		echo '</TD><TD><INPUT type="submit" name="delete_fiche_invite_Fraternite" value="Détruire la fiche" class="btn btn-secondary btn-sm">';
 	}
 	
 	echo '</TD></TR>';
 	echo '<TR><TD></TD></TR>';
-	echo '</TABLE>';
 	echo '</FORM>';
-	echo '</CENTER>';
+	echo '</TABLE>';
 
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo '</CENTER>';
+	echo '</td></tr></table>';
+
+	fMENU_bottom();
 	exit(); 
 }
 
@@ -826,10 +791,9 @@ function Sauvegarder_fiche_invite ( )
 		$Invite_id=$_POST['Invite_id'];
 	}
 	if (! isset($_POST['Lieux_id'])) {$Lieux_id = 0;} else { $Lieux_id = $_POST['Lieux_id'];}
-	if (!isset($_POST['Date'])) { $Date = "01/01/1970"; } else { $Date = $_POST['Date'];}
+	if (!isset($_POST['Date'])) { $Date = "0000-00-00"; } else { $Date = $_POST['Date'];}
 	if (!isset($_POST['JourSemaine'])) { $Jour = 0; } else { $Jour = $_POST['JourSemaine'];}
-	if (!isset($_POST['heure'])) { $heure = "0"; } else { $heure = $_POST['heure'];}
-	if (!isset($_POST['minute'])) { $minute = "0"; } else { $minute = $_POST['minute'];}
+	if (!isset($_POST['heure'])) { $heure = "00:00:00"; } else { $heure = $_POST['heure'].':00';}
 	if (!isset($_POST['PSession'])) { $PSession = "0"; } else { $PSession = $_POST['PSession'];}
 	if (!isset($_POST['ss_session'])) { $ss_session = "0"; } else { $ss_session = $_POST['ss_session'];}
 	if (!isset($_POST['NoFrat'])) { $NoFrat = "0"; } else { $NoFrat = $_POST['NoFrat'];}
@@ -840,7 +804,7 @@ function Sauvegarder_fiche_invite ( )
 		$sss_session = " ".$ss_session;
 		
 		pCOM_DebugAdd($debug, 'Fraternite:Sauvegarder_fiche_invite - Date='.$Date);
-		$SqlDate = fCOM_getSqlDate($Date, $heure, $minute, 0);
+		$SqlDate = $Date.' '.$heure;
 		
 		if (strpos($sss_session, "Janvier ")>0) {			$Mois="01";
 		} elseif (strpos($sss_session, "Février ")>0) {	$Mois="02";
@@ -893,10 +857,10 @@ if ( isset( $_POST['edit'] ) AND $_POST['edit']=="Enregistrer") {
 	Global $eCOM_db;
 	$retour = Sauvegarder_fiche_invite ();
 	if ($retour == 0) {
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Record Updated</FONT></CENTER></B>';
+		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Fiche enregistrée</FONT></CENTER></B>';
 	}
 	mysqli_close($eCOM_db);
-	echo '<META http-equiv="refresh" content="0; URL='.$_SERVER['PHP_SELF'].'?action=list_fraternite">';
+	echo '<META http-equiv="refresh" content="1; URL='.$_SERVER['PHP_SELF'].'?action=list_fraternite">';
 	exit;
 }
 
@@ -915,7 +879,7 @@ if ( isset( $_POST['delete_fiche_invite_Fraternite'] ) AND $_POST['delete_fiche_
 
 	while($row = mysqli_fetch_assoc($result))
 	{
-		address_top();
+		fMENU_top();
 		
 		echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Suppression d\'une fraternité</B><BR></TD></TR>';
@@ -927,8 +891,7 @@ if ( isset( $_POST['delete_fiche_invite_Fraternite'] ) AND $_POST['delete_fiche_
 		echo '<INPUT type="hidden" name="id" value='.$_POST['Invite_id'].'>';
 		echo '</FORM></TD></TR>';
 
-		fCOM_address_bottom();
-		mysqli_close($eCOM_db);
+		fMENU_bottom();
 		exit();	
 	}
 }
@@ -986,7 +949,7 @@ if ( isset( $_POST['retirer_fiche_Participant'] ) AND $_POST['retirer_fiche_Part
 	while($row = mysqli_fetch_assoc($result))
 	{
 		Global $eCOM_db;
-		address_top();
+		fMENU_top();
 		
 		echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Retirer personne de l\'activité</B><BR></TD></TR>';
@@ -998,8 +961,7 @@ if ( isset( $_POST['retirer_fiche_Participant'] ) AND $_POST['retirer_fiche_Part
 		echo '<INPUT type="hidden" name="id" value='.$_POST['QuiQuoi_id'].'>';
 		echo '</FORM></TD></TR>';
 
-		fCOM_address_bottom();
-		mysqli_close($eCOM_db);
+		fMENU_bottom();
 		exit();	
 	}
 }
@@ -1045,8 +1007,8 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Inscription") {
 function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $Invite_id)
 {
 	Global $eCOM_db;
-	$debug = true;
-	address_top();
+	$debug = false;
+	fMENU_top();
 	pCOM_DebugAdd($debug, 'Fraternite:Selectionner_individu_BaseFraternite - pQui='.$pQui);
 	pCOM_DebugAdd($debug, 'Fraternite:Selectionner_individu_BaseFraternite - Label='.$Label);
 	pCOM_DebugAdd($debug, 'Fraternite:Selectionner_individu_BaseFraternite - Inscription='.$Inscription);
@@ -1068,31 +1030,36 @@ function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $In
 		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Selectionner '.$Label.' de '.$row['Prenom'].' '.$row['Nom'].'</B><BR></TD><TD></TD><TD></TD></TR>';
 	}
 	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	echo '<FONT FACE="Verdana" size="2" ><BR>';
-	echo '<TABLE>';
+	
+	echo '<table id="TableauTrier" class="table table-striped table-hover table-sm" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	
+	//echo '<TABLE>';
 	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Sélectionner</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Prénom</font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Nom</font></TH>';
+	echo '<TH>Sélectionner</TH>';
+	echo '<TH>Prénom</TH>';
+	echo '<TH>Nom</TH>';
 	//if ($AfficherClasse == True) { // Aumônerie Lycée et collège
 	if ( $pQui != "Accompagnateur" && 
 		(($_SESSION["Activite_id"] == 12) || // Cathéchèse
 		($_SESSION["Activite_id"] == 26))) { // Aumônerie Lycée et collège
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Classe</font></TH>';
+		echo '<TH>Classe</TH>';
 	}
+	echo '</tr></thead>';
+	echo '<tbody>';
 	$Activite_id=$_SESSION["Activite_id"];
 	if ($pQui == "Celebrant") {
 		$requete = 'SELECT T1.`id` AS id, T1.`Prenom` AS Prenom, T1.`Nom` AS Nom 
 					FROM `QuiQuoi` T0 
 					LEFT JOIN `Individu` T1 ON T0.`Individu_id`=T1.`id` 
-					WHERE T0.`Engagement_id`=0 and (T0.`QuoiQuoi_id`=7 or T0.`QuoiQuoi_id`=8) AND T1.Actif = 1 AND T1.Dead = 0
+					WHERE T1.`Nom` <> "" AND T1.`Nom` <> "Annulé dupliqué" AND T1.`Prenom` <> "" AND T0.`Engagement_id`=0 and (T0.`QuoiQuoi_id`=7 or T0.`QuoiQuoi_id`=8) AND T1.Actif = 1 AND T1.Dead = 0
 					ORDER BY T1.Nom, T1.Prenom';
 	
 	} elseif ($pQui == "Accompagnateur") {
 		$requete = 'SELECT T1.`id` AS id, T1.`Prenom` AS Prenom, T1.`Nom` AS Nom 
 					FROM `QuiQuoi` T0 
 					LEFT JOIN `Individu` T1 ON T0.`Individu_id`=T1.`id` 
-					WHERE T0.`Activite_id`="'.$Activite_id.'" and T0.`QuoiQuoi_id`=2 and T0.`Engagement_id`=0 AND T1.Actif = 1 AND T1.Dead = 0
+					WHERE T1.`Nom` <> "" AND T1.`Nom` <> "Annulé dupliqué" AND T1.`Prenom` <> "" AND T0.`Activite_id`="'.$Activite_id.'" and T0.`QuoiQuoi_id`=2 and T0.`Engagement_id`=0 AND T1.Actif = 1 AND T1.Dead = 0
 					GROUP BY T1.`id` 
 					ORDER BY T1.`Nom`, T1.`Prenom` ';
 	
@@ -1105,13 +1072,13 @@ function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $In
 							FROM `Individu` T0
 							LEFT JOIN `QuiQuoi` T1 ON T1.`Individu_id`=T0.`id`
 							AND (T1.`Activite_id`='.$Activite_id.' AND T1.`QuoiQuoi_id`=1 AND T1.`Session`='.$_SESSION["Session"].')
-							WHERE T1.id IS NULL AND T0.`Naissance` >= DATE_SUB(now(), INTERVAL 15 YEAR) AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 4 YEAR) AND T0.Actif = 1 AND T0.Dead = 0
+							WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T1.id IS NULL AND T0.`Naissance` >= DATE_SUB(now(), INTERVAL 15 YEAR) AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 4 YEAR) AND T0.Actif = 1 AND T0.Dead = 0
 							ORDER by T0.`Nom`, T0.`Prenom`';
 			} else {
 				$requete = 'SELECT T1.`id` AS id, T0.`id` AS QuiQuoi_id, T1.`Prenom` AS Prenom, T1.`Nom` AS Nom, T0.`Detail` AS Classe
 							FROM `QuiQuoi` T0 
 							LEFT JOIN `Individu` T1 ON T0.`Individu_id`=T1.`id` 
-							WHERE T0.`Activite_id`="'.$Activite_id.'" AND T0.`QuoiQuoi_id`=1 AND T0.`Session`='.$_SESSION["Session"].' AND T0.`Engagement_id`=0 
+							WHERE T1.`Nom` <> "" AND T1.`Nom` <> "Annulé dupliqué" AND T1.`Prenom` <> "" AND T0.`Activite_id`="'.$Activite_id.'" AND T0.`QuoiQuoi_id`=1 AND T0.`Session`='.$_SESSION["Session"].' AND T0.`Engagement_id`=0 
 							GROUP BY T1.`id` 
 							ORDER BY T1.`Nom`, T1.`Prenom` ';
 			}
@@ -1123,14 +1090,14 @@ function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $In
 							FROM `Individu` T0
 							LEFT JOIN `QuiQuoi` T1 ON T1.`Individu_id`=T0.`id`
 							AND (T1.`Activite_id`='.$Activite_id.' AND T1.`QuoiQuoi_id`=1 AND T1.`Session`='.$_SESSION["Session"].')
-							WHERE  T1.id IS NULL AND T0.`Naissance` >= DATE_SUB(now(), INTERVAL 20 YEAR) AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 10 YEAR) AND T0.Actif = 1 AND T0.Dead = 0
+							WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T1.id IS NULL AND T0.`Naissance` >= DATE_SUB(now(), INTERVAL 20 YEAR) AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 10 YEAR) AND T0.Actif = 1 AND T0.Dead = 0
 							ORDER by T0.`Nom`, T0.`Prenom`';
 
 			} else {
 				$requete = 'SELECT T1.`id` AS id, T0.`id` AS QuiQuoi_id, T1.`Prenom` AS Prenom, T1.`Nom` AS Nom, T0.`Detail` AS Classe 
 							FROM `QuiQuoi` T0 
 							LEFT JOIN `Individu` T1 ON T0.`Individu_id`=T1.`id` 
-							WHERE T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=1 AND T0.`Session`='.$_SESSION["Session"].' AND T0.`Engagement_id`=0 
+							WHERE T1.`Nom` <> "" AND T1.`Nom` <> "Annulé dupliqué" AND T1.`Prenom` <> "" AND T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=1 AND T0.`Session`='.$_SESSION["Session"].' AND T0.`Engagement_id`=0 
 							GROUP BY T1.`id` 
 							ORDER BY T1.`Nom`, T1.`Prenom` ';
 			}
@@ -1146,13 +1113,13 @@ function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $In
 							FROM `Individu` T0
 							LEFT JOIN `QuiQuoi` T1 ON T1.`Individu_id`=T0.`id`
 							AND (T1.`Activite_id`='.$Activite_id.' AND T1.`QuoiQuoi_id`=1 AND T1.`Session`='.$_SESSION["Session"].')
-							WHERE  T1.id IS NULL AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 15 YEAR) AND T0.Actif = 1 AND T0.Dead = 0
+							WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T1.id IS NULL AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 15 YEAR) AND T0.Actif = 1 AND T0.Dead = 0
 							ORDER by T0.`Nom`, T0.`Prenom`';	
 			} else {
 				$requete = 'SELECT T1.`id` AS id, T0.`id` AS QuiQuoi_id, T1.`Prenom` AS Prenom, T1.`Nom` AS Nom, T0.`Detail` AS Classe 
 							FROM `QuiQuoi` T0 
 							LEFT JOIN `Individu` T1 ON T0.`Individu_id`=T1.`id` 
-							WHERE T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=1 AND T0.`Session`='.$_SESSION["Session"].' AND T0.`Engagement_id`=0 AND T1.Actif = 1 AND T1.Dead = 0
+							WHERE T1.`Nom` <> "" AND T1.`Nom` <> "Annulé dupliqué" AND T1.`Prenom` <> "" AND T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=1 AND T0.`Session`='.$_SESSION["Session"].' AND T0.`Engagement_id`=0 AND T1.Actif = 1 AND T1.Dead = 0
 							GROUP BY T1.`id` 
 							ORDER BY T1.`Nom`, T1.`Prenom` ';
 			}
@@ -1167,27 +1134,27 @@ function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $In
 						ORDER by Nom, Prenom';
 			$requete = 'SELECT id, Prenom, Nom 
 						FROM Individu T0
-						WHERE T0.Actif = 1 AND T0.Dead = 0 AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 10 YEAR)
+						WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T0.Actif = 1 AND T0.Dead = 0 AND T0.`Naissance` <= DATE_SUB(now(), INTERVAL 10 YEAR)
 						ORDER by Nom, Prenom';
 						
 		} else if ($_SESSION["Activite_id"] == 59) { // Parcours 40jours
 			$Title = "Parcours 40jours";
 			$requete = 'SELECT id, Prenom, Nom 
 						FROM Individu T0
-						WHERE T0.Actif = 1 AND T0.Dead = 0
+						WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T0.Actif = 1 AND T0.Dead = 0
 						ORDER by Nom, Prenom'; 
 						
 		} else if ($_SESSION["Activite_id"] == 85) { // SophiaDeo
 			$Title = "SophiaDeo";
 			$requete = 'SELECT id, Prenom, Nom 
 						FROM Individu T0
-						WHERE T0.Actif = 1 AND T0.Dead = 0
+						WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T0.Actif = 1 AND T0.Dead = 0
 						ORDER by Nom, Prenom'; 
 		} else {
 			$Title = "Fraternité";
 			$requete = 'SELECT id, Prenom, Nom 
 						FROM Individu T0
-						WHERE T0.Actif = 1 AND T0.Dead = 0
+						WHERE T0.`Nom` <> "" AND T0.`Nom` <> "Annulé dupliqué" AND T0.`Prenom` <> "" AND T0.Actif = 1 AND T0.Dead = 0
 						ORDER by Nom, Prenom'; 
 		}
 		pCOM_DebugAdd($debug, 'Fraternite:Selectionner_individu_BaseFraternite - requete(2) = '.$requete);
@@ -1199,35 +1166,31 @@ function Selectionner_individu_BaseFraternite ( $pQui, $Label, $Inscription, $In
 		echo '<TR>'; 
 		if ($pQui == "Participant" && $Inscription == True && ($Title == "Cathéchèse" || $Title == "Aumônerie" || $Title == "Emmaüs")) {
 				// il faut saisir la participation financière de l'inscription
-			echo '<TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=RenseignerParticipation&Qui='.$pQui.'&Qui_id='.$row['id'].'&Invite_id='.$Invite_id.' TITLE="Selectionner '.$pQui.'"><img src="images/plus.gif" border=0 alt="Add Record"></a></td>  ';
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Prenom'].'</FONT></TD>';
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Nom'].'</FONT></TD>';
+			echo '<TD><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=RenseignerParticipation&Qui='.$pQui.'&Qui_id='.$row['id'].'&Invite_id='.$Invite_id.' TITLE="Selectionner '.$pQui.'"><i class="fa fa-plus-circle"></i></a></CENTER></TD>';
+			echo '<TD>'.$row['Prenom'].'</TD>';
+			echo '<TD>'.$row['Nom'].'</TD>';
 		} else {
-			echo '<TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=AffecterBaseFraternite&Qui='.$pQui.'&Qui_id='.$row['id'].'&Invite_id='.$Invite_id.' TITLE="Selectionner '.$pQui.'"><img src="images/plus.gif" border=0 alt="Add Record"></a></td>  ';
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Prenom'].'</FONT></TD>';
-			echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Nom'].'</FONT></TD>';
+			echo '<TD><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=AffecterBaseFraternite&Qui='.$pQui.'&Qui_id='.$row['id'].'&Invite_id='.$Invite_id.' TITLE="Selectionner '.$pQui.'"><i class="fa fa-plus-circle"></i></a></CENTER></td>  ';
+			echo '<TD>'.$row['Prenom'].'</TD>';
+			echo '<TD>'.$row['Nom'].'</TD>';
 			if ($pQui != "Accompagnateur" &&
 				(($_SESSION["Activite_id"] == 12) || // Cathéchèse
 				($_SESSION["Activite_id"] == 26))) { // Aumônerie Lycée et collège
-				echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Classe'].' </FONT></TD>';
+				echo '<TD>'.$row['Classe'].'</TD>';
 			}
 		}
 		echo '</TR>'; 
 	}
-	echo '</TABLE><BR></FONT>';
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo '</tbody></table>'; 
+	
+	echo '</TD></TR></TABLE>';
+	fMENU_bottom();
 	exit;
 }
 
 
 if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
-//if ($action == "RenseignerParticipation") { 
-   // Participation financière
-   
-	// $Qui			-> "Participant"
-	// $Qui_id		-> Individu[id]
-	// $Invite_id	-> Engagement_id
+
 	Global $eCOM_db;
 	$debug = false;
 	if (!isset($_GET['Qui'])) { $Qui = 0; } else {$Qui = $_GET['Qui'];}
@@ -1279,26 +1242,11 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 		$_Demande_Confirmation =$row['Demande_Confirmation'];
 		$_CertificatBapteme = $row['CertificatBapteme'];
 		$_SituationFamiliale = $row['SituationFamiliale'];
-		if ($row['DateBapteme'] != "0000-00-00"){
-			$_DateBapteme = date("d/m/Y", strtotime($row['DateBapteme']));
-		} else {
-			$_DateBapteme = "";
-		}
-		if ($row['DateCommunion'] != "0000-00-00"){
-			$_DateCommunion = date("d/m/Y", strtotime($row['DateCommunion']));
-		} else {
-			$_DateCommunion = "";
-		}
-		if ($row['DateProfession'] != "0000-00-00"){
-			$_DateProfession = date("d/m/Y", strtotime($row['DateProfession']));
-		} else {
-			$_DateProfession = "";
-		}		
-		if ($row['DateConfirmation'] != "0000-00-00"){
-			$_DateConfirmation = date("d/m/Y", strtotime($row['DateConfirmation']));
-		} else {
-			$_DateConfirmation = "";
-		}
+		$_DateBapteme = $row['DateBapteme'];
+		$_DateCommunion = $row['DateCommunion'];
+		$_DateProfession = $row['DateProfession'];
+		$_DateConfirmation = $row['DateConfirmation'];
+
 		pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - DateBapteme = '.$row['DateBapteme']);
 		pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - DateCommunion = '.$row['DateCommunion']);
 		pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - DateProfession = '.$row['DateProfession']);
@@ -1306,41 +1254,36 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 		}
 	pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - QuiQuoi_id = '.$QuiQuoi_id);
 
-	address_top();
-	
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	
+	fMENU_top();
+	if ( $num_total == 0) {
+		fMENU_Title("Edition : Nouveau Participant");
+	} else {
+		fMENU_Title("Edition : Fiche No ".$row['id']);
+	}	
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) { 
 		$BloquerAcces="";
 	} else {
 		$BloquerAcces="disabled='disabled'";
 	}
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Edition: ';
-	if ( $num_total == 0) {
-		echo 'Nouveau Participant</B></FONT></TD>';
-	} else {
-		echo 'Fiche No '.$row['id'].'</B></FONT></TD>'; 
-	}
-	echo '</TR>';
-	echo '<TR>';
-	echo '<TD BGCOLOR="#EEEEEE" Colspan="2">';
-	echo '<CENTER><font face="verdana" size="2">';
+	echo '<TR><TD BGCOLOR="#EEEEEE" Colspan="2">';
+	echo '<CENTER>';
+	
 	echo '<TABLE border="0" cellpadding="2" cellspacing="0">';
-	echo '<TR><TD width="140" bgcolor="#eeeeee">';
-	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'"><B><FONT SIZE="3"> </FONT></B></TD></TR>';
+	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'">';
 	
 	// Nom et Prénom
-	echo '<TR><TD width=250><b><FONT SIZE="2">Nom :</FONT></b></TD>';
-	echo '<TD><FONT SIZE="2">'.$row['Nom'].' '.$row['Prenom'].'</FONT></TD><TD></TD></TR>';
+	echo '<TR><TD width="230"><b>Nom</b></TD>';
+	echo '<TD>';
+	fCOM_Display_Photo($row['Nom'], $row['Prenom'], $Qui_id, "edit_Individu", True);
+	echo '</TD><TD></TD></TR>';
 	
 	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 	    ($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		echo '<TR><TD width=90 ><B><FONT SIZE="2">Situation Familiale:</FONT></B></TD>';
+		echo '<TR><TD><B>Situation Familiale</B></TD>';
 		echo '<TD>';
 		$liste_SituationFamiliale = fCOM_Get_Liste_SituationFamiliale();
-		echo '<SELECT name="SituationFamiliale">';
+		echo '<SELECT class="form-control" name="SituationFamiliale">';
 		$i=0;
 		foreach ($liste_SituationFamiliale as $SituationFamiliale){
 			$SelectionDefault = '';
@@ -1353,12 +1296,12 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 		echo '</SELECT></TD></TR>';
 		
 		// Ecole =============================================
-		echo '<TR><TD width=90 ><B><FONT SIZE="2">Ecole / Classe:</FONT></B></TD><TD colspan="2">';
+		echo '<TR><TD valign="top" ><B>Ecole</B></TD><TD colspan="2">';
 		$liste_ecoles = fCOM_Get_liste_ecoles();
 		pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - Size liste_ecoles = '.count($liste_ecoles));
 
 		//if ( count($liste_ecoles) > 0 ) {
-			echo '<SELECT name="EcoleSelection">';
+			echo '<SELECT class="form-control" name="EcoleSelection">';
 			foreach ($liste_ecoles as $Ecole){
 				list($Ecole_id, $Ecole_nom) = $Ecole;
 				$SelectionDefault = '';
@@ -1369,11 +1312,11 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 			}
 			echo '</SELECT>';
 		//}
-		echo '&nbsp<input type=text name="Autre_Ecole" placeholder="Nouvelle Ecole à déclarer dans la base" size="35" maxlength="40">';
+		echo '<input class="form-control form-control-sm" type=text name="Autre_Ecole" placeholder="Ou nouvelle Ecole à déclarer dans la base" size="40" maxlength="40"></TD></TR>';
 
 		
 		// Classe ============================================
-		echo '<BR>';
+		echo '<TR><TD><B>Classe</B></TD><TD colspan="2">';
 		$Liste_Classe = array(" ");
 		if ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
 			$Liste_Classe[1]="6ème";
@@ -1393,7 +1336,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 			$Liste_Classe[7]="6ème";
 		}
 		pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - Size Liste_Classe = '.count($Liste_Classe));
-		echo '<SELECT name="ClasseVal">';
+		echo '<SELECT class="form-control" style="width:160px" name="ClasseVal">';
 		for ($i = 0, $size = count($Liste_Classe)-1; $i <= $size; $i++) {
 			pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - Liste_Classe = "'.$Liste_Classe[$i].'"');
 			pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - row[Classe] = "'.$_Classe.'"');
@@ -1407,53 +1350,64 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 		echo '</SELECT>';
 		echo '</TD></TR>';
 	}
-	
+	echo '<TR><TD> </TD></TR>';
 	// Sacrement demandé ============================================
-	echo '<TR><TD width=90 valign="top"><B><FONT SIZE="2">Sacrement demandé:</FONT></B></TD>';
-	echo '<TD>';
+	echo '<TR><TD valign="top"><B>Sacrement</B></TD><TD><B>Demandé</B></TD><TD><B>ou Reçu le</B></TD></TR>';
+	echo '<TR><TD></TD><TD valign="top">';
 	if ($_Demande_Bapteme == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-	echo '<input type="checkbox" name="Demande_Bapteme" id="Demande_Bapteme" '.$optionSelect.' > <LABEL for="Demande_Bapteme"><FONT SIZE="2">Baptême</b></LABEL></TD>';
+	echo '<div class="form-check"><label class="form-check-label">';
+	echo '<input class="form-check-input" type="checkbox" name="Demande_Bapteme" id="Demande_Bapteme" '.$optionSelect.' > <LABEL for="Demande_Bapteme">Baptême</b></LABEL>';
+	echo '</label></div>';
+	echo '</TD>';
 	echo '<TD>';
-	echo '<FONT SIZE="2"> reçu le ';
-	echo '<input type=text id="DateBapteme" name="DateBapteme" placeholder="JJ/MM/AAAA" style="width:75px" value ="'.$_DateBapteme.'" size="8" maxlength="10"></FONT>';
-	?><a href="javascript:popupwnd('calendrier.php?idcible=DateBapteme&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span><?php
+	echo '<input class="form-control" type="date" id="DateBapteme" name="DateBapteme" placeholder="JJ/MM/AAAA" style="width:160px" value ="'.$_DateBapteme.'" size="8" maxlength="10">';
+
 	if ($_CertificatBapteme == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-	echo '&nbsp<input type="checkbox" name="CertificatBapteme" id="CertificatBapteme" '.$optionSelect.' > <label for="CertificatBapteme"><FONT SIZE="2"> Certificat de Baptême<BR></b></label>';
+	echo '<div class="form-check"><label class="form-check-label">';
+	echo '<input class="form-check-input" type="checkbox" name="CertificatBapteme" id="CertificatBapteme" '.$optionSelect.' > <label for="CertificatBapteme">Certificat de Baptême<BR></b></label>';
+	echo '</label></div>';
 	echo '</TD></TR>';
 	
-	echo '<TR><TD></TD><TD>';
+	echo '<TR><TD></TD><TD valign="top">';
 	if ($_Demande_Communion == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-	echo '<input type="checkbox" name="Demande_Communion" id="Demande_Communion" '.$optionSelect.' > <LABEL for="Demande_Communion"><FONT SIZE="2">1ère Communion</b></LABEL></TD>';
+	echo '<div class="form-check"><label class="form-check-label">';
+	echo '<input class="form-check-input" type="checkbox" name="Demande_Communion" id="Demande_Communion" '.$optionSelect.' > <LABEL for="Demande_Communion">1ère Communion</b></LABEL>';
+	echo '</label></div>';
+	echo '</TD>';
 	echo '<TD>';
-	echo '<FONT SIZE="2"> reçu le ';
-	echo '<input type=text id="DateCommunion" name="DateCommunion" placeholder="JJ/MM/AAAA" style="width:75px" value ="'.$_DateCommunion.'" size="8" maxlength="10"></FONT>';
-	?><a href="javascript:popupwnd('calendrier.php?idcible=DateCommunion&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span><?php
+	echo '<input class="form-control" type="date" id="DateCommunion" name="DateCommunion" placeholder="JJ/MM/AAAA" style="width:160px" value ="'.$_DateCommunion.'" size="8" maxlength="10">';
+
 	
 	echo '</TD></TR>';
 	
 	if ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
-		echo '<TR><TD></TD><TD>';
+		echo '<TR><TD></TD><TD valign="top">';
 		if ($_Demande_Profession == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-		echo '<input type="checkbox" name="Demande_Profession" id="Demande_Profession" '.$optionSelect.' > <LABEL for="Demande_Profession"><FONT SIZE="2">Profession de Foi </b></LABEL></TD>';
+		echo '<div class="form-check"><label class="form-check-label">';
+		echo '<input class="form-check-input" type="checkbox" name="Demande_Profession" id="Demande_Profession" '.$optionSelect.' > <LABEL for="Demande_Profession">Profession de Foi</LABEL>';
+	echo '</label></div>';
 		echo '<TD>';
-		echo '<FONT SIZE="2"> reçu le ';
-		echo '<input type=text id="DateProfession" name="DateProfession" placeholder="JJ/MM/AAAA" style="width:75px" value ="'.$_DateProfession.'" size="8" maxlength="10"></FONT>';
-		?><a href="javascript:popupwnd('calendrier.php?idcible=DateProfession&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span><?php
+		echo '<input class="form-control" type="date" id="DateProfession" name="DateProfession" placeholder="JJ/MM/AAAA" style="width:160px" value ="'.$_DateProfession.'" size="8" maxlength="10">';
+
 		
-		echo '<TR><TD></TD><TD>';
+		echo '<TR><TD></TD><TD valign="top">';
 		if ($_Demande_Confirmation == '1') { $optionSelect = "checked"; } else { $optionSelect = ""; };
-		echo '<input type="checkbox" name="Demande_Confirmation" id="Demande_Confirmation" '.$optionSelect.' > <LABEL for="Demande_Confirmation"><FONT SIZE="2">Confirmation </b></LABEL></TD>';
+		echo '<div class="form-check"><label class="form-check-label">';
+		echo '<input class="form-check-input" type="checkbox" name="Demande_Confirmation" id="Demande_Confirmation" '.$optionSelect.' > <LABEL for="Demande_Confirmation">Confirmation</LABEL>';
+	echo '</label></div>';
 		echo '<TD>';
-		echo '<FONT SIZE="2"> reçu le ';
-		echo '<input type=text id="DateConfirmation" name="DateConfirmation" placeholder="JJ/MM/AAAA" style="width:75px" value ="'.$_DateConfirmation.'" size="8" maxlength="10"></FONT>';
-		?><a href="javascript:popupwnd('calendrier.php?idcible=DateConfirmation&langue=fr','no','no','no','yes','yes','no','50','50','470','400')" target="_self"><img src="images/calendrier.gif" id="Image1" alt="" border="0" style="width:20px;height:20px;"></a></span><?php
-		
+		echo '<input class="form-control" type="date" id="DateConfirmation" name="DateConfirmation" placeholder="JJ/MM/AAAA" style="width:160px" value ="'.$_DateConfirmation.'" size="8" maxlength="10">';
 	}
 	
 	// Participation financière ============================================
-	echo '<TR><TD width=90><B><FONT SIZE="2">Participation Financière (Euro):</FONT></B></TD>';
+	echo '<TR><TD><B>Participation Financière</B></TD>';
 	pCOM_DebugAdd($debug, 'Fraternite:RenseignerParticipation - ParticipationFinance = '.$_ParticipationF);
-	echo '<TD bgcolor="#eeeeee"><input type=text name="ParticipationF" placeholder="00" value ="'.$_ParticipationF.'" size="9" maxlength="9" '.$BloquerAcces.'></TD><TD></TD></TR>';
+	echo '<TD>';
+	echo '<div class="input-group">';
+	echo '<span class="input-group-addon"><i class="fa fa-eur"></i></span>';
+	echo '<input class="form-control" type="text" name="ParticipationF" placeholder="00" value ="'.$_ParticipationF.'" size="9" maxlength="9" '.$BloquerAcces.'>';
+	echo '</div>';
+	echo '</TD><TD></TD></TR>';
 	
 	echo '<TR><TD></TD></TR>';
 	echo '<TR><TD colspan=2>';
@@ -1462,20 +1416,20 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RenseignerParticipation") {
 	echo '<INPUT type=hidden name=QuiQuoi_id value='.$QuiQuoi_id.'>';
 	echo '<INPUT type=hidden name=Invite_id value='.$Invite_id.'>';
 	
-	echo '<div align="center"><INPUT type="submit" name="SauvegarderParticipation" value="Enregistrer">';
-	echo '<input type="reset" name="Reset" value="Reset">';
+	echo '<div align="center"><INPUT type="submit" class="btn btn-secondary" name="SauvegarderParticipation" value="Enregistrer"> ';
+	echo '<input type="reset" class="btn btn-secondary" name="Reset" value="Reset">';
 	if (fCOM_Get_Autorization( $Activite_id ) >= 30) {
-		echo '<INPUT type="submit" name="retirer_fiche_Participant" value="Retirer ce participant">';
+		echo ' <INPUT type="submit" class="btn btn-secondary" name="retirer_fiche_Participant" value="Retirer ce participant">';
 	}
 	
 	echo '</TD></TR>';
 	echo '<TR><TD></TD></TR>';
-	echo '</TABLE>';
 	echo '</FORM>';
-	echo '</CENTER>';
+	echo '</TABLE>';
+	
+	echo '</CENTER></TD></TR></TABLE>';
 
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	fMENU_bottom();
 	exit;
 }
 
@@ -1554,28 +1508,23 @@ if ( isset( $_POST['SauvegarderParticipation'] ) AND $_POST['SauvegarderParticip
 	
 	if ( isset($_POST['DateBapteme'])) {
 		pCOM_DebugAdd($debug, 'Fraternite:SauvegarderParticipation - DateBapteme = '.$_POST['DateBapteme']);
-		if ($_POST['DateBapteme'] != "") {
-			$DateBapteme = substr(fCOM_getSqlDate($_POST['DateBapteme'],0,0,0), 0, 10);
-			$requete = 'SELECT * FROM Individu WHERE id='.$_POST['Qui_id'].' AND Bapteme='.$DateBapteme.'';
-			$result = mysqli_query($eCOM_db, $requete);
-			if (mysqli_num_rows($result) == 0) {
-				mysqli_query($eCOM_db, 'UPDATE Individu SET Bapteme="'.$DateBapteme.'" WHERE id='.$_POST['Qui_id'].' ') or die (mysqli_error($eCOM_db));
-			}
-		}
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Bapteme="'.$_POST['DateBapteme'].'" WHERE id='.$_POST['Qui_id'].' ') or die (mysqli_error($eCOM_db));
 	}
 	
 	if ( isset($_POST['DateCommunion'])) {
 		pCOM_DebugAdd($debug, 'Fraternite:SauvegarderParticipation - DateCommunion = '.$_POST['DateCommunion']);
-		if ($_POST['DateCommunion'] != "") {
-			$DateCommunion = substr(fCOM_getSqlDate($_POST['DateCommunion'],0,0,0), 0, 10);
-			$requete = 'SELECT * FROM Individu WHERE id='.$_POST['Qui_id'].' AND Bapteme='.$DateCommunion.'';
-			$result = mysqli_query($eCOM_db, $requete);
-			if (mysqli_num_rows($result) == 0) {
-				mysqli_query($eCOM_db, 'UPDATE Individu SET Communion="'.$DateCommunion.'" WHERE id='.$_POST['Qui_id'].' ') or die (mysqli_error($eCOM_db));
-			}
-		}
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Communion="'.$_POST['DateCommunion'].'" WHERE id='.$_POST['Qui_id'].' ') or die (mysqli_error($eCOM_db));
 	}  
 	
+	if ( isset($_POST['DateProfession'])) {
+		pCOM_DebugAdd($debug, 'Fraternite:SauvegarderParticipation - DateProfession = '.$_POST['DateProfession']);
+		mysqli_query($eCOM_db, 'UPDATE Individu SET ProfessionFoi="'.$_POST['DateProfession'].'" WHERE id='.$_POST['Qui_id'].' ') or die (mysqli_error($eCOM_db));
+	}
+
+	if ( isset($_POST['DateConfirmation'])) {
+		pCOM_DebugAdd($debug, 'Fraternite:SauvegarderParticipation - DateCommunion = '.$_POST['DateConfirmation']);
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Confirmation="'.$_POST['DateConfirmation'].'" WHERE id='.$_POST['Qui_id'].' ') or die (mysqli_error($eCOM_db));
+	}  
 }
 
 
@@ -1647,7 +1596,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AffecterBaseFraternite") {
 			}
 		} else {
 			mysqli_query($eCOM_db, 'UPDATE Fraternite SET '.$Qui.'_id='.$_GET['Qui_id'].' WHERE id='.$_GET['Invite_id'].' ') or die (mysqli_error($eCOM_db));
-		// mysqli_query($eCOM_db, 'UPDATE Individu SET '".$Qui."'_id='".$Qui_id."' WHERE id='.$Enfant.' ') or die (mysqli_error($eCOM_db));
 		}
 		mysqli_query($eCOM_db, 'UPDATE Fraternite SET MAJ="'.date("Y-m-d H:i:s").'" WHERE id='.$_GET['Invite_id'].' ') or die (mysqli_error($eCOM_db));
 	}
@@ -1657,7 +1605,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AffecterBaseFraternite") {
 }
 
 if ( isset( $_GET['action'] ) AND $_GET['action']=="RetirerParticipant") {
-//if ($action == "RetirerParticipant") {
 	Global $eCOM_db;
 	$debug=False;
 	if ($_GET['Qui_id'] > 0 & $_GET['Invite_id'] > 0) {
@@ -1701,7 +1648,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="RetirerAccompagnateur") {
 
 
 if ( isset( $_GET['action'] ) AND $_GET['action']=="vue_financiere") {
-//if ($action == "vue_financiere") {
 	Global $eCOM_db;
 	$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T2.`SS_Session` AS SS_Session, T2.`NoFrat`, T2.`date` AS Date, T3.`Lieu` As Lieu, T1.`id` AS Individu_id, T1.`Prenom` AS Prenom, T1.`Nom` as Nom, T0.`Participation` AS Participation, T1.`Adresse`, T1.`e_mail`, T1.`Telephone`, T0.`Participation`
 				FROM `QuiQuoi` T0 
@@ -1710,64 +1656,79 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="vue_financiere") {
 				LEFT JOIN `Lieux` T3 ON T2.`Lieu_id`=T3.`id`
 				WHERE T0.`Activite_id`="'.$_SESSION["Activite_id"].'" AND T0.`QuoiQuoi_id`="1" '.$ComplementRequete.'
 				ORDER BY T1.`Prenom`, T1.`Nom` ';
-	address_top();
-
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+	fMENU_top();
 	if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
-		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Liste des Invités</B><BR>';
+		fMENU_Title("Liste des Invités ...");
 	} else {
-		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Liste des Inscrits</B><BR>';
+		fMENU_Title("Liste des Inscrits ...");
 	}
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	echo "<TABLE>";
+	
+	echo '<table id="TableauTrier" class="table table-striped table-bordered hover ml-1 mr-1" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
 	$trcolor = "#EEEEEE";
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>No Frat</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Nom</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Adresse</FONT></TH>';
-	echo '<TH bgcolor='.$trcolor.'><FONT face=verdana size=2>Participation</FONT></TH>';
+	echo '<TH width="10"></TH>';
+	echo '<TH width="100">Participation</TH>';
+	echo '<TH>Nom</TH>';
+	echo '<TH>Adresse</TH>';
+	echo '<TH>No Frat</TH>';
+	echo '</tr></thead>';
+	echo '<tbody>';
 	$Somme_Total = 0;
 	$resultat = mysqli_query($eCOM_db,  $requete );
 	while( $row = mysqli_fetch_assoc( $resultat ))
 	{
 		$trcolor = usecolor();
+		$td_click='onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=RenseignerParticipation&Qui_id='.$row['Individu_id'].'\')"';
+		if ($row['Participation'] > 0) { 
+			$fgcolorOk = ' class="table-success"'; // "green"
+		} else {
+			$fgcolorOk = '';
+		}
 		echo '<TR>';
+		echo '<TD></TD>';
+		echo '<TD align="right"  '.$td_click.'>'.$row['Participation'].' €</TD>';
 		if ($row['Participation'] != 0) { $fgcolor = "green"; } else { $fgcolor = "black"; };
-		echo '<TD align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2 color='.$fgcolor.'>'.$row['NoFrat'].'</FONT></TD>';
-		echo '<TD align="left" bgcolor='.$trcolor.'><FONT face=verdana size=2 color='.$fgcolor.'>';
-		Display_Photo($row['Nom'], $row['Prenom'], $row['Individu_id'], 2);
-		echo '</FONT></TD>';
-		echo '<TD align="left" bgcolor='.$trcolor.'><FONT face=verdana size=2 color='.$fgcolor.'>'.$row['Telephone'].'<BR>'.$row['e_mail'].'</FONT></TD>';
-		echo '<TD align="right" bgcolor='.$trcolor.'><FONT face=verdana size=2 color='.$fgcolor.'>'.$row['Participation'].'</FONT></TD>';
+
+		echo '<TD '.$fgcolorOk.'>';
+		fCOM_Display_Photo($row['Nom'], $row['Prenom'], $row['Individu_id'], "edit_Individu", true);
+		echo '</TD>';
+		echo '<TD '.$td_click.'>'.$row['Telephone'].'<BR>'.$row['e_mail'].'</TD>';
+		echo '<TD><A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$row['Frat_id'].'>'.$row['NoFrat'].'</A></TD>';
 		$Somme_Total = $Somme_Total +$row['Participation'];
 		echo '</TR>';
 	}
 	$trcolor = usecolor();
-	echo '<TR><TD bgcolor='.$trcolor.'></TD><TD  align="right" bgcolor='.$trcolor.'></TD><TD align="right" bgcolor='.$trcolor.'><FONT face=verdana size=2><B>Total is </B></FONT></TD><TD align="right" bgcolor='.$trcolor.'><FONT face=verdana size=2><B>'.sprintf("%01.2f",$Somme_Total).'</B></FONT></TD></TR>';
-	echo '</TABLE>';
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo "</tbody></TABLE>";
+	echo '<div class="alert alert-success">Total = <strong>'.$Somme_Total.' €</strong></div>';
+	fMENU_bottom();
 	exit;
 }
 
 if ( isset( $_GET['action'] ) AND $_GET['action']=="trombinoscope") {
 	Global $eCOM_db;
 	$debug = false;
-	address_top();
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	fMENU_top();
+	if ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
+		$Title='de l\'Aumônerie collège et lycée';
+	} elseif ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		$Title='des enfants du catéchisme';
+	} else {
+		$Title='des paroissiens';
+	}
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Trombinoscope de l\'Aumônerie collège et lycée</B><BR>';
+	echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Trombinoscope '.$Title.'</B><BR>';
 	echo '</TD></TR>';
 	echo '<TR><TD BGCOLOR="#EEEEEE">';
-	echo '<TABLE>';
+	//echo '<TABLE>';
 	
-	$Activite_id = 26; // Aumônerie Lycée et collège
+	//$Activite_id = 26; // Aumônerie Lycée et collège
 	$criteria = "T0.`Detail`";
 	$order = "DESC";
 	$ComplementRequete = ' AND MID(T0.`Session`,1,4)="'.$_SESSION["Session"].'" ';
 
-	$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T2.`SS_Session` AS SS_Session, T2.`NoFrat`, T2.`date` AS Date, T3.`Lieu` As Lieu, T1.`id` AS Individu_id, T1.`Prenom` AS Prenom, T1.`Nom` as Nom, T0.`Participation` AS Participation, T1.`Adresse`, T1.`e_mail`, T1.`Telephone`, T0.`Detail` AS Classe, T4.`e_mail` As AdressPere, Concat(T4.`e_mail`, " ", T5.`e_mail`) AS ParentAddress
+	if (($_SESSION["Activite_id"] == 26) OR // Aumônerie Lycée et collège
+		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+		$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T2.`SS_Session` AS SS_Session, T2.`NoFrat`, T2.`date` AS Date, T3.`Lieu` As Lieu, T1.`id` AS Individu_id, T1.`Prenom` AS Prenom, T1.`Nom` as Nom, T0.`Participation` AS Participation, T1.`Adresse`, T1.`e_mail`, T1.`Telephone`, T0.`Detail` AS Classe, T4.`e_mail` As AdressPere, Concat(T4.`e_mail`, " ", T5.`e_mail`) AS ParentAddress
 		FROM `QuiQuoi` T0 
 		LEFT JOIN `Individu` T1 on T1.`id`= T0.`Individu_id` 
 		LEFT JOIN `Individu` T4 on T4.`id`=T1.`Pere_id`
@@ -1776,33 +1737,55 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="trombinoscope") {
 		LEFT JOIN `Lieux` T3 ON T2.`Lieu_id`=T3.`id`
 		WHERE T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=1 '.$ComplementRequete.'
 		ORDER BY '.$criteria.' '.$order.' ';
+		$Titre_Famille='Classe';
+	} else {
+		$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T2.`SS_Session` AS SS_Session, T2.`NoFrat`, T2.`date` AS Date, T3.`Lieu` As Classe, T1.`id` AS Individu_id, T1.`Prenom` AS Prenom, T1.`Nom` as Nom, T0.`Participation` AS Participation, T1.`Adresse`, T1.`e_mail`, T1.`Telephone`, "" As AdressPere, "" AS ParentAddress
+		FROM `QuiQuoi` T0 
+		LEFT JOIN `Individu` T1 on T1.`id`= T0.`Individu_id` 
+		LEFT JOIN `Fraternite` T2 ON T2.`id`=T0.`Engagement_id`
+		LEFT JOIN `Lieux` T3 ON T0.`Lieu_id`=T3.`id`
+		WHERE T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=2 '.$ComplementRequete.'
+		ORDER BY '.$criteria.' '.$order.' ';
+		$Titre_Famille='Lieu';
+	}
+	
 	$resultat = mysqli_query($eCOM_db,  $requete );
-	$compteur = 0;
 	$MemoClasse= "";
+	echo '<div class="card-block">';
+	echo '<div class="row">';
 	while( $row = mysqli_fetch_assoc( $resultat )) {
-		if ($compteur > 5 OR $MemoClasse != $row['Classe']) {
-			echo "</TR><TR>";
-			$compteur = 0;
+		if ($MemoClasse != $row['Classe']) {
+			echo '</div><div class="row">';
 			$MemoClasse = $row['Classe'];
 		}
-		$compteur = $compteur + 1;
-					
-		echo '<TD valign="top"><A HREF='.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$row['Individu_id'].'>';	
+		
+		$Classe = $row['Classe'];
+		$Nom = $row['Prenom']." ".$row['Nom'];
+		
+		//echo '<TD valign="top"><A 
+		$HREF=$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$row['Individu_id'];	
 		if (file_exists("Photos/Individu_".$row['Individu_id'].".jpg")) { 
-			echo '<IMG SRC="Photos/Individu_'.$row['Individu_id'].'.jpg" HEIGHT=150 border="1"></A>';		
+			$Photo = 'Photos/Individu_'.$row['Individu_id'].'.jpg';		
 		} else {
-			echo '<IMG SRC="Photos/Individu_NULL.jpg" HEIGHT=150 border="1"></A>';
+			$Photo = 'Photos/Individu_NULL.jpg';
 		}
-		echo "<BR><FONT face=verdana size=2>".$row['Prenom']." ".$row['Nom']."</FONT><BR>";
-		if ($row['Classe'] == "" ) {
-			echo "<FONT face=verdana size=1>La classe n'est pas renseignée</FONT></TD>";
-		} else {
-			echo "<FONT face=verdana size=2>classe de ".$row['Classe']."</FONT></TD>";
-		}
+
+		echo '<div class="col">';
+		echo '<div class="card" style="width:150px">';
+		//echo '<div class="card">';
+		echo '<A href='.$HREF.'><img class="card-img-top" src="'.$Photo.'" alt="Pas de photo"></A>';
+		echo '<div class="card-block">';
+		echo '<h6 class="card-title">'.$Nom.'</h6>';
+		echo '<p class="card-text">'.$Titre_Famille.' : '.$Classe.'</p>';
+		echo '</div>';
+		echo '</div>';
+		echo '</div>';
+
 	}
-	echo "</TR></TABLE>";
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	echo '</div>';
+	echo '</div>';
+	echo "</TD></TR></TABLE>";
+	fMENU_bottom();
 	exit;
 }
 
@@ -1813,7 +1796,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Inviter") {
 	// Tous les enfants >= 12 ans et moins de 18 qui ont déjà été baptisés et qui n'ont pas remis les pieds au aumônerie
 	Global $eCOM_db;
 	$debug = False;
-	address_top();
+	fMENU_top();
 	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Invité</B><BR>';
@@ -1861,7 +1844,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Inviter") {
 		echo '<TR>';
 
 		echo '<TD bgcolor='.$trcolor.'>';
-		echo fCOM_Display_Photo($row['Nom'], $row['Prenom'], $row['id'], "2", True);
+		fCOM_Display_Photo($row['Nom'], $row['Prenom'], $row['id'], "edit_Individu", True);
 		echo '</TD>';
 		
 		echo '<TD bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$row['Age'].'</FONT></TD>';
@@ -1879,8 +1862,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Inviter") {
 	fclose($handle_Parent);
 		
 	echo "</TABLE>";
-	fCOM_address_bottom();
-	mysqli_close($eCOM_db);
+	fMENU_bottom();
 	exit;
 }
 
@@ -1894,231 +1876,303 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Inviter") {
 
 function personne_list ($resultat, $Classe_order, $order) {
 	Global $eCOM_db;
-	global $debug;
+	Global $Titre_Accompagnateur, $Fct_Accompagnateur_actif, $Fct_Frat_actif;
 	$debug = false;
-	require("Login/sqlconf.php");
-	address_top(); 
 
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+	$TD_Click="";
+	$SimpleFraternite = false;
 	if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
-		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Liste des Invités</B><BR>';
+		fMENU_Title("Liste des Invités :");
+	} elseif ($_SESSION["Activite_id"] == 26) { // Aumônerie Lycée et collège
+		fMENU_Title("Liste des enfants de l'aumônerie :");
+	} elseif ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+		fMENU_Title("Liste des enfants de la cathéchèse :");
 	} else {
-		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Liste des Inscrits</B><BR>';
+		fMENU_Title("Liste des participants :");
+		$SimpleFraternite = true;
 	}
-	echo '</TD></TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE">';
 
-	echo "<TABLE>";
+	if ($SimpleFraternite) {
+		echo '<table id="TableauSansTriero" class="table table-striped table-hover table-sm" width="100%" cellspacing="0">';
+	} else {
+		echo '<table id="TableauTrier" class="table table-striped table-hover table-sm">';
+	}
+	
 	$trcolor = "#EEEEEE";
+	echo '<thead><tr>';
 	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		($_SESSION["Activite_id"] == 22) || // Emmaüs
 		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2></font></TH>';
+		//echo '<TH></TH>';
 	}
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=NoFrat&order='.$order.'">No Frat</A></font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Prenom&order='.$order.'">Prénom</A></font></TH>';
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Nom&order='.$order.'">Nom</A></font></TH>';
+	
+	if ($SimpleFraternite){
+		echo '<TH>Statut</TH>';  // Service ou Ressourcement
+		
+		$requete = 'SELECT Nom
+					FROM `Activites` 
+					WHERE id='.$_SESSION["Activite_id"];
+		$resultat2 = mysqli_query($eCOM_db,  $requete );
+		$Row_Activite = mysqli_fetch_assoc( $resultat2);
+		
+		$temp_AuService = "load/ListeMail_Activite_Au_Service.php";
+		$handle_AuService = fopen($temp_AuService, 'w');
+		fCOM_PrintFile_Init($handle_AuService, 'Liste adresses mail des paroissiens au service '.$Row_Activite['Nom']);
+		
+		$temp_EnRessource = "load/ListeMail_Activite_En_Ressourcement.php";
+		$handle_EnRessource = fopen($temp_EnRessource, 'w');
+		fCOM_PrintFile_Init($handle_EnRessource, 'Liste adresses mail des paroissiens en ressourcement '.$Row_Activite['Nom']);
+	}
+	
+	echo '<TH> </TH>';
+	if ($Fct_Frat_actif) {
+		echo '<TH>No Frat</TH>';
+	}
+	
+	echo '<TH>Nom</TH>';
 	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=T0.`Detail`&order='.$order.'">Jour</A></font></TH>';
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Lieu&order='.$order.'">Lieu</A></font></TH>';
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=T0.`Detail`&order='.$order.'">Ecole</A></font></TH>';
+		echo '<TH>Jour</TH>';
+		echo '<TH>Lieu</TH>';
+		echo '<TH>Ecole</TH>';
 	}	
 	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=T0.`Detail`&order='.$order.'">Classe</A></font></TH>';
+		echo '<TH>Classe</TH>';
 	}
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Tel / e_Mail ';
+	echo '<TH>Tel / e_Mail ';
 	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
 		echo '<A HREF="load/ListeMail_Parents.php">Parents</A>';
 		setlocale(LC_TIME, "fr_FR");
 		$temp_Parent = "load/ListeMail_Parents.php";
 		$handle_Parent = fopen($temp_Parent, 'w');
-		fwrite($handle_Parent, "<HTML><HEAD><TITLE>Liste adresses mail des parents</TITLE></HEAD><BODY><br>");
+		fCOM_PrintFile_Init($handle_Parent, 'Liste adresses mail des parents');
 		$TreatedName = ""; // mise à zéro pour éviter erreur
-		fwrite($handle_Parent, "<h1><FONT face=verdana>Liste des adresses mail des parents : ".$TreatedName."</FONT></h1>\r\n");
-		fwrite($handle_Parent, "<FONT face=verdana size=2>");
-		fwrite($handle_Parent, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>");
-		fwrite($handle_Parent, "<p>===================================================</p><br><TABLE>");
-		fwrite($handle_Parent, "<FONT face=verdana size=2>");
-	}
-	echo '</font></TH>';
-	
-	echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Adresse</font></TH>';
-	//echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Accompagnateur&order='.$order.'">Accompagnateurs</A></font></TH>';
-	if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Catéchiste</font></TH>';
 	} else {
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2>Accompagnateurs</font></TH>';
+		echo '<A HREF="load/ListeMail_Paroissien.php">Paroissiens</A>';
+		setlocale(LC_TIME, "fr_FR");
+		$temp_Paroissien = "load/ListeMail_Paroissien.php";
+		$handle_Paroissien = fopen($temp_Paroissien, 'w');
+		fCOM_PrintFile_Init($handle_Paroissien, 'Liste adresses mail des paroissiens');
+		$TreatedName = ""; // mise à zéro pour éviter erreur
+	}
+	echo '</TH>';
+	
+	echo '<TH>Adresse</TH>';
+	//echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Accompagnateur&order='.$order.'">Accompagnateurs</A></font></TH>';
+	if ($Fct_Accompagnateur_actif) { 
+		echo '<TH>'.$Titre_Accompagnateur.'s</TH>';
 	}
 	if ($_SESSION["Session"]=="All") {
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Session&order='.$order.'">Session</A></font></TH>';
+		echo '<TH>Session</TH>';
 	}
 	if ($_SESSION["Activite_id"] != 12) { // Cathéchèse, car déjà printer
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Lieu&order='.$order.'">Lieu</A></font></TH>';
+		echo '<TH>Lieu</TH>';
 	}
 	if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
-		echo '<TH bgcolor='.$trcolor.'><font face=verdana size=2><A HREF="'.$_SERVER['SCRIPT_NAME'].'?criteria=Date&order='.$order.'">Date</A></font></TH>';
+		echo '<TH>Date</TH>';
 	}
+	echo '</tr></thead>';
+	echo '<tbody>';
 	
 	$debug = true;
 	pCOM_DebugInit($debug);
 	
+	$Memo_Titre_Parcours="";
 	$Memo_Classe="NULL";
 	$Activite_id=$_SESSION["Activite_id"];
 	while( $enregistrement = mysqli_fetch_assoc( $resultat ))
 	{
 		$debug = False;
   
-			$trcolor = usecolor();
+		$trcolor = usecolor();
+		echo '<TR>';
+
+		if ($_SESSION["Activite_id"] == 26 AND 
+			$Classe_order == TRUE AND 
+			$Memo_Classe != $enregistrement['Classe']) { // Aumônerie Lycée et collège
+			if ( $Memo_Classe != "NULL" ) {
+				fclose($handle_ParentClasse);
+				fclose($handle_EnfantClasse);
+			}
+			$Memo_Classe = $enregistrement['Classe'];
 			echo '<TR>';
-		
-			// $Qui			-> "Participant"
-			// $Qui_id		-> Individu[id]
-			// $Invite_id	-> Engagement_id
-			if ($_SESSION["Activite_id"] == 26 AND $Classe_order == TRUE AND $Memo_Classe != $enregistrement['Classe']) { // Aumônerie Lycée et collège
-				if ( $Memo_Classe != "NULL" ) {
-					fclose($handle_ParentClasse);
-					fclose($handle_EnfantClasse);
-				}
-				$Memo_Classe = $enregistrement['Classe'];
-				echo '<TR>';
-				echo '<TD align="left" bgcolor="#A1A1A1" colspan=9><font face=verdana size=2>Enfants classe de '.$Memo_Classe.' -> E_mail <A HREF="load/ListeMail_Parents'.fCOM_stripAccents($enregistrement['Classe']).'.php">Parents</A> <A HREF="load/ListeMail_Enfant'.fCOM_stripAccents($enregistrement['Classe']).'.php">Enfants</A></font>';
-				echo '</TD></TR>';
+			echo '<TD> </TD>';
+			echo '<TD align="left" bgcolor="#A1A1A1" colspan=9><font face=verdana size=2>Enfants classe de '.$Memo_Classe.' -> E_mail <A HREF="load/ListeMail_Parents'.fCOM_stripAccents($enregistrement['Classe']).'.php">Parents</A> <A HREF="load/ListeMail_Enfant'.fCOM_stripAccents($enregistrement['Classe']).'.php">Enfants</A></font>';
+			echo '</TD></TR>';
 				
-				// Parent Classe
-				$temp_ParentClasse = "load/ListeMail_Parents".fCOM_stripAccents($enregistrement['Classe']).".php";
-				$handle_ParentClasse = fopen($temp_ParentClasse, 'w');				
-				fwrite($handle_ParentClasse, "<HTML><HEAD><TITLE>Liste adresses mail des parents</TITLE></HEAD><BODY><BR>");
-				$TreatedName = ""; // mise à zéro pour éviter erreur
-				fwrite($handle_ParentClasse, "<h1><FONT face=verdana>Liste des adresses mail des parents<BR>enfants de la classe de : ".$enregistrement['Classe']."</FONT></h1>");
-				fwrite($handle_ParentClasse, "<FONT face=verdana size=2>");
-				fwrite($handle_ParentClasse, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>\r\n");
-				fwrite($handle_ParentClasse, "<p>===================================================</p><br><TABLE>");
-				fwrite($handle_ParentClasse, "<FONT face=verdana size=2>");
+			// Parent Classe
+			$temp_ParentClasse = "load/ListeMail_Parents".fCOM_stripAccents($enregistrement['Classe']).".php";
+			$handle_ParentClasse = fopen($temp_ParentClasse, 'w');
+			fCOM_PrintFile_Init($handle_ParentClasse, 'Liste adresses mail des parents<BR>enfants de la classe de : '.$enregistrement['Classe'].'');
+			$TreatedName = ""; // mise à zéro pour éviter erreur
 				
-				// Enfant Classe
-				$temp_EnfantClasse = "load/ListeMail_Enfant".fCOM_stripAccents($enregistrement['Classe']).".php";
-				$handle_EnfantClasse = fopen($temp_EnfantClasse, 'w');				
-				fwrite($handle_EnfantClasse, "<HTML><HEAD><TITLE>Liste adresses mail des enfants</TITLE></HEAD><BODY><br>");
-				$TreatedName = ""; // mise à zéro pour éviter erreur
-				fwrite($handle_EnfantClasse, "<h1><FONT face=verdana>Liste des adresses mail<BR>enfants de la classe de : ".$enregistrement['Classe']."</FONT></h1>");
-				fwrite($handle_EnfantClasse, "<FONT face=verdana size=2>");
-				fwrite($handle_EnfantClasse, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>");
-				fwrite($handle_EnfantClasse, "<p>===================================================</p><br><TABLE>");
-				fwrite($handle_EnfantClasse, "<FONT face=verdana size=2>");
-			}
-
-			if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-				($_SESSION["Activite_id"] == 22) || // Emmaüs
-				($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-				
-				echo '<TD align="center" bgcolor='.$trcolor.'>';
-				echo ' <A HREF='.$_SERVER['PHP_SELF'].'?action=RenseignerParticipation&Qui_id='.$enregistrement['Individu_id'].'&Qui=Participant TITLE="Modifier Inscription"><img src="images/edit.gif": border=0 alt="Modifier participation financière">';
-				echo '<em><span></span>';
-				echo "</em></A></TD>";
-			}
+			// Enfant Classe
+			$temp_EnfantClasse = "load/ListeMail_Enfant".fCOM_stripAccents($enregistrement['Classe']).".php";
+			$handle_EnfantClasse = fopen($temp_EnfantClasse, 'w');
+			fCOM_PrintFile_Init($handle_EnfantClasse, 'Liste adresses mail des enfants de la classe de : '.$enregistrement['Classe'].'');
+			$TreatedName = ""; // mise à zéro pour éviter erreur
 			
-			// No frat
-			//--------
-			if ($enregistrement['Participation'] != 0) { $fgcolor = "green"; } else { $fgcolor = "black"; };
+		} else {
+			// au Service ou en Ressourcement
+			if ($SimpleFraternite){
+				echo '<TD>';
+				if ($enregistrement['Serv_ou_Ress'] == 2) {
+					echo 'Au Service -> <A HREF="load/ListeMail_Activite_Au_Service.php">Liste e_mail</A>'  ;
+				} else {
+					echo 'En Ressourcement -> <A HREF="load/ListeMail_Activite_En_Ressourcement.php">Liste e_mail</A>';
+				}
+				echo '</TD>';
+				echo '<TD> </TD>';
+			} else {
+				echo '<TD> </TD>';
+			}
+		}
 
+		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
+			($_SESSION["Activite_id"] == 22) || // Emmaüs
+			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+			$TD_Click=' onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=RenseignerParticipation&Qui_id='.$enregistrement['Individu_id'].'\')"';
+		} elseif ($SimpleFraternite AND fCOM_Get_Autorization($enregistrement['Individu_id']) >= 20) {
+			$TD_Click=' onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$enregistrement['Individu_id'].'\')"';
+		} elseif ($SimpleFraternite){
+			$TD_Click='';
+		} else {
+			$TD_Click=' onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=RenseignerParticipation&Qui_id='.$enregistrement['Individu_id'].'\')"';
+		}
+		
+
+		
+		// No frat
+		//--------
+		if ($enregistrement['Participation'] != 0) { $fgcolor = "green"; } else { $fgcolor = "black"; };
+		
+		if ($Fct_Frat_actif) {
 			if ($enregistrement['NoFrat'] == "") {
 				$FratNum="-";
 			} else {
 				$FratNum=$enregistrement['NoFrat'];
 			}
+
 			if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 				($_SESSION["Activite_id"] == 22) || // Emmaüs
 				($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-				echo '<TD align="center" bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'><A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$enregistrement['Frat_id'].'>'.$FratNum.'</font></A></TD>';
+				echo '<TD '.$TD_Click.'><A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$enregistrement['Frat_id'].'>'.$FratNum.'</A></TD>';
 			} else {
-				echo '<TD align="center" bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'><A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$enregistrement['id'].'>'.$FratNum.'</font></A></TD>';
+				echo '<TD><A HREF='.$_SERVER['PHP_SELF'].'?action=edit&id='.$enregistrement['id'].'>'.$FratNum.'</A></TD>';
 			}
+		}	
+		
+		// Nom
+		//--------
+		if ($enregistrement['Participation'] != 0) { $fgcolor = "green"; } else { $fgcolor = "black"; };
+		echo '<TD>';
+		fCOM_Display_Photo($enregistrement['Nom'], $enregistrement['Prenom'], $enregistrement['Individu_id'], "edit_Individu", true);
+		echo '</font></TD>';
 			
-			// Prénom
-			//--------
-			if ($enregistrement['Participation'] != 0) { $fgcolor = "green"; } else { $fgcolor = "black"; };
+		// Lieux
+		//-------
+		if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
+			echo '<TD '.$TD_Click.'>'.fCOM_Get_JourSemaine($enregistrement['Jour']).'</TD>';
+			echo '<TD '.$TD_Click.'>'.$enregistrement['Lieu'].'</TD>';
+			echo '<TD '.$TD_Click.'>'.$enregistrement['Ecole'].'</TD>';
+		}
 			
-			//echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Prenom'].'</font></TD>';
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>';
-			Display_Photo("", $enregistrement['Prenom'], $enregistrement['Individu_id'], 2);
-			echo '</font></TD>';
+		// Classe
+		//--------
+		$fgcolor = "black";
+		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
+			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+			echo '<TD '.$TD_Click.'>'.$enregistrement['Classe'].'<BR>';
+		}
 			
-			// Nom
-			//--------
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Nom'].'</font></TD>';
-			
-			// Lieux
-			//-------
-			if ($_SESSION["Activite_id"] == 12) { // Cathéchèse
-				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.fCOM_Get_JourSemaine($enregistrement['Jour']).'</font></TD>';
-				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Lieu'].'</font></TD>';
-				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Ecole'].'</font></TD>';
-			}
-			
-			// Classe
-			//--------
-			$fgcolor = "black";
-			if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-				($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Classe'].'<BR>';
-			}
-			
-			// Telephone / Mail
-			//-----------------
-			echo '<TD width=150 bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Telephone'].'<BR>';
-			echo '<A HREF="mailto:'.$enregistrement['e_mail'].'?subject= Paroisse ND Sagesse : " TITLE="Envoyer un mail a '.$enregistrement['Prenom'].' '.$enregistrement['Nom'].'">'.$enregistrement['e_mail'].'</A></font></TD>';
-			if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-				($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-				if ( $enregistrement['ParentAddress'] != "" ) {
-					fwrite($handle_Parent, '"Parents de '.Securite_html($enregistrement['Prenom']).' '.Securite_html($enregistrement['Nom']).'"< '.format_email_list(Securite_html($enregistrement['ParentAddress']), ">;< ").'>; ');
-					if ( $Memo_Classe != "NULL" ) {
-						fwrite($handle_ParentClasse, '"Parents de '.Securite_html($enregistrement['Prenom']).' '.Securite_html($enregistrement['Nom']).'"< '.format_email_list(Securite_html($enregistrement['ParentAddress']), ">;< ").'>; ');
+		// Telephone / Mail
+		//-----------------
+		echo '<TD '.$TD_Click.'>'.$enregistrement['Telephone'].'<BR>';
+		echo '<A HREF="mailto:'.$enregistrement['e_mail'].'?subject= Paroisse ND Sagesse : " TITLE="Envoyer un mail a '.$enregistrement['Prenom'].' '.$enregistrement['Nom'].'">'.$enregistrement['e_mail'].'</A></font></TD>';
+		if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
+			($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+			if ( $enregistrement['ParentAddress'] != "" ) {
+				fwrite($handle_Parent, '"Parents de '.Securite_html($enregistrement['Prenom']).' '.Securite_html($enregistrement['Nom']).'"< '.format_email_list(Securite_html($enregistrement['ParentAddress']), ">;< ").'>; ');
+				if ( $Memo_Classe != "NULL" ) {
+					fwrite($handle_ParentClasse, '"Parents de '.Securite_html($enregistrement['Prenom']).' '.Securite_html($enregistrement['Nom']).'"< '.format_email_list(Securite_html($enregistrement['ParentAddress']), ">;< ").'>; ');
 
-					}
-				}
-				if ( $enregistrement['e_mail'] != "" ) {
-					$debug=true;
-					if ( $Memo_Classe != "NULL" ) {
-						pCOM_DebugAdd($debug, "Fraternité:liste Enfant=".$enregistrement['Prenom']." ".$enregistrement['Nom']);
-						fwrite($handle_EnfantClasse, '"'.$enregistrement['Prenom'].' '.$enregistrement['Nom'].'"< '.format_email_list($enregistrement['e_mail'], ">;< ").'>; ');
-						//fwrite($handle_EnfantClasse, '"'.$enregistrement['Nom'].'"< '.format_email_list($enregistrement['e_mail'], ">;< ").'>; ');
-					}
 				}
 			}
-			//echo '<font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['e_mail'].'</font></TD>';
+			if ( $enregistrement['e_mail'] != "" ) {
+				$debug=true;
+				if ( $Memo_Classe != "NULL" ) {
+					pCOM_DebugAdd($debug, "Fraternité:liste Enfant=".$enregistrement['Prenom']." ".$enregistrement['Nom']);
+					fwrite($handle_EnfantClasse, '"'.$enregistrement['Prenom'].' '.$enregistrement['Nom'].'"< '.format_email_list($enregistrement['e_mail'], ">;< ").'>; ');
+					//fwrite($handle_EnfantClasse, '"'.$enregistrement['Nom'].'"< '.format_email_list($enregistrement['e_mail'], ">;< ").'>; ');
+				}
+			}
+		} else {
+			
+			// au Service ou en Ressourcement
+			if ($SimpleFraternite){
+				if ($enregistrement['Serv_ou_Ress'] == 2) {
+					$Ref_Handle = $handle_AuService;
+				} else {
+					$Ref_Handle = $handle_EnRessource;
+				}
+			} else {
+				$Ref_Handle = $handle_Paroissien;
+			}
+						
+			if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
+				$Titre_Parcours = 'Parcours : '.$enregistrement['Lieu'];
+				if (strftime("%d/%m/%y", fCOM_sqlDateToOut($enregistrement['Date'])) == "01/01/70" ) {
+					$DateParcours='-';
+				} else {
+					setlocale(LC_TIME,"fr_FR");
+					if (intval(substr($enregistrement['Date'], 11, 2))>17 ) {
+						$DateParcours= ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($enregistrement['Date'])))." soir";
+					} elseif (intval(substr($enregistrement['Date'], 11, 2))>13 ) {
+						$DateParcours= ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($enregistrement['Date'])))." après-midi";
+					} elseif (intval(substr($enregistrement['Date'], 11, 2))>11 ) {
+						$DateParcours= ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($enregistrement['Date'])))." midi";
+					} else {
+						$DateParcours= ucwords(strftime("(%b) %A", fCOM_sqlDateToOut($enregistrement['Date'])))." matin";
+					}
+				}
+				$Titre_Parcours = $Titre_Parcours.' '.$DateParcours; 
+				if ($Memo_Titre_Parcours != $Titre_Parcours) {
+					fwrite($Ref_Handle, '<BR><BR><BR><B>'.$Titre_Parcours.'</B><BR>');
+					$Memo_Titre_Parcours = $Titre_Parcours;
+				}			
+			}
+			
+			fCOM_PrintFile_Email($Ref_Handle, $enregistrement['Prenom'].' '.$enregistrement['Nom'], $enregistrement['e_mail']);
+		}
 
-			// Adresse
-			//--------
-			echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2 color='.$fgcolor.'>'.$enregistrement['Adresse'].'</font></TD>';
+		// Adresse
+		//--------
+		echo '<TD '.$TD_Click.'>'.$enregistrement['Adresse'].'</TD>';
 	
-			// Chercher les accompagnateurs
-			if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
-				($_SESSION["Activite_id"] == 22) || // Emmaüs
-				($_SESSION["Activite_id"] == 12)) { // Cathéchèse
+		// Chercher les accompagnateurs
+		if ($Fct_Accompagnateur_actif) {
+			if ($_SESSION["Activite_id"] != 4) { // Parcours Alpha
 				if ( $enregistrement['Frat_id'] > 0 ) {
 					$requete = 'SELECT T0.`id`, T1.`Nom`, T1.`Prenom`, T1.`Sex`, T1.`e_mail`, T1.`Adresse`, T1.`Telephone` 
-							FROM `QuiQuoi` T0 
-							LEFT JOIN `Individu` T1 ON T1.`id` = T0.`Individu_id` 
-							WHERE T0.`Activite_id`='.$Activite_id.' and T0.`Engagement_id`='.$enregistrement['Frat_id'].' and T0.`QuoiQuoi_id`=2 
-							ORDER BY T1.`Nom`, T1.`Sex` DESC';
+						FROM `QuiQuoi` T0 
+						LEFT JOIN `Individu` T1 ON T1.`id` = T0.`Individu_id` 
+						WHERE T0.`Activite_id`='.$Activite_id.' and T0.`Engagement_id`='.$enregistrement['Frat_id'].' and T0.`QuoiQuoi_id`=2 
+						ORDER BY T1.`Nom`, T1.`Sex` DESC';
 				}
 			} else {
 				$requete = 'SELECT T0.`id`, T1.`Nom`, T1.`Prenom`, T1.`Sex`, T1.`e_mail`, T1.`Adresse`, T1.`Telephone`
-						FROM `QuiQuoi` T0 
-						LEFT JOIN `Individu` T1 ON T1.`id` = T0.`Individu_id` 
-						WHERE T0.`Activite_id`='.$Activite_id.' and T0.`Engagement_id`='.$enregistrement['id'].' and T0.`QuoiQuoi_id`=2 
-						ORDER BY T1.`Nom`, T1.`Sex` DESC';
+					FROM `QuiQuoi` T0 
+					LEFT JOIN `Individu` T1 ON T1.`id` = T0.`Individu_id` 
+					WHERE T0.`Activite_id`='.$Activite_id.' and T0.`Engagement_id`='.$enregistrement['id'].' and T0.`QuoiQuoi_id`=2 
+					ORDER BY T1.`Nom`, T1.`Sex` DESC';
 			}
-			//debug($requete . "<BR>\n");
+
 			if ($enregistrement['Frat_id'] > 0) {
 				$resultat2 = mysqli_query($eCOM_db,  $requete );
-				echo '<TD bgcolor='.$trcolor.'><font face=verdana size=2>';
+				echo '<TD '.$TD_Click.'>';
 				$Nom = "@@@";
-				while( $Row_Accomp = mysqli_fetch_assoc( $resultat2))
-				{
+				while( $Row_Accomp = mysqli_fetch_assoc( $resultat2)) {
 					if ($Nom == $Row_Accomp['Nom']) {
 						echo " et ".$Row_Accomp['Prenom']."";
 					} else {
@@ -2127,77 +2181,46 @@ function personne_list ($resultat, $Classe_order, $order) {
 						$Nom = $Row_Accomp['Nom'];
 					}
 				}
-				echo '</font></TD>';
+				echo '</TD>';
 			} else {
-				echo '<TD bgcolor='.$trcolor.'></TD>';
+				echo '<TD></TD>';
 			}
-
-			// Affichage de la session
-			if ($_SESSION["Session"]=="All") {
-				//echo '<TD align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$enregistrement[Session].' '.$enregistrement[SS_Session].' </FONT></TD>';
-			//} elseif ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
-			//	echo '<TD align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$enregistrement[SS_Session].' </FONT></TD>';
-			//} else {
-				echo '<TD align="center" bgcolor='.$trcolor.'><FONT face=verdana size=2>'.$enregistrement['Session'].' </FONT></TD>';
-			}
+		}
 		
-			if ($_SESSION["Activite_id"] != 12) { // Cathéchèse
-				echo '<TD width=110 bgcolor='.$trcolor.'><font face=verdana size=2>'.$enregistrement['Lieu'].'</font></TD>';
-			}
+		// Affichage de la session
+		if ($_SESSION["Session"]=="All") {
+			echo '<TD '.$TD_Click.'>'.$enregistrement['Session'].'</TD>';
+		}
+		
+		if ($_SESSION["Activite_id"] != 12) { // Cathéchèse
+			echo '<TD '.$TD_Click.'>'.$enregistrement['Lieu'].'</TD>';
+		}
 
-			if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
-			
-				if (strftime("%d/%m/%y", sqlDateToOut($enregistrement['Date'])) == "01/01/70" ) {
-					echo '<TD width=90 bgcolor='.$trcolor.'><FONT face=verdana size=2>';
-					echo '<FONT face=verdana size=2>-</FONT></TD>';
-				} else {
-					echo '<TD width=100 align="left" bgcolor='.$trcolor.'><FONT face=verdana size=2>';
-					setlocale(LC_TIME,"fr_FR");
-					echo ucwords(strftime("%B", sqlDateToOut($enregistrement['Date'])));
-
-					if (intval(strftime("%k", sqlDateToOut($enregistrement['Date'])))>17 ) {
-						echo " Soirée";
-					} elseif (intval(strftime("%k", sqlDateToOut($enregistrement['Date'])))>13 ) {
-						echo " Après-midi";
-					} elseif (intval(strftime("%k", sqlDateToOut($enregistrement['Date'])))>11 ) {
-						echo " Midi";
-					} else {
-						echo " Matin";
-					}
-					echo '</FONT></TD>';
-				}
-			}
-			echo '</TR>';
-			//echo "<!-- /PERSONNE -->";
-		//}
+		if ($_SESSION["Activite_id"] == 4) { // Parcours Alpha
+			echo '<TD align="left">';
+			echo $DateParcours;
+			echo '</FONT></TD>';
+		}
+		echo '</TR>';
 	}
-	echo '</TABLE>'; 
+	echo "</tbody></TABLE>";
+	
 	if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-		fwrite($handle_Parent, "</TD></TR><TR><TD><BR><BR></TD></TR>");
-		fwrite($handle_Parent, "<TR><TD><FONT face=verdana size=2>");
-		fwrite($handle_Parent, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-		fwrite($handle_Parent, "</FONT></TD></TR></TABLE>");
-		fwrite($handle_Parent, "</BODY></HTML>");
+		fCOM_PrintFile_End($handle_Parent);
 		fclose($handle_Parent);
-	}		
-	if ( $_SESSION["Activite_id"] == 26 AND $Classe_order == TRUE AND $Memo_Classe != "NULL" ) { // Aumônerie Lycée et collège
-		fwrite($handle_ParentClasse, "</TD></TR><TR><TD><BR><BR></TD></TR>");
-		fwrite($handle_ParentClasse, "<TR><TD><FONT face=verdana size=2>");
-		fwrite($handle_ParentClasse, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-		fwrite($handle_ParentClasse, "</FONT></TD></TR></TABLE>");
-		fwrite($handle_ParentClasse, "</BODY></HTML>");
-		fclose($handle_ParentClasse);
-			
-		fwrite($handle_EnfantClasse, "</TD></TR><TR><TD><BR><BR></TD></TR>");
-		fwrite($handle_EnfantClasse, "<TR><TD><FONT face=verdana size=2>");
-		fwrite($handle_EnfantClasse, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-		fwrite($handle_EnfantClasse, "</FONT></TD></TR></TABLE>");
-		fwrite($handle_EnfantClasse, "</BODY></HTML>");
-		fclose($handle_EnfantClasse);
-	}
 
-	fCOM_address_bottom();	
+		if ( $_SESSION["Activite_id"] == 26 AND $Classe_order == TRUE AND $Memo_Classe != "NULL" ) { // Aumônerie Lycée et collège
+			fCOM_PrintFile_End($handle_ParentClasse);
+			fclose($handle_ParentClasse);
+		
+			fCOM_PrintFile_End($handle_EnfantClasse);
+			fclose($handle_EnfantClasse);
+		}
+	} else {
+		fCOM_PrintFile_End($handle_Paroissien);
+		fclose($handle_Paroissien);
+	}
 
 }
 
@@ -2205,48 +2228,31 @@ function personne_list ($resultat, $Classe_order, $order) {
 // Début --------------------------------------------------------------------------------------------------------------------------
 // ==================================================================
 
-echo '<HTML><HEAD>';
-echo '<TITLE>Database Fraternite</TITLE>';
-echo '</HEAD>';
-echo '<BODY>';
+fMENU_top();
 
 Global $eCOM_db;
 $debug = False;
 $_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
 
-// Connexion au serveur MySQL
-//require("Login/sqlconf.php");
-
-//mysql_connect( $sqlserver , $login , $password ) 
-//or die( 'Connexion au serveur [<FONT COLOR=RED>Impossible</FONT> ]' ) ;
-//debug('Connexion au serveur [ <FONT COLOR=GREEN>OK</FONT> ]<BR>');
-
-// Sélection de la base de données
-
-//@mysql_select_db( $sqlbase )
-//mysql_select_db( $sqlbase )
-//or die( 'Sélection de la base de donnée [<FONT COLOR=RED>Impossible</FONT> ]' ) ;
-//debug('Connexion à la base de donnée  [ <FONT COLOR=GREEN>OK</FONT> ]<BR>');
-
 $Classe_order = False;
 if (!isset($_GET['criteria'])) {
-	$criteria='Nom';
+	$criteria='Date, Lieu, Nom';
 } else {
 	$criteria=$_GET['criteria'];
 	if ( strpos($criteria, "`Detail`") !== False ) {
 		$Classe_order = True;
 	}
 }
-if (!isset($_GET['order'])) {
-	$order='DESC';
-} else {
-	$order=$_GET['order'];
-}
+//if (!isset($_GET['order'])) {
+//	$order='DESC';
+//} else {
+//	$order=$_GET['order'];
+//}
 
+$Activite_id=$_SESSION["Activite_id"];
 if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 	($_SESSION["Activite_id"] == 22) || // Emmaüs
 	($_SESSION["Activite_id"] == 12)) { // Cathéchèse
-	$Activite_id=$_SESSION["Activite_id"];
 	
 	$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T2.`SS_Session` AS SS_Session, T2.`NoFrat`, T2.`date` AS Date, T3.`Lieu` As Lieu, T1.`id` AS Individu_id, T1.`Prenom` AS Prenom, T1.`Nom` as Nom, T0.`Participation` AS Participation, T1.`Adresse`, T1.`e_mail`, T1.`Telephone`, T0.`Detail` AS Classe, Concat(T4.`e_mail`, " ", T5.`e_mail`) AS ParentAddress, T2.`Jour`, T6.`Nom` AS Ecole
 		FROM `QuiQuoi` T0 
@@ -2257,17 +2263,35 @@ if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		LEFT JOIN `Lieux` T3 ON T2.`Lieu_id`=T3.`id`
 		LEFT JOIN `Ecoles` T6 ON T6.`id`=T0.`Ecole_id`
 		WHERE T0.`Activite_id`='.$Activite_id.' AND T0.`QuoiQuoi_id`=1 '.$ComplementRequete.'
-		ORDER BY '.$criteria.' '.$order.' ';
+		ORDER BY '.$criteria;
 	
-} else {
-	// Alpha
+} elseif ($_SESSION["Activite_id"] == 4) { // Alpha
 	$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T0.`SS_Session` AS SS_Session, T0.`NoFrat`, T0.`date` AS Date, T1.`Lieu` As Lieu, T3.`id` AS Individu_id, T3.`Prenom` AS Prenom, T3.`Nom` AS Nom, T2.`Participation` AS Participation, T3.`Adresse`, T3.`e_mail`, T3.`Telephone`, T2.`Detail` AS Classe
 		FROM `Fraternite` T0
 		LEFT JOIN `Lieux` T1 ON T0.`Lieu_id`=T1.`id`
 		LEFT JOIN `QuiQuoi` T2 ON T2.`Activite_id`='.$Activite_id.' AND T0.`id`=T2.`Engagement_id` AND T2.`QuoiQuoi_id`="1"
 		LEFT JOIN `Individu` T3 on T3.`id`= T2.`Individu_id`
+		WHERE T0.`Activite_id`='.$Activite_id.$ComplementRequete.' AND Nom != "" AND Prenom != ""
+		ORDER BY '.$criteria;
+
+} else {
+	if ($Fct_Accompagnateur_actif) {
+		$requete = 'SELECT T0.`id`, T2.`id` AS Frat_id, T0.`Session` AS Session, T0.`SS_Session` AS SS_Session, T0.`NoFrat`, T0.`date` AS Date, T1.`Lieu` As Lieu, T3.`id` AS Individu_id, T3.`Prenom` AS Prenom, T3.`Nom` AS Nom, T2.`Participation` AS Participation, T3.`Adresse`, T3.`e_mail`, T3.`Telephone`, T2.`Detail` AS Classe
+		FROM `Fraternite` T0
+		LEFT JOIN `Lieux` T1 ON T0.`Lieu_id`=T1.`id`
+		LEFT JOIN `QuiQuoi` T2 ON T2.`Activite_id`='.$Activite_id.' AND T2.`QuoiQuoi_id`="1"
+		LEFT JOIN `Individu` T3 on T3.`id`= T2.`Individu_id`
 		WHERE T0.`Activite_id`='.$Activite_id.$ComplementRequete.'
-		ORDER BY '.$criteria.' '.$order.' ';
+		ORDER BY '.$criteria;
+
+	} else {
+		$requete = 'SELECT T0.`id`, T0.`Session` AS Session, T1.`Lieu` As Lieu, T3.`id` AS Individu_id, T3.`Prenom` AS Prenom, T3.`Nom` AS Nom, T3.`Adresse`, T3.`e_mail`, T3.`Telephone`, 0 as Participation, "0" as NoFrat, T0.`QuoiQuoi_id` As Serv_ou_Ress
+		FROM `QuiQuoi` T0
+		LEFT JOIN `Lieux` T1 ON T0.`Lieu_id`=T1.`id`
+		LEFT JOIN `Individu` T3 on T3.`id`= T0.`Individu_id`
+		WHERE T0.`Activite_id`='.$Activite_id.$ComplementRequete.' AND (T0.`QuoiQuoi_id`=2 OR T0.`QuoiQuoi_id`=1) AND Nom != "" AND Prenom != ""
+		ORDER BY T0.`QuoiQuoi_id` DESC, '.$criteria;
+	}
 }
 
 $debug = false;
@@ -2276,7 +2300,6 @@ pCOM_DebugAdd($debug, 'Fraternite - requete ='.$requete);
 $resultat = mysqli_query($eCOM_db,  $requete );
 
 pCOM_DebugAdd($debug, 'Fraternite - Critère de tri: ' . $criteria . "<BR>\n");
-pCOM_DebugAdd($debug, 'Fraternite - Critère d\'ordre: ' . $order . "<BR><BR>\n");
 
 if(isset($_GET['order']) and $_GET['order']=="ASC"){
 	$order="DESC";
@@ -2285,7 +2308,8 @@ if(isset($_GET['order']) and $_GET['order']=="ASC"){
 }
 
 personne_list($resultat, $Classe_order, $order);
-mysqli_close($eCOM_db);
+
+fMENU_bottom();
 
 echo '</BODY>';
 echo '</HTML>';

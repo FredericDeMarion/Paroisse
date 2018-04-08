@@ -37,40 +37,6 @@ if( ! isset( $Database_Acces ) ) $Database_Acces = "";
 
 	
 	
-// Afficher l'adresse sur une carte GoogleMap
-function Display_Photo($Nom, $Prenom, $id, $Font_Size)
-{
-	if(!isset($Font_Size)) {
-		$Font_Size="1";
-	}
-	
-	if (file_exists("Photos/Individu_".$id.".jpg")) { 
-		if ($Prenom == "NO LINK"){
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].' class="tooltip"><FONT SIZE="'.$Font_Size.'">'.$Nom.'</FONT>';
-			echo '<em><span></span>';
-			echo "<img src='Photos/Individu_".$id.".jpg' height='100' border='1' alt='Paroissien_".$id."'>";
-			echo '<br><font face=verdana size=1>'.$Nom.'</font>';
-			echo '</em></A>';
-		} else {
-			echo '<A HREF=/SuiviParoissien.php?action=edit_Individu&id='.$id.' class="tooltip"><FONT SIZE="'.$Font_Size.'">'.$Prenom.' '.$Nom.'</FONT>';
-			echo '<em><span></span>';
-			echo "<img src='Photos/Individu_".$id.".jpg' height='100' border='1' alt='Paroissien_".$id."'>";
-			echo '<br><font face=verdana size=1>'.$Prenom.' '.$Nom.'</font>';
-			echo '</em></A>';
-		}
-	} else {
-		if ($Prenom == "NO LINK"){
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'].'>';
-			echo '<FONT SIZE="'.$Font_Size.'">' .$Nom. '</FONT> ';
-			echo '</A>';
-		} else {
-			echo '<A HREF=/SuiviParoissien.php?action=edit_Individu&id='.$id.'>';
-			echo '<FONT SIZE="'.$Font_Size.'">' .$Prenom. ' ' .$Nom. '</FONT> ';
-			echo '</A>';
-		}
-	}
-}
-
 //view profiles
 if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 //if ($action == "AjouterCeService") {
@@ -182,7 +148,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	echo '<input type="checkbox" name="Responsable" id="Responsable" value="on" '.$Checked_Responsable.'/> <label for="Responsable"><FONT SIZE="2">Responsable</b></label></FONT> ';
 	echo '<input type="checkbox" name="Point_de_contact" id="Point_de_contact" value="on" '.$Checked_Point_de_contact.'/> <label for="Point_de_contact"><FONT SIZE="2">Point de contact</b></label></FONT>';
 	if (fCOM_Get_Autorization(0)>= 50) {
-		echo '<input type="checkbox" name="WEB_G" id="WEB_Gestionnaire" value="on" '.$Checked_WEB_gestionnaire.'/> <label for="WEB_Gestionnaire"><FONT SIZE="2">Gestionnaire WEB</b></label></FONT>';
+		echo ' <input type="checkbox" name="WEB_G" id="WEB_Gestionnaire" value="on" '.$Checked_WEB_gestionnaire.'/> <label for="WEB_Gestionnaire"><FONT SIZE="2">Gestionnaire</b></label></FONT>';
 	} else {
 		if ( $WEB_gestionnaire == 1 ){
 			echo '<INPUT TYPE=hidden name="WEB_G" value="on" >';
@@ -225,9 +191,38 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 
 //edit records
 if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
-//if ($action == "edit_Individu") {
+	
+	$id=$_GET['id'];
+	if (isset($_GET['old_id'])) {
+		$old_id=$_GET['old_id'];
+	} else {
+		$old_id=0;
+	}
+	
+	fMENU_top();
+	echo '<div class="row justify-content-around">';
+	//echo '<div class="col-lg-3">';
+	//echo '</div>';
+	if ($old_id>0) {
+		echo '<div class="col-lg-6">';
+		Edition_Fiche_Paroissien($old_id, False);
+		echo '</div>';
+	}
+	echo '<div class="col-lg-6">';
+	Edition_Fiche_Paroissien($id, true);
+	echo '</div>';
+	echo '</div>';
+	fMENU_bottom();
+	exit; 
+}
+
+function Edition_Fiche_Paroissien($pId, $pToutAfficher=True) {
+
 	Global $eCOM_db;
-	echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
+	Global $Liste_Confessions, $Liste_LangueMaternelle, $Liste_Genre;
+	
+	$id = $pId;
+	
 	$_SESSION["RetourPageCourante"]=$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
 	if ($_SESSION["RetourPage"] == "") {
 		$_SESSION["RetourPage"]=$_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
@@ -240,10 +235,23 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 		$SessionActuelle= date("Y")+1;
 	}
 	
+	?>
+	<SCRIPT LANGUAGE="JavaScript">
+	<!-- Begin
+	function AjouterService(Individu_id, Quiquoi_id) {
+		var windowprops = "toolbar=0,location=0,directories=0,status=0,menubar=0,scrollbars=0,resizable=0,width=500,height=270";
+
+		OpenWindow = window.open("<?php echo $_SERVER['PHP_SELF']; ?>?action=AjouterCeService&Individu_id=" + Individu_id + "&QuiQuoi_id=" + Quiquoi_id , "profile", windowprops); 
+		
+	}
+	//  End --> 
+	</script>
+	<?php
+	
 	$debug = False;
 	pCOM_DebugInit($debug);
 	
-	if ( $_GET['id'] == 0 ) {
+	if ( $pId == 0 ) {
 		// creation d'une nouvelle fiche impossible si pas gestionnaire ou administrateur
 		if (fCOM_Get_Autorization( 0 ) >= 30) {
 			// avant de créer une nouvelle fiche on essaie d'en trouver une déjà vide
@@ -255,7 +263,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			}
 			if ($id == 0){
 				mysqli_query($eCOM_db, 'INSERT INTO Individu (id) VALUES (0)') or die (mysqli_error($eCOM_db));
-				$id=mysql_insert_id();
+				$id=mysqli_insert_id($eCOM_db);
 			}
 			$_SESSION["RetourPageCourante"]=$_SERVER['PHP_SELF'].'?action=edit_individu&id='.$id;
 		} else {
@@ -263,7 +271,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			exit;
 		}
 	} else {
-		$id= $_GET['id'];
+		$id= $pId;
 	}
 	
 	if ( $id > 0 ) {
@@ -276,42 +284,78 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 		$row = mysqli_fetch_assoc($result);
 	} 
 	
-	address_top();
-	if (fCOM_Get_Autorization( 0)>= 30) { 
-		$BloquerAcces="";
-	} else {
-		$BloquerAcces="disabled='disabled'";
-	}
-	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-	echo '<TR BGCOLOR="#F7F7F7">';
-	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Edition: ';
-	if ($_GET['id'] == 0) {
-		echo 'Nouvelle fiche No '.$row['id'].'</B></FONT></td>';
+
+
+	//echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+
+	$Titre02Page = '';
+	$Titre01Page = "Edition: ";	
+	if ($id == 0) {
+		$Titre01Page = $Titre01Page.'Nouvelle fiche No '.$row['id'];
 		$Pere_id = 0;
 		$Mere_id = 0;
 		$Conjoint_id = 0;
 		$Services = 0;
 		$Ressourcement = 0;
 	} else {
-		echo 'Fiche paroissien No '.$row['id'].'</B></FONT></td>'; 
-		if (strftime("%d/%m/%y", fCOM_sqlDateToOut($row['MAJ'])) != "01/01/70" ) {
-			echo '<TD align="right"><FONT FACE="Verdana" SIZE="1"> (Dernière modification au '.strftime("%d/%m/%Y %T", fCOM_sqlDateToOut($row['MAJ'])).')</td>';
-		}
+		$Titre01Page = $Titre01Page.'Fiche paroissien No '.$row['id'];
+		$Titre02Page = '(Modifiée le '.$row['MAJ'].')';
 	}
-	echo '</TR>';
-	echo '<TR><TD BGCOLOR="#EEEEEE" Colspan="2">';
-	echo '<CENTER><font face="verdana" size="2">';
-	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'" >';
-	echo '<TABLE border="0" cellpadding="2" cellspacing="0">';
-	echo '<TR><TD width="140" bgcolor="#eeeeee"><B><FONT SIZE="3"> </FONT></B></TD></TR>';
-	echo '<TR><TD bgcolor="#eeeeee" valign="top"><B><FONT SIZE="2">Nom:</FONT></B></TD><TD bgcolor="#eeeeee">';
-	echo '<INPUT type=text name="Prenom" placeholder="Prénom" value ="'.$row['Prenom'].'" size="18" maxlength="40" '.$BloquerAcces.'> ';
-	echo '<INPUT type=text name="Nom" placeholder="NOM" value ="'.$row['Nom'].'" size="18" maxlength="40" '.$BloquerAcces.'>';
-
-	// Genre
+	fMENU_Title($Titre01Page, $Titre02Page);
 	
-	echo '<BR><FONT SIZE="2">Genre:</FONT>';
-	echo '<SELECT name="Sex" '.$BloquerAcces.' >';
+	if (fCOM_Get_Autorization( 0)>= 30 AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
+	
+	//echo '<TR><TD BGCOLOR="#EEEEEE" Colspan="2">';
+	//echo '<CENTER><font face="verdana" size="2">';
+	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'" >';
+	//echo '<TABLE border="0" align="center" cellpadding="2" cellspacing="0">';
+	
+	// Photo
+	echo '<div class="row" align="center">';
+	echo '<div class="col">';
+	if ( $id > 0 ) {
+		//echo '<TR><TD><CENTER>';
+		if (file_exists("Photos/Individu_" . $row['id'] . ".jpg")) { 
+			echo '<IMG SRC="Photos/Individu_' . $row['id'] . '.jpg" HEIGHT=150>';
+			echo '<a data-toggle="tooltip" title="<img SRC="Photos/Individu_'.$row['id'].'.jpg" width="150"></a>';
+			echo '<BR><BR>';
+			if (fCOM_Get_Autorization( 0)>= 30) {
+				if ($pToutAfficher) {
+					echo '<div align=center><input type="submit" class="btn btn-outline-secondary btn-sm" name="upload_Photo" value="Charger une autre photo (50k octets max)"></div>';
+				} else {
+					echo '<div align=center><input type="submit" class="btn btn-outline-secondary btn-sm" name="Rename_Photo" value="Basculer photo à droite"></div>';
+				}
+			}
+		} else {
+			if (fCOM_Get_Autorization( 0)>= 30) {
+				echo '<div align=center><input type="submit" class="btn btn-outline-secondary btn-sm" name="upload_Photo" value="Charger une photo (50k octets max)"></div>'; }
+		}
+		//echo '</CENTER><BR></TD></TR>';
+	}
+	echo '</div>';
+	echo '</div>';
+	//echo '<TR><TD bgcolor="#eeeeee">';
+	
+	echo '<div class="row mt-2">';
+	echo '<div class="col">';
+	echo '<label for="Prenom">Prénom</label>';
+	echo '<INPUT type="text" name="Prenom" class="form-control form-control-sm" placeholder="Prénom" value ="'.$row['Prenom'].'" maxlength="40" '.$BloquerAcces.'> ';
+	echo '</div>';
+	
+	echo '<div class="col">';
+	echo '<label for="Nom">Nom</label>';
+	echo '<INPUT type="text" name="Nom" class="form-control form-control-sm" placeholder="NOM" value ="'.$row['Nom'].'" maxlength="40" '.$BloquerAcces.'>';
+	echo '</div>';
+	
+	// Genre
+	echo '<div class="col">';
+	//echo '<FONT SIZE="2"> Genre:</FONT>';
+	echo '<label for="Sex">Genre</label>';
+	echo '<SELECT name="Sex" class="form-control form-control-sm" '.$BloquerAcces.' >';
 	foreach ($Liste_Genre as $Genre){
 		if ( $id > 0 ) {
 			if ($row['Sex'] == $Genre){
@@ -324,105 +368,36 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 		}
 	}
 	echo '</SELECT>';
-
-	// Conjoint
+	echo '</div>';
+	echo '</div>';
+	//echo '</TD></TR>';
 	
-	if ( $id > 0 ) {
-		echo ' ';
-		if ( $BloquerAcces=="" ) {
-			echo ' ';
-			echo '<div style="display:inline"><input type="submit" name="Selectionner_Ascendant" value="Conjoint">';
-			echo '<input type="hidden" name="RetourPage" value="SuiviParoissien">';
-			echo '<input type="hidden" name="Fiche_id" value="'.$id.'"></div>';
-		} else {
-			echo ' / ';
-		}
-		if ( $row['Conjoint_id'] > 0 ) { 
-			echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerConjoint&Qui_id='.$id.' TITLE="Retirer Conjoint"><img src="images/moins.gif" border=0 alt="Retirer Conjoint"></a>  ';
-			Display_Photo($row['Nom_Conjoint'], $row['Prenom_Conjoint'], $row['Conjoint_id'], "2");
-			echo '<input type="hidden" name="Conjoint_id" value="'.$row['Conjoint_id'].'"></div>'; // indispensable pour l'enregistrement ensuite
-		}
-	}
-	
-	// Enfants
-	if ( $id > 0 ) {
-		$requeteEnfants = 'SELECT T0.id, T0.`Nom`, T0.`Prenom`, T0.`Nom`, T0.`Naissance` FROM `Individu` T0 WHERE T0.`Pere_id`='.$row['id'].' OR T0.`Mere_id`='.$row['id'].' ORDER BY Naissance';
-		pCOM_DebugAdd($debug, "Paroissien:edit_Individu - requeteEnfants=".$requeteEnfants);
-		$TitreLigne ='<BR><FONT SIZE="2">Enfant(s) : </FONT>';
-		$resultListEnfants = mysqli_query($eCOM_db, $requeteEnfants);
-		while( $ListEnfants = mysqli_fetch_assoc( $resultListEnfants ))
-		{
-			echo $TitreLigne;
-			$TitreLigne = "";
-			//$Prenom=$ListEnfants[Prenom];
-			Display_Photo("", $ListEnfants['Prenom'], $ListEnfants['id'], "1");
-			if (strftime("%d/%m/%y", fCOM_sqlDateToOut($ListEnfants['Naissance'])) != "01/01/70" ) {
-				$birthDate = explode("-", $ListEnfants['Naissance']);
-				$Age = (date("md", date("U", mktime(0, 0, 0, $birthDate[1], $birthDate[2], $birthDate[0]))) > date("md") ? ((date("Y")-$birthDate[0])-1):(date("Y")-$birthDate[0]));
-				//$Prenom= $Prenom." ($Age ans)";
-				
-				echo '<FONT SIZE="1">('.$Age.' ans) </FONT>';
-			} else {
-				echo '</A><FONT SIZE="1"> - </FONT>';
-			}
-		}
-		echo '<BR>';
-	}
-	
-	
-	// Photo
-	
-	if ( $id > 0 ) {
-		echo "</TD>";
-		echo '<TD rowspan="4">';
-		if (file_exists("Photos/Individu_" . $row['id'] . ".jpg")) { 
-			echo '<IMG SRC="Photos/Individu_' . $row['id'] . '.jpg" HEIGHT=150><BR><BR>';
-			if (fCOM_Get_Autorization( 0)>= 30) {
-				echo "<div align=center><input type=submit name=upload_Photo value='Charger une autre photo (50k octets max)'>"; }
-		} else {
-			if (fCOM_Get_Autorization( 0)>= 30) {
-				echo "<div align=center><input type=submit name=upload_Photo value='Charger une photo (50k octets max)'>"; }
-		}
-	}
-	echo '</TD></TR>';
-	
-	// Téléphone
-
-	echo '<TR><TD bgcolor="#eeeeee">';
-	echo '<B><FONT SIZE="2">Téléphone:</FONT></B></TD>';
-	?>
-	<TD bgcolor="#eeeeee"><input type=tel name="Telephone" placeholder="Séparer tous le 2 chiffres avec un point" <?php if ( $id > 0 ) {echo ' value ="'.format_Telephone(Securite_html($row['Telephone']), " ").'"';} ?> size="50" maxlength="50" <?php echo $BloquerAcces;?>>
-	<?php
-	echo '</TD></TR>';
-	
-	// email
-	echo '<TR><TD bgcolor="#eeeeee"><B><FONT SIZE="2">Email:</FONT></B></TD>';
-	?>
-	<TD bgcolor="#eeeeee"><input type=text name="e_mail" placeholder="Séparer mail avec ';'" <?php if ( $id > 0 ) {echo ' value ="'.format_email_list(Securite_html($row['e_mail']), ";").'"';} ?> size="60" maxlength="50" <?php echo $BloquerAcces;?>>
-	<?php
-	echo '</TD></TR>';
-	
-	// adresse
-	echo '<TR><TD bgcolor="#eeeeee"><B><FONT SIZE="2">Adresse:</FONT></B></TD>';
-	?>
-	<TD bgcolor="#eeeeee"><input type=text name="Adresse" placeholder="<Num + Rue> <Code Postal> <Ville>" <?php if ( $id > 0 ) {echo ' value ="'.Securite_html($row['Adresse']).'"';} ?> size="60" maxlength="70" <?php echo $BloquerAcces;?>>
-	<?php
-	echo '</TD></TR>';
-
-
 	// Date de Naissance
-	echo '<TR><TD><B><FONT SIZE="2">Né  le:</FONT></B></TD>';
+	//echo '<TR><TD>';
+	if ((fCOM_Get_Autorization( 0)>= 30 OR $id == $_SESSION['USER_ID']) AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
 	?>
-	<TD></b><input type=text name="Naissance" placeholder="JJ/MM/AAAA" style="width:75px" <?php if ( $id > 0 & $row['Naissance'] != "0000-00-00" ) {echo ' value ="'.date("d/m/Y", strtotime($row['Naissance'])).'"';} ?> size="8" maxlength="10" <?php echo $BloquerAcces;?>>
+	<div class="row">
+	<div class="col-auto">
+	<label for="Naissance">Né le</label>
+	<font SIZE="3"><input type="date" class="form-control form-control-sm" name="Naissance" placeholder="JJ/MM/AAAA" style="width:150px" <?php echo ' value ="'.$row['Naissance'].'"';  echo $BloquerAcces;?>></font>
+	</div>
+	
 	<?php
 	// calcul de l'age
+	echo '<div class="col-auto mt-4 mr-5">';
 	if (fCOM_Afficher_Age($row['Naissance']) != -1) {
-			echo  '<FONT FACE="Verdana" SIZE="1"> ('.fCOM_Afficher_Age($row['Naissance']).' ans)';
+		echo  '('.fCOM_Afficher_Age($row['Naissance']).' ans)';
 	}
-		
+	echo '</div>';
+	
 	// Langue Maternelle
-	echo '<FONT SIZE="2"> Langue Maternelle </FONT>';
-	echo '<SELECT name="LangueMaternelle" '.$BloquerAcces.' >';
+	echo '<div class="col-auto">';
+	echo '<label for="LangueMaternelle">Langue Maternelle</label>';
+	echo '<SELECT name="LangueMaternelle" class="form-control form-control-sm" '.$BloquerAcces.' >';
 	foreach ($Liste_LangueMaternelle as $LangueMaternelle){
 		if ( $id > 0 ) {
 			if ($row['LangueMaternelle'] == $LangueMaternelle){
@@ -434,75 +409,199 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			echo '<option value="'.$LangueMaternelle.'">'.$LangueMaternelle.'</option>';
 		}
 	}		
-	echo '</SELECT> ';
-	echo "</TD></TR>";
+	echo '</SELECT>';
+	echo '</div>';
+	echo '</div>';
+	//echo "</TD></TR>";
 
-	// Pere et Mere
+	if (fCOM_Get_Autorization( 0)>= 30 AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
 	
-	if ( $id > 0 ) { 
-		echo "<TR><TD>";
-		if ( $BloquerAcces!="" ) {
-			echo '<B><FONT SIZE="2">Parents:</FONT></b>';
-		}
-		echo "</TD><TD>";
+	// Conjoint
+	//echo '<TR><TD>';
+	echo '<div class="row mt-4">';
+	echo '<div class="col">';
+	if ( $id > 0 ) {
+		//echo ' <BR>';
+		
 		if ( $BloquerAcces=="" ) {
-			echo '<div style="display:inline"><input type="submit" name="Selectionner_Ascendant" value="Mère">';
-			echo '<input type="hidden" name="Genre" value="F"></div>';
+			echo ' ';
+			echo '<div style="display:inline"><input type="submit" class="btn btn-outline-secondary btn-sm" name="Selectionner_Ascendant" value="Conjoint">';
 			echo '<input type="hidden" name="RetourPage" value="SuiviParoissien">';
 			echo '<input type="hidden" name="Fiche_id" value="'.$id.'"></div>';
+		} else {
+			echo ' Conjoint : ';
+		}
+		if ( $row['Conjoint_id'] > 0 ) { 
+			if ( $BloquerAcces=="" ) {
+				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerConjoint&Qui_id='.$id.' TITLE="Retirer Conjoint"> <i class="fa fa-minus-circle text-danger"></i></a>  ';
+			} else {
+				echo ' ';
+			}
+			fCOM_Display_Photo($row['Nom_Conjoint'], $row['Prenom_Conjoint'], $row['Conjoint_id'], "edit_Individu", true);
+			echo '<input type="hidden" name="Conjoint_id" value="'.$row['Conjoint_id'].'">'; // indispensable pour l'enregistrement ensuite
+		}
+	}
+	echo '</div>';
+	echo '</div>';
+	
+	// Enfants
+	echo '<div class="row">';
+	echo '<div class="col">';
+	if ( $id > 0 ) {
+		$requeteEnfants = 'SELECT T0.id, T0.`Nom`, T0.`Prenom`, T0.`Nom`, T0.`Naissance` FROM `Individu` T0 WHERE T0.`Pere_id`='.$row['id'].' OR T0.`Mere_id`='.$row['id'].' ORDER BY Naissance';
+		pCOM_DebugAdd($debug, "Paroissien:edit_Individu - requeteEnfants=".$requeteEnfants);
+		$TitreLigne ='<FONT SIZE="2">Enfant(s) : </FONT>';
+		$resultListEnfants = mysqli_query($eCOM_db, $requeteEnfants);
+		while( $ListEnfants = mysqli_fetch_assoc( $resultListEnfants ))
+		{
+			echo $TitreLigne;
+			$TitreLigne = "";
+			//$Prenom=$ListEnfants[Prenom];
+			fCOM_Display_Photo("", $ListEnfants['Prenom'], $ListEnfants['id'], "edit_Individu", true);
+			if (strftime("%d/%m/%y", fCOM_sqlDateToOut($ListEnfants['Naissance'])) != "01/01/70" ) {
+				$birthDate = explode("-", $ListEnfants['Naissance']);
+				$Age = (date("md", date("U", mktime(0, 0, 0, $birthDate[1], $birthDate[2], $birthDate[0]))) > date("md") ? ((date("Y")-$birthDate[0])-1):(date("Y")-$birthDate[0]));
+				//$Prenom= $Prenom." ($Age ans)";
+				
+				echo '<FONT SIZE="1">('.$Age.' ans) </FONT>&nbsp&nbsp';
+			} else {
+				echo '</A><FONT SIZE="1"> - </FONT>&nbsp&nbsp';
+			}
+		}
+		//echo '</FONT><BR>';
+	}
+	echo '</div></div>';
+	//echo '</TD></TR>';
+	
+	// Pere et Mere
+	echo '<div class="row mt-2">';
+	echo '<div class="col">';
+	if ( $id > 0 ) { 
+		//echo "<TR>";
+		//echo "<TD><BR>";
+
+		//echo '<div class="col-6">';
+		if ( $BloquerAcces=="" ) {
+			echo'<input type="submit" class="btn btn-outline-secondary btn-sm" name="Selectionner_Ascendant" value="Mère">';
+			echo '<input type="hidden" name="Genre" value="F">';
+			echo '<input type="hidden" name="RetourPage" value="SuiviParoissien">';
+			echo '<input type="hidden" name="Fiche_id" value="'.$id.'">';
+		} else {
+			echo ' Mère : ';
 		}
 		if ( $row['Mere_id'] > 0 ) { 
 			
 			//echo '<FONT SIZE="1">' .$row[Prenom_Mere]. ' ' .$row[Nom_Mere]. '</FONT> ';
 			if ( $BloquerAcces=="" ) {
-				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerAscendant&Qui=Mere&Individu_id='.$row['id'].' TITLE="Desélectionner Mère"><img src="images/moins.gif" border=0 alt="Retirer Mère"></a>  ';
+				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerAscendant&Qui=Mere&Individu_id='.$row['id'].' TITLE="Desélectionner Mère"> <i class="fa fa-minus-circle text-danger"></i></a>  ';
 			}	
-			echo '<FONT SIZE="1"> <A HREF='.$_SERVER['PHP_SELF'].'?Session='.$_SESSION["Session"].'&action=edit_Individu&id='.$row['Mere_id'].'>' .Securite_html($row['Prenom_Mere']). ' ' .Securite_html($row['Nom_Mere']). '</a>';
-			echo '<input type="hidden" name="Mere_id" value="'.$row['Mere_id'].'"></div>'; // indispensable pour l'enregistrement ensuite
+			fCOM_Display_Photo($row['Nom_Mere'], $row['Prenom_Mere'], $row['Mere_id'], "edit_Individu", true);
+			echo '<input type="hidden" name="Mere_id" value="'.$row['Mere_id'].'">'; // indispensable pour l'enregistrement ensuite
 		} else {
 			echo '<input type="hidden" name="Mere_id" value="0">'; // indispensable pour la sauvegarde
 		}
+		//echo '</div>';
+		
+		//echo '<div class="col-6">';
 		if ( $BloquerAcces=="" ) {
-			echo '</td></tr><td></td><td>';
-			echo '<div style="display:inline"><input type="submit" name="Selectionner_Ascendant" value="Père">';
-			echo '<input type="hidden" name="Genre" value="M"></div>';
+			//echo '</td></tr><td></td><td>';
+			echo ' <input type="submit" class="btn btn-outline-secondary btn-sm" name="Selectionner_Ascendant" value="Père">';
+			echo '<input type="hidden" name="Genre" value="M">';
 			echo '<input type="hidden" name="RetourPage" value="SuiviParoissien">';
-			echo '<input type="hidden" name="Fiche_id" value="'.$id.'"></div>';
+			echo '<input type="hidden" name="Fiche_id" value="'.$id.'">';
 		} else {
-			echo ' / ';
+			echo ' Père : ';
 		}
 		if ( $row['Pere_id'] > 0 ) { 
 				
 			//echo '<FONT SIZE="1">' .$row[Prenom_Pere]. ' ' .$row[Nom_Pere]. '</FONT> ';
 			if ( $BloquerAcces=="" ) {
-				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerAscendant&Qui=Pere&Individu_id='.$row['id'].' TITLE="Desélectionner Père"><img src="images/moins.gif" border=0 alt="Retirer Père"></a>  ';
-			}	
-			echo '<FONT SIZE="1"> <A HREF='.$_SERVER['PHP_SELF'].'?Session='.$_SESSION["Session"].'&action=edit_Individu&id='.$row['Pere_id'].'>' .Securite_html($row['Prenom_Pere']). ' ' .Securite_html($row['Nom_Pere']). '</a>';
-			echo '<input type="hidden" name="Pere_id" value="'.$row['Pere_id'].'"></div>'; // indispensable pour l'enregistrement ensuite
+				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerAscendant&Qui=Pere&Individu_id='.$row['id'].' TITLE="Desélectionner Père"> <i class="fa fa-minus-circle text-danger"></i></a>  ';
+			}
+			fCOM_Display_Photo($row['Nom_Pere'], $row['Prenom_Pere'], $row['Pere_id'], "edit_Individu", true);
+			echo '<input type="hidden" name="Pere_id" value="'.$row['Pere_id'].'">'; // indispensable pour l'enregistrement ensuite
 		} else {
 			echo '<input type="hidden" name="Pere_id" value="0">'; // indispensable pour la sauvegarde
 		}
+		
+		
 	} 
-	echo '<input type="hidden" name="Conjoint_id" value="'.$row['Conjoint_id'].'"></div>'; // indispensable pour l'enregistrement ensuite
-	echo '</TD>';
+	echo '<input type="hidden" name="Conjoint_id" value="'.$row['Conjoint_id'].'">'; // indispensablepour l'enregistrement ensuite
+	echo '</div>';
+	echo '</div>';
+	//echo '</TD></TR>';
+	
+	
+	if ((fCOM_Get_Autorization( 0)>= 30 OR $id == $_SESSION['USER_ID']) AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
+	
+	// Téléphone
+	//echo '<TR><TD bgcolor="#eeeeee"><BR>'; 
+	?>
+	<div class="row mt-4">
+	<div class="col-6">
+	<label for="Telephone">Téléphone</label>
+	<input type="tel" class="form-control form-control-sm" name="Telephone" placeholder="Séparer tous le 2 chiffres avec un point" <?php if ( $id > 0 ) {echo ' value ="'.format_Telephone(Securite_html($row['Telephone']), " ").'"';} ?> maxlength="50" <?php echo $BloquerAcces;?>>
+	</div>
+	
+	<?php
+		// pattern="[\.\+\s0-9]{3,18}"
+		
+	?>
+	<div class="col-6">
+	<label for="e_mail">Email</label>
+	<input type="email" name="e_mail" class="form-control form-control-sm" placeholder="Séparer mail avec ';'" <?php if ( $id > 0 ) {echo ' value ="'.format_email_list(Securite_html($row['e_mail']), ";").'"';} ?> maxlength="50" <?php echo $BloquerAcces;?>>
+	
+	</div>
+	</div>
+	<?php
+	//echo '</TD></TR>';
+	
+
+	// adresse
+	//=========
+	//echo '<TR><TD bgcolor="#eeeeee">';
+	echo '<div class="row mt-2">';
+	echo '<div class="col">';
+	?>
+	<label for="Adresse">Adresse</label>
+	<input type=text name="Adresse" placeholder="<Num + Rue> <Code Postal> <Ville>" class="form-control form-control-sm" <?php if ( $id > 0 ) {echo ' value ="'.Securite_html($row['Adresse']).'"';} ?> size="30" maxlength="70" <?php echo $BloquerAcces;?>>
+	<?php
+	echo '</div>';
+	echo '</div>';
+	//echo '</TD></TR>';
+
 
 	// google map localisation
-	
+	echo '<div class="row">';
+	echo '<div class="col">';	
 	if ( $id > 0 && Securite_html($row['Adresse']) != "") {
-		echo '<TD rowspan="10">';
+		//echo '<TR><TD>';
 	//if ( $row[Adresse] != "" ) {
 	//	retourGMap=Display_google_map($row[Prenom]." ".$row[Nom], $row[Adresse])
 	//}
-		echo '<iframe width="425" height="350" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.fr/maps?f=q&amp;source=s_q&amp;hl=fr&amp;geocode=&amp;q='.str_replace(' ', '+',Securite_html($row['Adresse'])).'&amp;aq=0&amp;ie=UTF8&amp;hq=&amp;hnear='.str_replace(' ', '+',Securite_html($row['Adresse'])).'&amp;t=m&amp;z=13&amp;iwloc=A&amp;output=embed"></iframe>';
-		
-		echo '</TD>';
+
+		echo '<iframe width="100%" height="300" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.fr/maps?f=q&amp;source=s_q&amp;hl=fr&amp;geocode=&amp;q='.str_replace(' ', '+',Securite_html($row['Adresse'])).'&amp;aq=0&amp;ie=UTF8&amp;hq=&amp;hnear='.str_replace(' ', '+',Securite_html($row['Adresse'])).'&amp;t=m&amp;z=13&amp;iwloc=A&amp;output=embed"></iframe>';
+
+		//echo '</TD></TR>';
 	}
-	echo '</TR>';
+	echo '</div>';
+	echo '</div>';
+	
 	
 	// Confession
-	
-	echo '<TR><TD></TD><TD valign="top">';
-	echo '<BR><SELECT name="Confession" '.$BloquerAcces.' >';
+	//=============
+	//echo '<TR><TD valign="top">';
+	echo '<div class="row mt-4">';
+	echo '<div class="col-12">';
+	echo '<SELECT name="Confession" class="form-control form-control-sm" '.$BloquerAcces.' >';
 	foreach ($Liste_Confessions as $Confession){
 		if ( $id > 0 ) {
 			if ($row['Confession'] == $Confession){
@@ -514,12 +613,20 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			echo '<option value="'.$Confession.'">'.$Confession.'</option>';
 		}
 	}		
-	echo '</SELECT><BR>';
+	echo '</SELECT>';
+	//echo '</TD></TR>';
+	echo '</div>';
+	echo '</div>';
 	
-	//$Checked_Pretre="";
-	//$Checked_Diacre="";
-	//$Checked_Dead="";
-	//$Checked_Actif="";
+	if (fCOM_Get_Autorization( 0)>= 30 AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
+	
+	//echo '<TR><TD>';
+	
+	
 	pCOM_DebugAdd($debug,"Paroissien:Edit - row['Actif'] :".$row['Actif']);
 	pCOM_DebugAdd($debug,"Paroissien:Edit - row['Dead'] :".$row['Dead']);
 	if ( $id > 0 ) {
@@ -528,36 +635,95 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 		if ($row['Dead']==1) {$Checked_Dead="checked";} else {$Checked_Dead="";};
 		if ($row['Actif']==1) {$Checked_Actif="checked";} else {$Checked_Actif="";};
 	} else {
+		$Checked_Diacre="";
+		$Checked_Pretre="";
+		$Checked_Dead="";
 		$Checked_Actif="checked";
 	}
 	pCOM_DebugAdd($debug,"Paroissien:Edit - Checked_Actif :".$Checked_Actif);
 	pCOM_DebugAdd($debug,"Paroissien:Edit - Checked_Dead :".$Checked_Dead);
-	echo '<input type="checkbox" name="Pretre" value="on" '.$Checked_Pretre.' /> <label for="Pretre"><FONT SIZE="2">Prêtre</b></label>&nbsp&nbsp';
+
+	//echo '<TR><TD>';
+	echo '<div class="row">';
+	echo '<div class="col">';
+	echo '<div class="form-check ml-4">';
+	echo '<input type="checkbox" class="form-check-input" name="Pretre" id="Pretre" value="on" '.$Checked_Pretre.'><label class="form-check-label" for="Pretre"> Prêtre</label>';
+	echo '</div>';
+
+	echo '<div class="form-check ml-4">';
+	echo '<input type="checkbox" class="form-check-input" name="Diacre" id="Diacre" value="on" '.$Checked_Diacre.'><label class="form-check-label" for="Diacre"> Diacre</label>';
+	echo '</div>';
+	echo '</div>';
 	
-	echo '<input type="checkbox" name="Diacre" value="on" '.$Checked_Diacre.' /> <label for="Diacre"><FONT SIZE="2">Diacre</b></label><BR>';
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Actif" value="on" '.$Checked_Actif.'><label class="form-check-label" for="Actif"> Paroissien(ne)</label>';
+	echo '</div>';
 	
-	echo '<input type="checkbox" name="Actif" value="on" '.$Checked_Actif.' /> <label for="Actif"><FONT SIZE="2">Paroissien(ne)&nbsp.&nbsp.&nbsp.&nbsp</b></label>';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Dead" value="on" '.$Checked_Dead.'><label class="form-check-label" for="Dead"> Décédé(e)</label>';
+	echo '</div>';
+	echo '</div>';
+	//echo '</TD></TR>';
+	echo '</div>'; // bizzar
 	
-	echo '<input type="checkbox" name="Dead" value="on" '.$Checked_Dead.' /> <label for="Dead"><FONT SIZE="2">Décédé(e)</b></label>';
+
+	//echo '</TD></TR>';
 	
-	echo '</TD></TR>';
-	echo '<TR></TR>';
-	echo '<TR><TD></TD><TD>';
-	
+	//echo '<TR><TD>';
+	if ((fCOM_Get_Autorization( 0)>= 30 OR $id == $_SESSION['USER_ID']) AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
 	?>
-	<B><FONT SIZE="2"><br>Baptême</FONT>&nbsp &nbsp</b><input type=text name="Bapteme" placeholder="JJ/MM/AAAA" style="width:75px" <?php if ( $id > 0 & $row['Bapteme'] != "0000-00-00" ) {echo ' value ="'.date("d/m/Y", strtotime($row['Bapteme'])).'"';} ?> size="8" maxlength="10" <?php echo $BloquerAcces;?>>
-	<B><FONT SIZE="2">Communion</FONT>&nbsp &nbsp</b><input type=text name="Communion" placeholder="JJ/MM/AAAA" style="width:75px" <?php if ( $id > 0 & $row['Communion'] != "0000-00-00" ) {echo ' value ="'.date("d/m/Y", strtotime($row['Communion'])).'"';} ?> size="8" maxlength="10" <?php echo $BloquerAcces;?>>
-	<B><FONT SIZE="2"><br>Profession de Foi</FONT>&nbsp &nbsp</b><input type=text name="ProfessionFoi" placeholder="JJ/MM/AAAA" style="width:75px" <?php if ( $id > 0 & $row['ProfessionFoi'] != "0000-00-00" ) {echo ' value ="'.date("d/m/Y", strtotime($row['ProfessionFoi'])).'"';} ?> size="8" maxlength="10" <?php echo $BloquerAcces;?>>
-	<B><FONT SIZE="2">Confirmation</FONT>&nbsp &nbsp</b><input type=text name="Confirmation" placeholder="JJ/MM/AAAA" style="width:75px" <?php if ( $id > 0 & $row['Confirmation'] != "0000-00-00" ) {echo ' value ="'.date("d/m/Y", strtotime($row['Confirmation'])).'"';} ?> size="8" maxlength="10" <?php echo $BloquerAcces;?>>
+	<div class="row">
+	<div class="col-auto">
+	<label for="Bapteme">Baptême</label>
+	<input type="date" name="Bapteme" id="Bapteme" class="form-control form-control-sm" placeholder="JJ/MM/AAAA" style="width:145px" <?php echo ' value ="'.$row['Bapteme'].'"'; echo $BloquerAcces;?>>
+	</div>
+	
+	<div class="col-auto">
+	<label for="Communion">Communion</label>
+	<input type="date" name="Communion" id="Communion" class="form-control form-control-sm" placeholder="JJ/MM/AAAA" style="width:145px" <?php echo ' value ="'.$row['Communion'].'"'; echo $BloquerAcces;?>>
+	</div>
+	
+	<div class="col-auto">
+	<label for="ProfessionFoi">Profession de Foi</label>
+	<input type="date" name="ProfessionFoi" id="ProfessionFoi" class="form-control form-control-sm" placeholder="JJ/MM/AAAA" style="width:145px" <?php echo ' value ="'.$row['ProfessionFoi'].'"'; ?> size="15" maxlength="10" <?php echo $BloquerAcces;?>>
+	</div>
+	
+	<div class="col-auto">
+	<label for="Confirmation">Confirmation</label>
+	<input type="date" name="Confirmation" id="Confirmation" class="form-control form-control-sm" placeholder="JJ/MM/AAAA" style="width:145px" <?php echo ' value ="'.$row['Confirmation'].'"'; echo $BloquerAcces;?>>
+	</div>
+	</div>
+
 	<?php
-	echo '</TD></TR>';
-	echo '<TR><TD>&nbsp</TD></TR>';
+	//echo '</TD></TR>';
 	
+	if (fCOM_Get_Autorization( 0)>= 30 AND $pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
+	
+	//echo '<TR><TD>&nbsp</TD></TR>';
+
+
 	// Les Ressourcements ==============================
+	echo '<div class="row mt-4">';
+	echo '<div class="col">';
+	echo '<B>Ressourcements :</B>';
+	echo '</div>';
+	echo '</div>';
 	
-	echo '<TR><TD valign="top"><b><FONT SIZE="2">Ressourcements:</FONT></TD>';
-	echo '<TD>';
+	//echo '<TR>';
+	//echo '<TD><B>Ressourcements:</B></TD></TR><TR><TD>';
 	if ( $id > 0 ) {
+		echo '<div class="row">';
+		echo '<div class="col">';
+
 		$Compteur = 0;
 		$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Nom` FROM `QuiQuoi` T0
 					LEFT JOIN `Activites` T1 ON T1.`id` = T0.`Activite_id`
@@ -571,11 +737,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			$Compteur = $Compteur + 1;
 		}
 		if ($Compteur > 0) {
-			echo '<BR>';
+			//echo '<BR>';
 		}
+		echo '</div>';
+		echo '</div>';
 	
+		echo '<div class="row">';
 		if (fCOM_Get_Autorization( 0)>= 30) {
-			echo '<select name="Ressourcements" '.$BloquerAcces.' >';
+			
+			echo '<div class="col">';
+			echo '<select name="Ressourcements" class="form-control form-control-sm" '.$BloquerAcces.' >';
 			echo '<option value=" " hidden>Choisissez puis cliquer sur Ajouter -></option>';
 			$requete = 'SELECT * FROM `Activites` WHERE Formation=1 ORDER BY `Nom` '; 
 			$result = mysqli_query($eCOM_db, $requete);
@@ -584,22 +755,32 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 				echo '<option value="'.$row3['id'].'">'.$row3['Nom'].'</option>';
 			}
 			echo '</select>';
-			echo '<span align="center"><input type="submit" formnovalidate="formnovalidate" name="ajouter_ressourcement" value="Ajouter Ressourcement">';
+			echo '</div>';
+			
+			echo '<div class="col">';
+			echo '<span align="center"><input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" '.$BloquerAcces.' name="ajouter_ressourcement" value="Ajouter Ressourcement">';
 			//echo '<input type=hidden name=Individu_id value='.$id.' >';
-			echo '</br>';
+			//echo '</br>';
+			echo '</div>';
 		}
+		echo '</div>';
 		
+		//echo '</TD></TR>';
+		//echo '<TR><TD>';
+		echo '<div class="row">';
 		$requete = 'SELECT DISTINCT CONCAT(T1.`Nom`," [",T0.`Session`,"]") AS list_Ressourcements
 					FROM `QuiQuoi` T0
 					LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id`
 					WHERE T1.`Formation`=1 AND T0.`Individu_id`='.$id.' AND Session >('.$SessionActuelle.'-10) AND Session < '.$SessionActuelle.' AND T0.`QuoiQuoi_id`=1
 					ORDER BY T1.`Nom`, T0.`Session` DESC '; 
-		debug_plus('Requete = '.$requete);
+		fCOM_debug_plus('Requete = '.$requete);
 		$result = mysqli_query($eCOM_db, $requete);
 		$count_Nb_Services=mysqli_num_rows($result);
 		if ($count_Nb_Services > 0) {
+
+			echo '<div class="col">';
 			//echo '<FONT SIZE="1"> Historique des ressourcements : </FONT>';
-			echo '<select name="HistoRessource" '.$BloquerAcces.' >';
+			echo '<select name="HistoRessource" class="form-control form-control-sm" '.$BloquerAcces.' >';
 			echo '<option value="0">Historique des ressourcements</option>';
 			$counter=1;
 			$result = mysqli_query($eCOM_db, $requete);
@@ -609,18 +790,30 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 				$counter =$counter + 1;
 			}
 			echo '</select>';
+			echo '</div>';
 		}
-
+		echo '</div>';
 
 	}
-	echo '</TD><TD></TD></TR>';
-	echo '<TR><TD>&nbsp</TD></TR>';
+	//echo '</TD><TD></TD></TR>';
+	//echo '<TR><TD>&nbsp</TD></TR>';
+	
 	
 	// Les SERVICES ==============================
+	echo '<div class="row mt-4">';
+	echo '<div class="col">';
+	echo '<B>Services :</B>';
+	echo '</div>';
+	echo '</div>';
 	
-	echo '<TR><TD valign="top"><b><FONT SIZE="2">Services:</FONT></TD><TD>';
+	//echo '<TR>';
+	//echo '<TD><B>Services:</B></TD></TR><TR><TD>';
 	
 	if ( $id > 0 ) {
+		
+		echo '<div class="row">';
+		echo '<div class="col">';
+		
 		// Liste des activités du paroissien
 		$AddWhere = "AND T1.`id` > 1 ";
 		if (fCOM_Get_Autorization( 0)>= 90) {
@@ -649,32 +842,57 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			echo "</A>";
 			echo '</span>';
 			if ($Compteur % 3 == 0) {
-				echo '<BR>';
+				//echo '<BR>';
 			}
 		}
 		if ($Compteur > 0) {
-			echo '<BR>';
+			//echo '<BR>';
 		}
+		echo '</div>';
+		echo '</div>';
 	
+		echo '<div class="row">';
+		echo '<div class="col">';
+		
 		// Liste des autres activités disponibles
 		if (fCOM_Get_Autorization( 0)>= 30) {
-
 			echo '<span align="center">';
 			echo "<A HREF=\"javascript:AjouterService('".$id."', '0')\">";
-			echo '<button type="button" '.$BloquerAcces.' >Ajouter Service</button>';
+			echo '<button type="button" class="btn btn-secondary btn-sm" '.$BloquerAcces.' >Ajouter Service</button>';
 			echo "</A>";
 			echo '</span>';
-			if (fCOM_Get_Autorization( 0)>= 90) {
-				echo '<span align="center"><input type="submit" formnovalidate="formnovalidate" name="NewBouton_service" value="En test ne pas utiliser"></span>';
-			}
-			//echo '<input type=hidden name=Individu_id value='.$_GET['id'].' >';
-			//echo '</br>';
+			//if (fCOM_Get_Autorization( 0)>= 90) {
+			//	echo '<span align="center"><input type="submit" formnovalidate="formnovalidate" name="NewBouton_service" value="En test ne pas utiliser"></span>';
+			//}
+
 		}
 		
+			// Autorisation à se connecter à la base de donnée
+		if (fCOM_Get_Autorization( 0)>= 50) {
+			//echo '<BR><FONT SIZE="2"> Base de données :</FONT>';
+			$requete_login='SELECT * FROM Admin_membres WHERE Individu_id='.$id.' AND droit_acces=1';
+			$result_login=mysqli_query($eCOM_db, $requete_login);
+			$count=mysqli_num_rows($result_login);
+			if ( $count > 0) {
+				// le paroissien a le droit de se connecter à la base
+				echo '<span align="center"> <button name="Database_Acces" value="0" type="submit" class="btn btn-secondary btn-sm" style="background-color:OrangeRed" '.$BloquerAcces.' title="Interdire accès à la base de données">Retirer Accès à la base</button>'; //PaleGreen
+				echo '</span>';
+			} else {
+				echo '<span align="center"> <button name="Database_Acces" value="1" type="submit" class="btn btn-secondary btn-sm" class="btn btn-outline-secondary btn-sm" '.$BloquerAcces.' title="Autoriser accès à la base de données">Donner Accès à la base</button>';
+				echo '</span>';
+			}
+		}
+		echo '</div>';
+		echo '</div>';
+		//echo '</TD></TR>';
+		//echo '<TR><TD>';
+		
+		echo '<div class="row">';
+		echo '<div class="col">';
 		// afficher historique des services 
 		$requete = 'SELECT DISTINCT CONCAT(T1.`Nom`, " [", T0.`Session`, "]") AS list_Services FROM `QuiQuoi` T0 LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id` WHERE T1.`Service`=1 AND T0.`Individu_id`='.$id.' AND Session > ('.$SessionActuelle.'-10) AND Session < '.$SessionActuelle.' AND (T0.`QuoiQuoi_id`=2 OR (T0.`QuoiQuoi_id`>=5 AND T0.`QuoiQuoi_id`<=10)) ORDER BY T1.`Nom`, T0.`Session` DESC '; 
 		//$result = mysqli_query($eCOM_db, $requete);
-		echo '<SELECT name="HistoServices" '.$BloquerAcces.' >';
+		echo '<SELECT name="HistoServices" class="form-control form-control-sm" >';
 		echo '<option value="0">Historique des services</option>';
 		$counter = 1;
 		$result = mysqli_query($eCOM_db, $requete);
@@ -683,31 +901,24 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			$counter = $counter + 1;
 		}
 		echo '</SELECT>';
+		echo '</div>';
+		echo '</div>';
 	}
 	
-	// Autorisation à se connecter à la base de donnée
-	if (fCOM_Get_Autorization( 0)>= 50) {
-		echo '<BR><FONT SIZE="2"> Base de données :</FONT>';
-		$requete_login='SELECT * FROM Admin_membres WHERE Individu_id='.$id.' AND droit_acces=1';
-		$result_login=mysqli_query($eCOM_db, $requete_login);
-		$count=mysqli_num_rows($result_login);
-		if ( $count > 0) {
-			// le paroissien a le droit de se connecter à la base
-			echo '<span align="center"><button name="Database_Acces" value="0" type="submit" style="background-color:OrangeRed" title="Interdire accès à la base de données">Retirer Accès</button>'; //PaleGreen
-			echo '</span>';
-		} else {
-			echo '<span align="center"><button name="Database_Acces" value="1" type="submit" style="background-color:Gainsboro" title="Autoriser accès à la base de données">Donner Accès</button>';
-			echo '</span>';
-		}
-	}
-	
-	echo '</TD><TD></TD></TR>';
-	echo '<TR><TD>&nbsp</TD></TR>';
+
+	//echo '</TD><TD></TD></TR>';
+	//echo '<TR><TD>&nbsp</TD></TR>';
 	
 	// Les Souhaits ==============================
+	echo '<div class="row mt-4">';
+	echo '<div class="col">';
+	echo '<B>Souhaits :</B>';
+	echo '</div>';
+	echo '</div>';
 	
-	echo '<TR><TD valign="top"><b><FONT SIZE="2">Souhaits:</FONT></TD>';
-	echo '<TD>';
+	//echo '<TR>';
+	//echo '<TD><B>Souhaits:</B></TD></TR><TR><TD>';
+	
 	if ( $id > 0 ) {
 		$Compteur = 0;
 		$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Nom` FROM `QuiQuoi` T0
@@ -715,18 +926,25 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 					WHERE T0.`Individu_id`='.$id.' AND T1.`Souhait`=1 AND Session = '.$SessionActuelle.' AND T0.`Engagement_id`=0 AND T0.`QuoiQuoi_id`=1 
 					ORDER BY T1.`Nom` '; 
 		$result2 = mysqli_query($eCOM_db, $requete2);
+		echo '<div class="row">';
+		echo '<div class="col">';
 		while( $row2 = mysqli_fetch_assoc( $result2))
 		{
-			echo '<span align="center"><button name="delete_souhait" value="'.$row2['id'].'" type="submit" '.$BloquerAcces.' style="background-color:PaleTurquoise">'.$row2['Nom'].' <img src="images/delete.gif" width=10 height=10 alt="Supprimer ce souhait"></button>';
+			echo '<span align="center"><button name="delete_souhait" value="'.$row2['id'].'" type="submit" '.$BloquerAcces.' style="background-color:LightGreen">'.$row2['Nom'].' <img src="images/delete.gif" width=10 height=10 alt="Supprimer ce souhait"></button>';
 			echo '</span>';	
 			$Compteur = $Compteur + 1;
 		}
 		if ($Compteur > 0) {
-			echo '<BR>';
+			//echo '<BR>';
 		}
-	
+		echo '</div>';
+		echo '</div>';
+		
+		echo '<div class="row">';
 		if (fCOM_Get_Autorization( 0)>= 30) {
-			echo '<select name="Souhaits" '.$BloquerAcces.' >';
+			
+			echo '<div class="col">';
+			echo '<select name="Souhaits" class="form-control form-control-sm" '.$BloquerAcces.' >';
 			echo '<option value=" " hidden>Choisissez puis cliquer sur Ajouter -></option>';
 			$requete = 'SELECT * FROM `Activites` WHERE Souhait=1 ORDER BY `Nom` '; 
 			$result = mysqli_query($eCOM_db, $requete);
@@ -735,21 +953,28 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 				echo '<option value="'.$row3['id'].'">'.$row3['Nom'].'</option>';
 			}
 			echo '</select>';
-			echo '<span align="center"><input type="submit" formnovalidate="formnovalidate" name="ajouter_souhait" value="Ajouter Souhait">';
-			echo '</br>';
+			
+			echo '<span align="center"> <input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" '.$BloquerAcces.' name="ajouter_souhait" value="Ajouter Souhait">';
+			echo '</div>';
 		}
+		echo '</div>';
 		
+		//echo '</TD></TR>';
+		//echo '<TR><TD>';
+		
+		echo '<div class="row">';
+		echo '<div class="col">';
 		$requete = 'SELECT DISTINCT CONCAT(T1.`Nom`," [",T0.`Session`,"]") AS list_Souhaits
 					FROM `QuiQuoi` T0
 					LEFT JOIN Activites T1 ON T1.`id`=T0.`Activite_id`
 					WHERE T1.`Souhait`=1 AND T0.`Individu_id`='.$id.' AND Session >('.$SessionActuelle.'-10) AND Session < '.$SessionActuelle.' AND T0.`QuoiQuoi_id`=1
 					ORDER BY T1.`Nom`, T0.`Session` DESC '; 
-		debug_plus('Requete = '.$requete);
+		fCOM_debug_plus('Requete = '.$requete);
 		$result = mysqli_query($eCOM_db, $requete);
 		$count_Nb_Services=mysqli_num_rows($result);
 		if ($count_Nb_Services > 0) {
 			//echo '<FONT SIZE="1"> Historique des souhaits : </FONT>';
-			echo '<select name="HistoSouhaits" '.$BloquerAcces.' >';
+			echo '<select name="HistoSouhaits" class="form-control form-control-sm" '.$BloquerAcces.' >';
 			echo '<option value="0">Historique des souhaits</option>';
 			$counter=1;
 			$result = mysqli_query($eCOM_db, $requete);
@@ -760,18 +985,29 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			}
 			echo '</select>';
 		}
-
+		echo '</div>';
+		echo '</div>';
 	}
-	echo '</TD><TD></TD></TR>';
-	echo '<TR><TD>&nbsp</TD></TR>';
+	
+	//echo '</TD><TD></TD></TR>';
+	//echo '<TR><TD>&nbsp</TD></TR>';
 	
 	
 	// Denier du culte
 	
-	if (fCOM_Get_Autorization( 0)>= 40) {
-		echo '<TR><TD valign="top"><B><FONT SIZE="2">Denier de l\'église:</FONT></TD>';
-		echo '<TD>';
+	if (fCOM_Get_Autorization( 0)>= 40) {  // was 40
+		echo '<div class="row mt-4">';
+		echo '<div class="col">';
+		echo '<B>Denier de l\'église :</B>';
+		echo '</div>';
+		echo '</div>';
+		
+		//echo '<TR>';
+		//echo '<TD><B>Denier de l\'église:</B></TD></TR><TR><TD>';
+		
 		if ( $id > 0 ) {
+			echo '<div class="row">';
+			echo '<div class="col">';
 			$Compteur_Denier = 0;
 			$requete = 'SELECT * FROM `Denier` WHERE Paroissien_id='.$id.' ORDER BY `Date` '; 
 			$result = mysqli_query($eCOM_db, $requete);
@@ -779,57 +1015,105 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 			{
 				$Compteur_Denier = $Compteur_Denier + 1;
 				echo '<FONT SIZE="2">['.$row3['Montant'].' €</FONT><FONT Size="1"> le '.date("d/m/Y", strtotime($row3['Date'])).'</FONT>';
-				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerDenier&id='.$row3['id'].' TITLE="Retirer ce denier"><img src="images/delete.gif" width=10 height=10border=0 alt="Retirer Denier"></a>  ';
+				echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=RetirerDenier&id='.$row3['id'].' '.$BloquerAcces.' TITLE="Retirer ce denier"><img src="images/delete.gif" width=10 height=10border=0 alt="Retirer Denier"></a>  ';
 				echo '<FONT SIZE="2">] </FONT>';
 				if ( $Compteur_Denier % 3 == 0 ) {
-					echo '<BR>';
+					//echo '<BR>';
 				}
 			}
-			echo '</FONT>';
+			//echo '</FONT>';
 			if ($Compteur_Denier > 0) {
-				echo '<BR>';
+				//echo '<BR>';
 			}
-	
-			echo '<FONT SIZE="2">';
-			echo 'Montant <input type=text name="Montant_denier" placeholder="en euros" size="12" maxlength="12"> ';
-			echo 'Date <input type=text name="Date_denier" placeholder="JJ/MM/AAAA" size="10" maxlength="10">';
-			echo '</font>';
-			echo '<span align="center"><input type="submit" formnovalidate="formnovalidate" name="ajouter_Denier" value="Ajouter Denier">';
-			echo '</BR>';
+			echo '</div>';
+			echo '</div>';
+			
+			echo '<div class="row">';
+			
+			echo '<div class="col">';
+			echo '<label for="Montant_denier">Montant</label>';
+			echo '<div class="input-group">';
+			echo '<span class="input-group-addon"><i class="fa fa-eur"></i></span>';
+			echo '<input type="text" id="Montant_denier" '.$BloquerAcces.' class="form-control form-control-sm" name="Montant_denier" placeholder="en euros" maxlength="12"> ';
+			echo '</div>';
+			echo '</div>';
+			
+			echo '<div class="col">';
+			echo '<label for="Date_denier">Date</label>';
+			echo '<input type="date" id="Date_denier" '.$BloquerAcces.' class="form-control form-control-sm" name="Date_denier" placeholder="JJ/MM/AAAA" size="10" maxlength="10">';
+			echo '</div>';
+			
+			echo '<div class="col mt-4">';
+			echo ' <span align="center"><input type="submit" formnovalidate="formnovalidate" '.$BloquerAcces.' class="btn btn-outline-secondary btn-sm md-t3" name="ajouter_Denier" value="Ajouter Denier">';
+			echo '</div>';
+			echo '</div>';
+			//echo '</div>';
 		}
-		echo '</TD><TD></TR><TR></TR>';
+		//echo '</TD><TD></TR><TR></TR>';
+	}
+	
+	if ($pToutAfficher) { 
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
 	}
 	
 	// Commentaire
-	echo '<TR><TD colspan="3" bgcolor="#eeeeee">';
-	echo '<B><FONT SIZE="2">Commentaires:</FONT></B>';
-	echo '<BR>';
+	//echo '<TR><TD>';
+	echo '<div class="row mt-4">';
+	echo '<div class="col">';
+	echo '<B>Commentaire :</B>';
+	echo '</div>';
+	echo '</div>';
+	
+	//echo '<B>Commentaires:</B>';
+	//echo '<BR>';
+	echo '<div class="row">';
+	echo '<div class="col">';
 	if ( $id > 0 ) {
-		echo '<textarea cols=70 rows=5 name="Commentaire" maxlength="350" value ="'.Securite_html($row['Commentaire']).'">'.Securite_html($row['Commentaire']).'</textarea>';
+		echo '<textarea style="width:100%" '.$BloquerAcces.' rows=5 name="Commentaire" maxlength="350" value ="'.Securite_html($row['Commentaire']).'">'.Securite_html($row['Commentaire']).'</textarea>';
 	}
+	echo '</div>';
+	echo '</div>';
 
 	echo '<input type=hidden name=RetourPage value=SuiviParoissien>';
 	//echo '<input type=hidden name=id_Bapteme value=0>';
-	echo '</TD></TR>';
-	echo '<TR><TD></TD><TD>';
- 
-	if ( $id > 0 ) {
-		echo '<input type=hidden name=Individu_id value='.$id.'>';
-		echo '<br><div align="center"><input type="submit" formnovalidate="formnovalidate" name="edit_individu" value="Enregistrer">';
-	} else {
-		echo '<br><div align="center"><input type="submit" formnovalidate="formnovalidate" name="submit_individu" value="Enregistrer">';
-	}
-	echo '<input type="reset" name="Reset" value="Reset">';
-	if (fCOM_Get_Autorization( 0)>= 50) {
-		echo '<input type="submit" name="delete_fiche_Paroissien" value="Détruire la fiche">';
-		echo '<input type="hidden" name="id" value="'.$id.'">';
-	}
-	echo '</TD></TR></TABLE>';
-	echo '</FORM>';
-	echo '</CENTER>';
+	//echo '</TD></TR>';
+	//echo '<TR><TD>';
 
-	fCOM_address_bottom();
-	exit; 
+	if ($pToutAfficher) {
+		echo '<div class="row mt-2 mb-2" align="center">';
+		echo '<div class="col">';
+		if ( $id > 0 ) {
+			echo '<input type=hidden name=Individu_id value='.$id.'>';
+			echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="edit_individu" value="Enregistrer"> ';
+		} else {
+			echo '<<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="submit_individu" value="Enregistrer"> ';
+		}
+		echo '<input type="reset" class="btn btn-secondary btn-sm" name="Reset" value="Reset">';
+		if (fCOM_Get_Autorization( 0)>= 50) {
+			echo ' <input type="submit" class="btn btn-secondary btn-sm" name="delete_fiche_Paroissien" value="Détruire la fiche">';
+			echo '<input type="hidden" name="id" value="'.$id.'">';
+		}
+		echo '</div>';
+		echo '</div>';
+	} else {
+		if ( $id > 0 ) {
+			echo '<div class="row mt-2 mb-2" align="center">';
+			echo '<div class="col">';
+			pCOM_DebugAdd($debug,"Paroissien:Edit - _GET['id'] :".$_GET['id']);
+			pCOM_DebugAdd($debug,"Paroissien:Edit - _GET['old_id'] :".$_GET['old_id']);
+			echo '<input type=hidden name=Individu_id value='.$_GET['id'].'>';	
+			echo '<input type=hidden name=Individu_old_id value='.$_GET['old_id'].'>';
+			echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="Basculer_histo" value="Basculer historique à droite"> ';
+			echo '</div>';
+			echo '</div>';
+		}
+	}
+	//echo '</TD></TR></TABLE>';
+	echo '</FORM>';
+	//echo '</CENTER>';
+
 }
 
 
@@ -839,32 +1123,37 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit_Individu") {
 
 if ( isset( $_POST['Database_Acces'] ) AND ($_POST['Database_Acces']=="0" OR $_POST['Database_Acces']=="1" )) {
 	Global $eCOM_db;
-	$debug = True;
+	$debug = False;
 	//pCOM_DebugInit($debug);
 	pCOM_DebugAdd($debug, "Paroissien:Database_Acces=".$_POST['Database_Acces']."");
 	
 	if (fCOM_Get_Autorization( 0)>= 90) {
 		pCOM_DebugAdd($debug, "Paroissien:Database_Acces - administrateur, sauvegarde des data");
 		
-		$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-		$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-		$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-		$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-		pCOM_DebugAdd($debug, "Paroissien:Database_Acces.Enregistrer - Actif=".$check_Actif);
-		pCOM_DebugAdd($debug, "Paroissien:Database_Acces.Enregistrer - Dead=".$check_Dead);
-
-		Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+		Paroissien_sauvegarder_Fiche ();
 		
 		$requete='SELECT * FROM Admin_membres WHERE Individu_id='.$_POST['Individu_id'].'';
 		pCOM_DebugAdd($debug, "Paroissien:Database_Acces requete=".$requete."");
 		$result=mysqli_query($eCOM_db, $requete);
 		$count=mysqli_num_rows($result);
 		pCOM_DebugAdd($debug, "Paroissien:Database_Acces count=".$count."");
-		$mynaissance = substr(fCOM_getSqlDate($_POST['Naissance'],0,0,0), 0, 10);
-
+		//$mynaissance = substr(fCOM_getSqlDate($_POST['Naissance'],0,0,0), 0, 10);
+		$mynaissance = $_POST['Naissance'];
+		
+		$debug = False;
+		$email = trim($_POST['e_mail']).";";
+		$tab_email = explode(";",$email);
+		$email="";
+		$i = 0;
+		while (strlen($tab_email[$i]) > 0) {
+			$email = trim($tab_email[$i]);
+			$i = $i+1;
+		}
+		
 		if ($count > 0) {
 			pCOM_DebugAdd($debug, "Paroissien:Database_Acces.La fiche existe déjà");
-			$result=mysqli_query($eCOM_db, 'UPDATE Admin_membres SET droit_acces='.(int)$_POST['Database_Acces'].', Naissance="'.$mynaissance.'", password="" WHERE Individu_id='.$_POST['Individu_id'].'') or die("Paroissien-Database_Acces: Erreur d'ajout d'accès à la base de données: ".mysqli_error($eCOM_db)."");		
+			$result=mysqli_query($eCOM_db, 'UPDATE Admin_membres SET droit_acces='.(int)$_POST['Database_Acces'].', Naissance="'.$mynaissance.'", username="'.$email.'", password="" WHERE Individu_id='.$_POST['Individu_id'].'') or die("Paroissien-Database_Acces: Erreur d'ajout d'accès à la base de données: ".mysqli_error($eCOM_db)."");		
+		
 		} else {
 			pCOM_DebugAdd($debug, "Paroissien:Database_Acces. La fiche n'existe pas, il faut en créer une");
 			// 13/04/2017, récupérer la deuxième adresse mail, s'il y en a deux
@@ -876,29 +1165,140 @@ if ( isset( $_POST['Database_Acces'] ) AND ($_POST['Database_Acces']=="0" OR $_P
 				$email = trim($tab_email[$i]);
 				$i = $i+1;
 			}
-			$result=mysqli_query($eCOM_db, 'INSERT INTO Admin_membres (Individu_id, username, Naissance, droit_acces) VALUES ('.$_POST['Individu_id'].', "'.$email.'", "'.$mynaissance.'", '.(int)$_POST['Database_Acces'].')') or die("Paroissien-Database_Acces: Erreur de modification d'accès à la base de données: ".mysqli_error($eCOM_db)."");		}
+			$result=mysqli_query($eCOM_db, 'INSERT INTO Admin_membres (Individu_id, username, Naissance, droit_acces) VALUES ('.$_POST['Individu_id'].', "'.$email.'", "'.$mynaissance.'", '.(int)$_POST['Database_Acces'].')') or die("Paroissien-Database_Acces: Erreur de modification d'accès à la base de données: ".mysqli_error($eCOM_db)."");	
+			
+			// gérer les accès LDAP
+			//----------------------
+			if ($_SESSION["LDAP_Actif"]) {
+				
+				pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP Actif");
+				$LDAP_Pointeur = ldap_connect('localhost',389) or die("Connection LDAP impossible");
+				ldap_set_option($LDAP_Pointeur, LDAP_OPT_PROTOCOL_VERSION, 3);
+				$LDAP_username="cn=admin,dc=ndsagesse,dc=com";
+				$mypassword = "P@ul@06";
+				$ldapbind = ldap_bind($LDAP_Pointeur, $LDAP_username, $mypassword);
+				if ( $ldapbind) {
+					pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP ldapbind = ok");
+					$ldapsearch = ldap_search($LDAP_Pointeur, "dc=ndsagesse,dc=com", "(&(objectClass=*)(cn=".$email."))", array("cn"));
+					$nb_user=ldap_get_entries($LDAP_Pointeur, $ldapsearch);
+					if ($nb_user['count'] == 0) {
+						pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP le user n'existe pas");
+						$attribut['cn']=$email;
+						$attribut['userPassword']="freddoetbenoittravaillentleLDAP06";
+						$attribut['objectClass'][0]="posixAccount";
+						$attribut['gidNumber']=$_POST['Individu_id'];
+						$attribut['homeDirectory']="-";
+						$attribut['objectClass'][1]="inetOrgPerson";
+						$attribut['uidNumber']=$_POST['Individu_id'];
+						$attribut['uid']=$_POST['Individu_id'];
+						$attribut['sn']=$email;
+						$attribut['objectClass'][2]="top";
+						if (ldap_add($LDAP_Pointeur, "cn=".$email.",ou=users,dc=ndsagesse,dc=com", $attribut)) {
+							pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP User ajouté avec succès");
+						} else {
+							pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP User ajouté avec erreur");
+						}
+					} else {
+						pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP le user existe déjà");
+					}
+				}
+			} else {
+				pCOM_DebugAdd($debug, "Paroissien:Database_Acces LDAP pas Actif");
+			}
+		}
 	}
 	echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPageCourante"].'">';
 	exit;
 }
 
+// --------------------------------
+// Fiche en doublon
+//---------------------------------
+// Dans le cadre de fiche en doublon, il faut pouvoir récupérer la photo de la vieille fiche
+if (isset( $_POST['Rename_Photo'] ) AND  $_POST['Rename_Photo']=="Basculer photo à droite") {
+	
+	$old_id=$_POST['Individu_old_id'];
+	$id=$_POST['Individu_id'];
+	
+	if (file_exists("Photos/Individu_".$id.".jpg")) { 
+		rename("Photos/Individu_".$id.".jpg", "Photos/Individu_".$id."_old.jpg");
+	}
+	rename("Photos/Individu_".$old_id.".jpg", "Photos/Individu_".$id.".jpg");
+	echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPageCourante"].'">';
+	exit;
+}
+
+// Dans le cadre de fiche en doublon, il faut pouvoir basculer l'historique vers la nouvelle fiche
+if (isset( $_POST['Basculer_histo'] ) AND  $_POST['Basculer_histo']=="Basculer historique à droite") {
+	
+	$old_id=$_POST['Individu_old_id'];
+	$id=$_POST['Individu_id'];
+	
+	// vérifier que le paroissien n'est pas un conjoint d'un autre paroissien
+	$requete = 'SELECT id, Conjoint_id FROM Individu WHERE id='.$id;
+	$result = mysqli_query($eCOM_db, $requete);
+	while($row = mysqli_fetch_assoc($result)) {
+		if ($row['Conjoint_id'] == 0) {
+			$requete = 'SELECT id, Conjoint_id FROM Individu WHERE id='.$old_id;
+			$result = mysqli_query($eCOM_db, $requete);
+			while($row2 = mysqli_fetch_assoc($result)) {
+				if ($row2['Conjoint_id'] >= 0) {
+					mysqli_query($eCOM_db, 'UPDATE Individu SET Conjoint_id='.$row2['Conjoint_id'].' WHERE id ='.$id) or die (mysqli_error($eCOM_db));
+					mysqli_query($eCOM_db, 'UPDATE Individu SET Conjoint_id='.$id.' WHERE id ='.$row2['Conjoint_id']) or die (mysqli_error($eCOM_db));
+				}
+			}
+		}
+	}
+	
+	// Pere de
+	mysqli_query($eCOM_db, 'UPDATE Individu SET Pere_id='.$id.' WHERE Pere_id='.$old_id) or die (mysqli_error($eCOM_db));
+	
+	// Mere de
+	mysqli_query($eCOM_db, 'UPDATE Individu SET Mere_id='.$id.' WHERE Mere_id='.$old_id) or die (mysqli_error($eCOM_db));
+	
+	// Liste des services associées à la fiche
+	$requete = 'SELECT Individu_id FROM QuiQuoi WHERE Individu_id='.$old_id;
+	$result = mysqli_query($eCOM_db, $requete);
+	if (mysqli_num_rows( $result ) >= 1) {
+		mysqli_query($eCOM_db, 'UPDATE QuiQuoi SET Individu_id='.$id.' 
+			WHERE Individu_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	}
+
+	// Ancien Baptisé, ou célébrant Baptème
+	mysqli_query($eCOM_db, 'UPDATE Bapteme SET Baptise_id='.$id.' 
+			WHERE Baptise_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	mysqli_query($eCOM_db, 'UPDATE Bapteme SET Celebrant_id='.$id.' 
+			WHERE Celebrant_id ='.$old_id) or die (mysqli_error($eCOM_db));
+
+	// Ancien marié, ou célébrant mariage
+	mysqli_query($eCOM_db, 'UPDATE Fiancés SET Prem_Accueil_id='.$id.' 
+			WHERE Prem_Accueil_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	mysqli_query($eCOM_db, 'UPDATE Fiancés SET Celebrant_id='.$id.' 
+			WHERE Celebrant_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	mysqli_query($eCOM_db, 'UPDATE Fiancés SET Accompagnateur_id='.$id.' 
+			WHERE Accompagnateur_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	mysqli_query($eCOM_db, 'UPDATE Fiancés SET LUI_id='.$id.' 
+			WHERE LUI_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	mysqli_query($eCOM_db, 'UPDATE Fiancés SET ELLE_id='.$id.' 
+			WHERE ELLE_id ='.$old_id) or die (mysqli_error($eCOM_db));
+	
+	// Paroissien ayant participé au denier du culte
+	mysqli_query($eCOM_db, 'UPDATE Denier SET Paroissien_id='.$id.' 
+			WHERE Paroissien_id ='.$old_id) or die (mysqli_error($eCOM_db));
+
+	echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPageCourante"].'">';
+	exit;
+}
 
 //adds records to table
 if (isset( $_POST['submit_individu'] ) AND $_POST['submit_individu']=="Enregistrer" ) {
 //if ($submit_individu) {
 	$debug=false;
-	$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-	$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-	$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-	$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-	pCOM_DebugAdd($debug, "Paroissien:submit_individu.Enregistrer - Actif=".$check_Actif);
-	pCOM_DebugAdd($debug, "Paroissien:submit_individu.Enregistrer - Dead=".$check_Dead);
-
-	Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+	Paroissien_sauvegarder_Fiche ();
 		
-	echo '<B><CENTER><FONT face="verdana" size="2" color=green>Fiche paroissien enregistrée avec succès</FONT></CENTER></B>';
-
-	echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPage"].'">';
+	//echo '<B><CENTER><FONT face="verdana" size="2" color=green>Fiche paroissien enregistrée avec succès</FONT></CENTER></B>';
+	echo '<div class="alert alert-success">Fiche enregistrée avec succès.</strong></div>';
+	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
 	exit;
 }
 
@@ -915,6 +1315,7 @@ if ( isset( $_POST['edit_individu'] ) AND $_POST['edit_individu']=="Enregistrer"
 	
 	$debug = True;
 	pCOM_DebugInit($debug);
+	fCOM_Bootstrap_init();
 
 	//debug($Sex . "<BR>\n");
 	pCOM_DebugAdd("Paroissien:edit_individu.Enregistrer - Mere id = " .$_POST['Mere_id']. "<BR>\n");
@@ -923,23 +1324,11 @@ if ( isset( $_POST['edit_individu'] ) AND $_POST['edit_individu']=="Enregistrer"
 	
 	if (fCOM_Get_Autorization( 0) >= 30) {
 		
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Actif=".$_POST['checkbox_actif']);
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Actif=".$_POST['Actif']);
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Dead=".$_POST['checkbox_dead']);
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Dead=".$_POST['Dead']);
+		Paroissien_sauvegarder_Fiche ();
 
-		$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-		$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-		$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-		$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Actif=".$check_Actif);
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Dead=".$check_Dead);
-
-		Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
-
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Fiche paroissien enregistrée avec succès</FONT></CENTER></B>';
+		echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> la fiche a été enregistrée avec succès.</div>';
 	}
-	echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPage"].'">';
+	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
 	exit;
 
 }
@@ -949,23 +1338,22 @@ function sauvegarder_avant() {
 	$debug = True;
 	pCOM_DebugAdd($debug, "Paroissien.php:sauvegarde_avant : Individu_id=".$_POST['Individu_id']." Nom=".$_POST['Nom']);
 	
-	$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-	$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-	$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-	$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-	pCOM_DebugAdd($debug, "Paroissien:sauvegarder_avant.Enregistrer - Actif=".$check_Actif);
-	pCOM_DebugAdd($debug, "Paroissien:sauvegarder_avant.Enregistrer - Dead=".$check_Dead);
-
-	Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+	Paroissien_sauvegarder_Fiche ();
 
 }
 
 
-function Paroissien_sauvegarder_Fiche ($Individu_id, $Nom, $Prenom, $Sex, $Diacre, $Pretre, $Dead, $Actif, $Naissance, $LangueMaternelle, $e_mail, $Telephone, $Adresse, $Pere_id, $Mere_id, $Conjoint_id, $Confession, $Bapteme, $Communion, $ProfessionFoi, $Confirmation, $Commentaire) {
+function Paroissien_sauvegarder_Fiche () {// ($Individu_id, $Nom, $Prenom, $Sex, $Diacre, $Pretre, $Dead, $Actif, $Naissance, $LangueMaternelle, $e_mail, $Telephone, $Adresse, $Pere_id, $Mere_id, $Conjoint_id, $Confession, $Bapteme, $Communion, $ProfessionFoi, $Confirmation, $Commentaire) {
+	
 	Global $eCOM_db;
 	$debug = False;
 
-	$requeteTest = 'SELECT id, Nom, Prenom FROM `Individu` WHERE Nom COLLATE latin1_swedish_ci LIKE "%'.$Nom.'%" AND Prenom COLLATE latin1_swedish_ci LIKE "%'.$Prenom.'%" AND Sex = "'.$Sex.'" AND Naissance = '.fCOM_getSqlDate($Naissance,0,0,0).'';
+	$Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
+	$Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
+	$Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
+	$Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
+	
+	$requeteTest = 'SELECT id, Nom, Prenom FROM `Individu` WHERE Nom COLLATE latin1_swedish_ci LIKE "%'.$_POST['Nom'].'%" AND Prenom COLLATE latin1_swedish_ci LIKE "%'.$_POST['Prenom'].'%" AND Sex = "'.$_POST['Sex'].'" AND Naissance = '.$_POST['Naissance'].'';
 	
 	//pCOM_DebugAdd($debug, "Paroissien:Paroissien_sauvegarder_Fiche - requeteTest=".$requeteTest." -> Individu_id=".$Individu_id);
 	pCOM_DebugAdd($debug, "Paroissien.php:Paroissien_sauvegarder_Fiche:Actif=".$Actif);
@@ -975,7 +1363,7 @@ function Paroissien_sauvegarder_Fiche ($Individu_id, $Nom, $Prenom, $Sex, $Diacr
 	$resultTest = mysqli_query($eCOM_db, $requeteTest);
 	$ContinuerSauvegarde = True;
 	while ( $Listid = mysqli_fetch_assoc($resultTest)) {
-		if ( $Listid['id'] != $Individu_id ){
+		if ( $Listid['id'] != $_POST['Individu_id'] ){
 			$ContinuerSauvegarde = False;
 			$MemoId=$Listid['id'];
 		}
@@ -984,16 +1372,11 @@ function Paroissien_sauvegarder_Fiche ($Individu_id, $Nom, $Prenom, $Sex, $Diacr
 	pCOM_DebugAdd($debug, "Paroissien:Paroissien_sauvegarder_Fiche - ContinuerSauvegarde=".$ContinuerSauvegarde);
 
 	if ($ContinuerSauvegarde == True) {
-		$Naissance = substr(fCOM_getSqlDate($Naissance,0,0,0), 0, 10);
-		$Bapteme = substr(fCOM_getSqlDate($Bapteme,0,0,0), 0, 10);
-		$Communion = substr(fCOM_getSqlDate($Communion,0,0,0), 0, 10);
-		$debug=true;
-		$ProfessionFoi = substr(fCOM_getSqlDate($ProfessionFoi,0,0,0), 0, 10);
+
 		$debug = false;
-		$Confirmation = substr(fCOM_getSqlDate($Confirmation,0,0,0), 0, 10);
 		
-		$Nom = Securite_bdd($Nom);
-		$Prenom = ucwords(strtolower($Prenom));
+		$Nom = Securite_bdd($_POST['Nom']);
+		$Prenom = ucwords(strtolower($_POST['Prenom']));
 		if (strpos($Prenom, "-")===false) {
 		} else {
 			$pos=strpos($Prenom, "-");
@@ -1001,63 +1384,57 @@ function Paroissien_sauvegarder_Fiche ($Individu_id, $Nom, $Prenom, $Sex, $Diacr
 		}
 		
 		$Prenom = Securite_bdd($Prenom);
-		$Sex = Securite_bdd($Sex);
+		$Sex = Securite_bdd($_POST['Sex']);
 		$Diacre = Securite_bdd($Diacre);
 		$Pretre = Securite_bdd($Pretre);
 		$Dead = Securite_bdd($Dead);
 		$Actif = Securite_bdd($Actif);
-		$LangueMaternelle = Securite_bdd($LangueMaternelle);
-		$e_mail = format_email_list($e_mail, ";");
-		$Telephone = Securite_bdd(format_Telephone($Telephone, " "), " ");
-		$Adresse = Securite_bdd($Adresse);
-		$Pere_id = Securite_bdd($Pere_id);
-		$Mere_id = Securite_bdd($Mere_id);
-		$Conjoint_id = Securite_bdd($Conjoint_id);
-		$Confession = Securite_bdd($Confession);
-		$Commentaire = Securite_bdd($Commentaire);
+		$LangueMaternelle = Securite_bdd($_POST['LangueMaternelle']);
+		$e_mail = format_email_list($_POST['e_mail'], ";");
+		$Telephone = Securite_bdd(format_Telephone($_POST['Telephone'], " "), " ");
+		$Adresse = Securite_bdd($_POST['Adresse']);
+		$Pere_id = Securite_bdd($_POST['Pere_id']);
+		$Mere_id = Securite_bdd($_POST['Mere_id']);
+		$Conjoint_id = Securite_bdd($_POST['Conjoint_id']);
+		$Commentaire = Securite_bdd($_POST['Commentaire']);
 		
 		if(isset($Diacre) AND $Diacre=="on"){	$SetDiacre = 1;} else {$SetDiacre = 0;}
 		if(isset($Pretre) AND $Pretre=="on"){	$SetPretre = 1;} else {$SetPretre = 0;}
 		if(isset($Dead) AND $Dead=="on"){	$SetDead = 1;} else {$SetDead = 0;}
 		if(isset($Actif) AND $Actif=="on"){	$SetActif = 1;} else {$SetActif = 0;}
 		
-		pCOM_DebugAdd($debug, "UPDATE Individu SET Nom='".$Nom."' WHERE id=".$Individu_id." ");
+		pCOM_DebugAdd($debug, "UPDATE Individu SET Nom='".$Nom."' WHERE id=".$_POST['Individu_id']." ");
 		
-		mysqli_query($eCOM_db, 'UPDATE Individu SET Nom="'.$Nom.'" WHERE id='.$Individu_id.' ') or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Prenom='".$Prenom."' WHERE id = ".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Sex='".$Sex."' WHERE id = ".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, 'UPDATE Individu SET Diacre='.$SetDiacre.' WHERE id ='.$Individu_id.' ') or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, 'UPDATE Individu SET Pretre='.$SetPretre.' WHERE id ='.$Individu_id.' ') or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, 'UPDATE Individu SET Dead='.$SetDead.' WHERE id ='.$Individu_id.' ') or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, 'UPDATE Individu SET Actif='.$SetActif.' WHERE id ='.$Individu_id.' ') or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Naissance='".$Naissance."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET LangueMaternelle='".$LangueMaternelle."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET e_mail='".$e_mail."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Telephone='".$Telephone."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Adresse='".$Adresse."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Pere_id='".$Pere_id."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Mere_id='".$Mere_id."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Conjoint_id='".$Conjoint_id."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Confession='".$Confession."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		if ($Bapteme != NULL) {
-			mysqli_query($eCOM_db, "UPDATE Individu SET Bapteme='".$Bapteme."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		}
-		if ($Communion != NULL) {
-			mysqli_query($eCOM_db, "UPDATE Individu SET Communion='".$Communion."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		}
-		if ($ProfessionFoi != NULL) {
-			mysqli_query($eCOM_db, "UPDATE Individu SET ProfessionFoi='".$ProfessionFoi."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		}
-		if ($Confirmation != NULL) {
-			mysqli_query($eCOM_db, "UPDATE Individu SET Confirmation='".$Confirmation."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		}
-		mysqli_query($eCOM_db, "UPDATE Individu SET Commentaire='".$Commentaire."' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Nom="'.$Nom.'" WHERE id='.$_POST['Individu_id'].' ') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Prenom='".$Prenom."' WHERE id = ".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Sex='".$Sex."' WHERE id = ".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Diacre='.$SetDiacre.' WHERE id ='.$_POST['Individu_id'].' ') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Pretre='.$SetPretre.' WHERE id ='.$_POST['Individu_id'].' ') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Dead='.$SetDead.' WHERE id ='.$_POST['Individu_id'].' ') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Individu SET Actif='.$SetActif.' WHERE id ='.$_POST['Individu_id'].' ') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Naissance='".$_POST['Naissance']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET LangueMaternelle='".$LangueMaternelle."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET e_mail='".$e_mail."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Telephone='".$Telephone."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Adresse='".$Adresse."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Pere_id='".$Pere_id."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Mere_id='".$Mere_id."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Conjoint_id='".$Conjoint_id."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Confession='".$_POST['Confession']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+
+		mysqli_query($eCOM_db, "UPDATE Individu SET Bapteme='".$_POST['Bapteme']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Communion='".$_POST['Communion']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET ProfessionFoi='".$_POST['ProfessionFoi']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Confirmation='".$_POST['Confirmation']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+
+		mysqli_query($eCOM_db, "UPDATE Individu SET Commentaire='".$Commentaire."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
 		
-		mysqli_query($eCOM_db, 'UPDATE Individu SET MAJ="'.date("Y-m-d H:i:s").'" WHERE id='.$Individu_id.' ') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Individu SET MAJ="'.date("Y-m-d H:i:s").'" WHERE id='.$_POST['Individu_id'].' ') or die (mysqli_error($eCOM_db));
 
 	} else {
-		mysqli_query($eCOM_db, "UPDATE Individu SET Nom=".$Nom.".' dupliqué' WHERE id=".$Individu_id." ") or die (mysqli_error($eCOM_db));
-		mysqli_query($eCOM_db, "UPDATE Individu SET Prenom=".$Prenom.".' dupliqué' WHERE id = ".$Individu_id." ") or die (mysqli_error($eCOM_db));
+		
+		mysqli_query($eCOM_db, "UPDATE Individu SET Nom=".$Nom.".' dupliqué' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET Prenom=".$Prenom.".' dupliqué' WHERE id = ".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
 		echo '<B><CENTER><FONT face="verdana" size="2" color=red>Impossible de créer cette nouvelle fiche, le(la) <A URL=/SuiviParoissien.php?action=edit_Individu&id='.$MemoId.'>paroissien(ne)</A> existe déjà dans la base</FONT></CENTER></B>';
 		//echo '<META http-equiv="refresh" content="2; URL=https://'.$_SERVER['SERVER_NAME'].'/SuiviParoissien.php?action=edit_Individu&id='.$MemoId.'">';
 		exit;
@@ -1100,14 +1477,8 @@ if ( isset( $_POST['NewBouton_service'] ) AND
    ($_POST['NewBouton_service']=="En test ne pas utiliser")) {
 
 	$debug=false;
-	$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-	$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-	$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-	$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-	pCOM_DebugAdd($debug, "Paroissien:NewBouton_service.Enregistrer - Actif=".$check_Actif);
-	pCOM_DebugAdd($debug, "Paroissien:NewBouton_service.Enregistrer - Dead=".$check_Dead);
 
-	Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+	Paroissien_sauvegarder_Fiche ();
 
 	//echo "<A HREF=\"javascript:AjouterService('".$_POST['Individu_id']."', '0')\">";
 	?><script language="JavaScript" type="text/javascript">
@@ -1252,14 +1623,7 @@ if ( (isset( $_POST['ajouter_ressourcement'] ) AND $_POST['ajouter_ressourcement
 	$debug = False;
 	if (fCOM_Get_Autorization( 0)>= 30) {
 
-		$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-		$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-		$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-		$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-		pCOM_DebugAdd($debug, "Paroissien:ajouter_souhait.Enregistrer - Actif=".$check_Actif);
-		pCOM_DebugAdd($debug, "Paroissien:ajouter_souhait.Enregistrer - Dead=".$check_Dead);
-
-		Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+		Paroissien_sauvegarder_Fiche ();
 
 		if (date("n") <= 7 )
 		{
@@ -1300,14 +1664,7 @@ if ( (isset( $_POST['delete_ressourcement'] ) AND $_POST['delete_ressourcement']
 	$debug = false;
 	if (fCOM_Get_Autorization( 0)>= 30) {
 
-		$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-		$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-		$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-		$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Actif=".$check_Actif);
-		pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Dead=".$check_Dead);
-
-		Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+		Paroissien_sauvegarder_Fiche ();
 
 		if (date("n") <= 7 )
 		{
@@ -1334,21 +1691,15 @@ if ( (isset( $_POST['delete_ressourcement'] ) AND $_POST['delete_ressourcement']
 if ( isset( $_POST['ajouter_Denier'] ) AND $_POST['ajouter_Denier']=="Ajouter Denier" ) {
 //if ($ajouter_Denier) {
 	Global $eCOM_db;
-	$debug = True;
+	$debug = False;
 	if (fCOM_Get_Autorization( 0)>= 40) {
 
 		if (fCOM_Get_Autorization( 0)>= 50) {
-			$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-			$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-			$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-			$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-			pCOM_DebugAdd($debug, "Paroissien:ajouter_Denier.Enregistrer - Actif=".$check_Actif);
-			pCOM_DebugAdd($debug, "Paroissien:ajouter_Denier.Enregistrer - Dead=".$check_Dead);
-
-			Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+			Paroissien_sauvegarder_Fiche ();
 		}
 		$Montant_denier=number_format(floatval($_POST['Montant_denier']),2,'.','');
-		$Date_denier = fCOM_getSqlDate($_POST['Date_denier'],0,0,0);
+		//$Date_denier = fCOM_getSqlDate($_POST['Date_denier'],0,0,0);
+		$Date_denier = $_POST['Date_denier'];
 
 		pCOM_DebugAdd($debug, "Paroissien:ajouter_Denier - Date denier =".$Date_denier);
 		pCOM_DebugAdd($debug, "Paroissien:ajouter_Denier - Montant denier =".$Montant_denier);
@@ -1388,12 +1739,13 @@ if ( isset( $_POST['delete_fiche_Paroissien'] ) AND $_POST['delete_fiche_Paroiss
 
 	while($row = mysqli_fetch_assoc($result))
 	{
-		address_top();
-		echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Destruction d\'une fiche Paroissien</B><BR></TD></TR>';
-		echo '<TR><TD BGCOLOR="#EEEEEE">';
+		fMENU_top();
+		fMENU_Title ("Destruction d'une fiche Paroissien");
+		
+		echo '<TABLE><TR><TD>';
+		//echo '<div>';
 		echo '<FONT FACE="Verdana" size="2" >Etes-vous certain de vouloir détruire cette fiche : ';
-		echo $row['Prenom']. ' ' .$row['Nom']. ' ?</FONT></TD></TR>';
+		echo $row['Prenom']. ' ' .$row['Nom']. ' (Fiche No '.$_POST['id'].')?</FONT></TD></TR>';
 		
 		// vérifier que le paroissien n'est pas un conjoint d'un autre paroissien
 		$requete = 'SELECT T1.id, T1.Nom, T1.Prenom 
@@ -1427,11 +1779,11 @@ if ( isset( $_POST['delete_fiche_Paroissien'] ) AND $_POST['delete_fiche_Paroiss
 			}
 		}
 		
-		// Liste des Ressourcements associées à la fiche
+		// Liste des Ressourcements, ou .. différent de service associées à la fiche
 		$requete = 'SELECT DISTINCT T1.Nom AS Nom_Activite, T0.Session AS Annee
 			FROM QuiQuoi T0 
 			LEFT JOIN Activites T1 ON T1.id=T0.Activite_id
-			WHERE T0.Individu_id='.$_POST['id'].' AND T1.Formation=1
+			WHERE T0.Individu_id='.$_POST['id'].' AND T1.Service!=1
 			ORDER BY T0.Session, T1.Nom';
 		$result = mysqli_query($eCOM_db, $requete);
 		if (mysqli_num_rows( $result )>=1)
@@ -1461,17 +1813,63 @@ if ( isset( $_POST['delete_fiche_Paroissien'] ) AND $_POST['delete_fiche_Paroiss
 			}
 		}
 
-		if ($DestructionPossible == True) {
-			echo '<TR><TD><P><form method=post action="'.$PHP_SELF.'">';
-			echo '<input type="submit" name="delete_fiche_Paroissien_confirme" value="Oui">';
-			echo '<input type="submit" name="" value="Non">';
+		// Ancien Baptisé, ou célébrant Baptème
+		$requete = 'SELECT DISTINCT id
+			FROM Bapteme 
+			WHERE Baptise_id='.$_POST['id'].' OR Celebrant_id='.$_POST['id'];
+		$result = mysqli_query($eCOM_db, $requete);
+		if (mysqli_num_rows( $result )>=1)
+		{
+			$DestructionPossible = False;
+			echo '<TR><TD><B><FONT FACE="Verdana" size="2" >Ancien Baptisé, ou célébrant Baptème</FONT></B></TD></TR>';
+		}
+
+		// Ancien marié, ou célébrant mariage
+		$requete = 'SELECT DISTINCT id
+			FROM Fiancés 
+			WHERE Baptise_id='.$_POST['id'].' OR Celebrant_id='.$_POST['id'].'  OR Accompagnateur_id='.$_POST['id'].'  OR LUI_id='.$_POST['id'].' OR ELLE_id='.$_POST['id'];
+		$result = mysqli_query($eCOM_db, $requete);
+		if (mysqli_num_rows( $result )>=1)
+		{
+			$DestructionPossible = False;
+			echo '<TR><TD><B><FONT FACE="Verdana" size="2" >Ancien Mariéé, ou célébrant Mariage</FONT></B></TD></TR>';
+		}
+
+		// Paroissien ayant participé au denier du culte
+		$requete = 'SELECT DISTINCT id
+			FROM Denier 
+			WHERE Paroissien_id='.$_POST['id'];
+		$result = mysqli_query($eCOM_db, $requete);
+		if (mysqli_num_rows( $result )>=1)
+		{
+			$DestructionPossible = False;
+			echo '<TR><TD><B><FONT FACE="Verdana" size="2" >Paroissien ayant participé au denier du culte.</FONT></B></TD></TR>';
+		}
+
+		// Paroissien pouvant accéder à la base de donnée
+		$requete = 'SELECT DISTINCT Individu_id
+			FROM Admin_Membres
+			WHERE Individu_id='.$_POST['id'];
+		$result = mysqli_query($eCOM_db, $requete);
+		if (mysqli_num_rows( $result )>=1)
+		{
+			$DestructionPossible = False;
+			echo '<TR><TD><B><FONT FACE="Verdana" size="2" >Le paroissien a été déclaré comme pouvant accéder à la base.</FONT></B></TD></TR>';
+		}
+
+		if ($DestructionPossible) {
+			echo '<TR><TD><P><form method=post action="'.$_SERVER['PHP_SELF'].'">';
+			echo '<input type="submit" class="btn btn-outline-secondary btn-sm" name="delete_fiche_Paroissien_confirme" value="Oui"> ';
+			echo '<input type="submit" class="btn btn-outline-secondary btn-sm" name="" value="Non">';
 			echo '<input type="hidden" name="id" value="'.$_POST['id'].'">';
 			echo '</form></TD></TR>';
 		} else {
 			echo '<TR><TD><BR><FONT face="verdana" size="2" color=red>Tant qu\'il y a des activités associés au paroissien, il est impossible de détruire sa fiche</FONT></TD></TR>';
 		}
 		
-		fCOM_address_bottom();
+		//echo '</div>';
+		echo '</TD></TR></TABLE>';
+		fMENU_bottom();
 		exit();	
 	}
 }
@@ -1488,16 +1886,20 @@ if ( isset( $_POST['delete_fiche_Paroissien_confirme'] ) AND $_POST['delete_fich
     pCOM_DebugAdd($debug, "Paroissien:delete_fiche_Paroissien_confirme - Nb Enreg dans la table=".mysqli_num_rows( $result));
 
 	//while($row = mysql_fetch_row($result))
-	if (mysqli_num_rows( $result )==1)
-	{ 
-        $requete = 'Delete FROM Individu WHERE id=' . $_POST['id'] . ' '; 
+	if (mysqli_num_rows( $result ) == 1) { 
+        fCOM_Bootstrap_init();
+		$requete = 'Delete FROM Individu WHERE id='.$_POST['id']; 
 		pCOM_DebugAdd($debug, "Paroissien:delete_fiche_Paroissien_confirme - requete=".$requete);
         $result = mysqli_query($eCOM_db, $requete); 
 		if (!$result) {
-			echo 'Impossible d\'exécuter la requête : ' . mysqli_error($eCOM_db);
-			exit;
-        }
-		echo '<B><CENTER><FONT face="verdana" size="2" color=green>Fiche détruite avec succès</FONT></CENTER></B>';
+			echo '<div class="alert alert-primary" role="alert"><strong>Attention !</strong> la fiche n\'a pas pu être détruite.</div>';
+			$Timer = 5;
+        } else {
+			echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> la fiche a été détruite avec succès.</div>';
+			$Timer = 1;
+		}
+		echo '<META http-equiv="refresh" content="'.$Timer.'; URL='.$_SESSION["RetourPage"].'">';
+		exit;
 	}
 }
 
@@ -1507,66 +1909,22 @@ function Selectionner_individu ( $pQui, $Genre, $Individu_id, $RetourPage, $Fich
 {
 		Global $eCOM_db;
 		$debug = True;
-		//debug('Paroissien:Selectionner_individu - pQui ='.$pQui);
-		//debug('Paroissien:Selectionner_individu - Genre ='.$Genre);
-		//debug('Paroissien:Selectionner_individu - Individu_id ='.$Individu_id);
-		//debug('Paroissien:Selectionner_individu - RetourPage ='.$RetourPage);
-		//debug('Paroissien:Selectionner_individu - Fiche_id ='.$Fiche_id);
-		address_top();
+
+		fMENU_top();
 		
 		$requete = 'SELECT Prenom, Nom FROM Individu WHERE id='.$Individu_id.' ';
 		$result = mysqli_query($eCOM_db, $requete);
 		$row = mysqli_fetch_assoc($result);
 		
-		echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
-		echo '<TR BGCOLOR="#F7F7F7"><TD><FONT FACE="Verdana" SIZE="2"><B>Sélectionner '.$pQui.' de '.$row['Prenom'].' '.$row['Nom'].'</B><BR></TD><TD></TD></TR>';
-
-		echo '<TR><TD BGCOLOR="#EEEEEE"><FONT FACE="Verdana" size="2" ><BR>';
+		$Titre = 'Selectionner '.$pQui.' de '.$row['Prenom'].' '.$row['Nom'];
 		
-		$Afficher_10_premier = 2;
-		while ($Afficher_10_premier > 0) {
-			echo "<TABLE>";
-			$trcolor = "#EEEEEE";
-			if ($Afficher_10_premier > 1) {
-				if ($Genre =="F") {
-					echo "<TR><TD colspan=2><FONT face=verdana size=2>Dernières paroissiennes modifiées</FONT></TD></TR>";
-				} else {
-					echo "<TR><TD colspan=2><FONT face=verdana size=2>Derniers paroissiens modifiés</FONT></TD></TR>";
-				}
-				$requete_2 = 'MAJ DESC, ';
-				$requete_3 = ' LIMIT 0, 10';
-			} else {
-				echo "<TR><TD colspan=2><FONT face=verdana size=2>Tous les paroissiens</FONT></TD></TR>";
-				$requete_2 = '';
-				$requete_3 = '';
-			}
-			if ($Genre =="M" or $Genre =="F") {
-				$requete_1 = 'Where Sex="'.$Genre.'"';
-			} else {
-				$requete_1= '';
-			}
-			$requete = 'SELECT id, Prenom, Nom FROM Individu '.$requete_1.' Order by '.$requete_2.'Nom, Prenom '.$requete_3.' '; 
+		$Action_Clique = '<A HREF='.$_SERVER['PHP_SELF'].'?action=AffecterAIndividu&Qui='.$pQui.'&Qui_id=<Paroissien_id>&Enfant='.$Individu_id.' TITLE="Selectionner '.$pQui.'"><Icone_id></A>';
+		
+		$Requete_1 = 'SELECT id, Prenom, Nom FROM Individu Where Sex="'.$Genre.'" AND id <> '.$Individu_id.' AND Nom <> "" AND Nom <> "Annulé dupliqué" AND Prenom <> "" Order by MAJ DESC'; 
+		$Requete_2 = 'SELECT id, Prenom, Nom FROM Individu Where Sex="'.$Genre.'" AND id <> '.$Individu_id.' AND Nom <> "" AND Nom <> "Annulé dupliqué" AND Prenom <> "" Order by Nom, Prenom'; 
 			
-			echo "<TH bgcolor=".$trcolor."><FONT face=verdana size=2>Selectionner</FONT></TH>";
-			echo "<TH bgcolor=".$trcolor."><FONT face=verdana size=2>Nom</FONT></TH>";
-			echo "<TH bgcolor=".$trcolor."><FONT face=verdana size=2>Prénom</FONT></TH>";
-
-			$result = mysqli_query($eCOM_db, $requete);
-			while($row = mysqli_fetch_assoc($result)){
-				if ($row['id'] != $Individu_id ) {
-					if ($RetourPage == "SaisieBapteme") {
-						echo '<TR><TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=AffecterAIndividu&Qui='.$pQui.'&Qui_id='.$row['id'].'&Enfant='.$Individu_id.' TITLE="Selectionner '.$pQui.'"><img src="images/plus.gif" border=0 alt="Delete Record"></A></TD> ';
-					} else {
-						echo '<TR><TD bgcolor='.$trcolor.'><CENTER><A HREF='.$_SERVER['PHP_SELF'].'?action=AffecterAIndividu&Qui='.$pQui.'&Qui_id='.$row['id'].'&Enfant='.$Individu_id.' TITLE="Selectionner '.$pQui.'"><img src="images/plus.gif" border=0 alt="Delete Record"></A></TD>  ';
-					}
-					echo '<TD><FONT face=verdana size=2>'.$row['Nom'].'</FONT></TD><TD><FONT face=verdana size=2>'.$row['Prenom'].'</FONT></TD></TR>'; 
-				}
-			}
-			echo '</TABLE><BR></FONT>';
-			$Afficher_10_premier = $Afficher_10_premier - 1;
-		}
-		
-		fCOM_address_bottom();
+		fCOM_Selectionner_Paroissien ( $Titre, $Requete_1, $Requete_2, $Action_Clique);		
+		fMENU_bottom();
 		exit;
 }
 
@@ -1574,14 +1932,7 @@ if ( isset( $_POST['Selectionner_Ascendant'] )) {
 //if ($Selectionner_Ascendant) {
 	$debug=false;
 	if (fCOM_Get_Autorization( 0)>= 30) {
-		$check_Actif = isset($_POST['Actif']) ? $_POST['Actif'] : "off" ;
-		$check_Dead = isset($_POST['Dead']) ? $_POST['Dead'] : "off" ;
-		$check_Pretre = isset($_POST['Pretre']) ? $_POST['Pretre'] : "off" ;
-		$check_Diacre = isset($_POST['Diacre']) ? $_POST['Diacre'] : "off" ;
-		pCOM_DebugAdd($debug, "Paroissien:Selectionner_Ascendant.Enregistrer - Actif=".$check_Actif);
-		pCOM_DebugAdd($debug, "Paroissien:Selectionner_Ascendant.Enregistrer - Dead=".$check_Dead);
-
-		Paroissien_sauvegarder_Fiche ($_POST['Individu_id'], $_POST['Nom'], $_POST['Prenom'], $_POST['Sex'], $check_Diacre, $check_Pretre, $check_Dead, $check_Actif, $_POST['Naissance'], $_POST['LangueMaternelle'], $_POST['e_mail'], $_POST['Telephone'], $_POST['Adresse'], $_POST['Pere_id'], $_POST['Mere_id'], $_POST['Conjoint_id'], $_POST['Confession'], $_POST['Bapteme'], $_POST['Communion'], $_POST['ProfessionFoi'], $_POST['Confirmation'], $_POST['Commentaire']);
+		Paroissien_sauvegarder_Fiche ();
 	}
 	
 	if ($_POST['Selectionner_Ascendant'] == "Père" )
@@ -1636,7 +1987,7 @@ if ( isset( $_POST['upload_Photo'] )) {
 	echo '<input type="hidden" name="MAX_FILE_SIZE" value="50000">';
 	echo '<input type="file" name="avatar">';
 	echo '<input type=hidden name=id value='.$_POST['id'].'>';
-	echo '<input type=hidden name=Activite value='.$_POST['Activite'].'>';
+	//echo '<input type=hidden name=Activite value='.$_POST['Activite'].'>';
 	echo '<input type=hidden name=fichier_target value="Individu_'.$_POST['id'].'.jpg">';
 	echo '<input type="submit" name="envoyer" value="Télécharger le fichier"></form>';
 	mysqli_close($eCOM_db);

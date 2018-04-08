@@ -26,7 +26,7 @@ $count=mysqli_num_rows($result);
 
 if ( $count == "0" AND $_SESSION['USER_ID'] != 0 ) {
 	// si session n'existe pas, l'ajouter à la liste en cours car c'est une nouvelle connexion
-	$sql1='INSERT INTO Admin_user_online (session, time) VALUES ("'.session_id().'", "'.$time.'")';
+	$sql1='INSERT INTO Admin_user_online (session, time, id) VALUES ("'.session_id().'", "'.$time.'", '.$_SESSION['USER_ID'].')';
 	$result1=mysqli_query($db, $sql1);
 
 	// Augmenter le compteur de connexion de 1
