@@ -75,9 +75,9 @@ while($row_lieu = mysqli_fetch_array($result_Lieux)){
 	$Paroisse_name = $row_lieu['Lieu'];
 }
 $Gerer_Equipe_Technique_Messe = True;
-if ($Paroisse_name == "Notre Dame de la Sagesse") {
-	$Gerer_Equipe_Technique_Messe = False;
-}
+//if ($Paroisse_name == "Notre Dame de la Sagesse") {
+//	$Gerer_Equipe_Technique_Messe = False;
+//}
 
 //--------------------------------------------------------------------------------------
 //delete one rencontre by id
@@ -143,36 +143,54 @@ if ((isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder'
 	(isset( $_POST['Evenement_annuler']))) {
 
 	Global $eCOM_db;
+	fCOM_Bootstrap_init();
 	$debug = False;
 	
 	pCOM_DebugInit($debug);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder DateRencontre='.$_POST['DateRencontre']);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder heure='.$_POST['heure']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder DateRencontre='.$_POST['DateRencontre']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder heure='.$_POST['heure']);
 	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder minute='.$_POST['minute']);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Lieux='.$_POST['Lieux']);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Intitule='.$_POST['Intitule']);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder EveilFoi='.$_POST['EveilFoi']);
-	pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Garderie='.$_POST['Garderie']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Lieux='.$_POST['Lieux']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Intitule='.$_POST['Intitule']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder EveilFoi='.$_POST['EveilFoi']);
+	//pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder Garderie='.$_POST['Garderie']);
 	
-	$DateTimeValue=$_POST['DateRencontre'].' '.$_POST['heure'].':00';
-
-	$Celebration_Status = "";
-	if (isset( $_POST['Evenement_annuler'] ) AND $_POST['Evenement_annuler']=="Annuler cette célébration"){
-		$Celebration_Status = "Annulé";
-	} elseif (isset( $_POST['Evenement_annuler'] ) AND $_POST['Evenement_annuler']=="Réactiver cette célébration") {
-		$Celebration_Status = "Valide";
-	} elseif ($_POST['id'] > 0) {
-		$result = mysqli_query( $eCOM_db, 'SELECT Classement FROM Rencontres 
-			WHERE id='.$_POST['id'].'') or die (mysqli_error($eCOM_db));
-		while($row = mysqli_fetch_assoc($result)){
-			$Celebration_Status = $row['Classement'];
-		}	
-	}
-
-	$Activite_id=86;
 	if (date("n") <= 7 ) { $Session= date("Y");	} else { $Session= date("Y")+1;	}
-		
+	$Activite_id=86;
+	if (fCOM_Get_Autorization( $Activite_id ) >= 30 OR 
+		fCOM_Get_Autorization( 47 ) >= 20 OR // Projection
+		fCOM_Get_Autorization( 19 ) >= 20 OR // Sono
+		fCOM_Get_Autorization( 20 ) >= 20 OR // Video
+		fCOM_Get_Autorization( 51 ) >= 30 OR // Animateur chants
+		fCOM_Get_Autorization(  0 ) >= 30 OR // all
+		fCOM_Get_Autorization( 16 ) >= 30) { // Sacristin
+		$Gestionnaire=True;
+	} else {
+		$Gestionnaire=False;
+	}
+	
 	if ($_POST['id'] > 0) {
+		$Engagement_Id=$_POST['id'];
+	}
+	
+	if ($Gestionnaire) { // OR $_POST['id'] == 0) {
+		$DateTimeValue=$_POST['DateRencontre'].' '.$_POST['heure'].':00';
+
+		$Celebration_Status = "";
+		if (isset( $_POST['Evenement_annuler'] ) AND $_POST['Evenement_annuler']=="Annuler cette célébration"){
+			$Celebration_Status = "Annulé";
+		} elseif (isset( $_POST['Evenement_annuler'] ) AND $_POST['Evenement_annuler']=="Réactiver cette célébration") {
+			$Celebration_Status = "Valide";
+		} elseif ($_POST['id'] > 0) {
+			$result = mysqli_query( $eCOM_db, 'SELECT Classement FROM Rencontres 
+			WHERE id='.$_POST['id'].'') or die (mysqli_error($eCOM_db));
+			while($row = mysqli_fetch_assoc($result)){
+				$Celebration_Status = $row['Classement'];
+			}
+		}
+	}
+	
+	if ($_POST['id'] > 0 AND $Gestionnaire) {
 		mysqli_query( $eCOM_db, 'UPDATE Rencontres SET 
 			Date="'.$DateTimeValue.'", 
 			Intitule="'.$_POST['Intitule'].'", 
@@ -181,33 +199,43 @@ if ((isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder'
 			Activite_id="'.$Activite_id.'",
 			Classement="'.$Celebration_Status.'"
 			WHERE id='.$_POST['id'].'') or die (mysqli_error($eCOM_db));
-			
-		$Engagement_Id=$_POST['id'];
 
-	} else {
+	} elseif ($_POST['id'] == 0) {
 		$requete = 'INSERT INTO Rencontres (Activite_id, Session, Date, Classement, Intitule, Lieux_id) VALUES ('.$Activite_id.',"'.$Session.'", "'.$DateTimeValue.'", "'.$Celebration_Status.'", "'.$_POST['Intitule'].'", '.$_POST['Lieux'].')';
-			
+		
 		pCOM_DebugAdd($debug, 'Evenement:Evenement_sauvegarder requete='.$requete);
 		mysqli_query( $eCOM_db, $requete) or die (mysqli_error($eCOM_db));
 		$Engagement_Id=mysqli_insert_id($eCOM_db);
 	}
-		
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 5, $_POST['Celebrant']);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 12, $_POST['Sacristin']);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur']);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur_02'], 2);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien']);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien_02'], 2);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 16, $_POST['EveilFoi']);
-	Enregistrer_Intervenants($Activite_id, $Engagement_Id, 23, $_POST['Garderie']);
+	
+	if (isset($_POST['Celebrant'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 5, $_POST['Celebrant']);}
+	if (isset($_POST['Sacristin'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 12, $_POST['Sacristin']);}
+	if (isset($_POST['Animateur'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur']);}
+	if (isset($_POST['Animateur_02'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 13, $_POST['Animateur_02'], 2);}
+	if (isset($_POST['Musicien'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien']);}
+	if (isset($_POST['Musicien_02'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 21, $_POST['Musicien_02'], 2);}
+	if (isset($_POST['EveilFoi'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 16, $_POST['EveilFoi']);}
+	if (isset($_POST['Garderie'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 23, $_POST['Garderie']);}
 	if ( $Gerer_Equipe_Technique_Messe == True) {
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 24, $_POST['Sono']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 25, $_POST['Projection']);
-		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 26, $_POST['Broadcast']);
+		if (isset($_POST['Sono'])) {
+			Enregistrer_Intervenants($Activite_id, $Engagement_Id, 24, $_POST['Sono']);}
+		if (isset($_POST['Projection'])) {
+			Enregistrer_Intervenants($Activite_id, $Engagement_Id, 25, $_POST['Projection']);}
+		if (isset($_POST['Broadcast'])) {
+		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 26, $_POST['Broadcast']);}
 	}
-	echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement sauvegardée avec succes</FONT></CENTER></B>';
+	echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> la fiche a été enregistrée avec succès.</div>';
+	//echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement sauvegardée avec succes</FONT></CENTER></B>';
 
-	echo '<META http-equiv="refresh" content="1; URL='.$_SERVER['PHP_SELF'].'">';
+	echo '<META http-equiv="refresh" content="0; URL='.$_SERVER['PHP_SELF'].'">';
 	exit;
 }
 
@@ -380,6 +408,17 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		}
 	}
 
+	if (fCOM_Get_Autorization( $Activite_id ) >= 30 OR 
+		fCOM_Get_Autorization( 47 ) >= 30 OR // Projection
+		fCOM_Get_Autorization( 19 ) >= 30 OR // Sono
+		fCOM_Get_Autorization( 20 ) >= 30 OR // Video
+		fCOM_Get_Autorization( 51 ) >= 30 OR // Animateur chants
+		fCOM_Get_Autorization(  0 ) >= 30 OR // all
+		fCOM_Get_Autorization( 16 ) >= 30) { // Sacristin
+		$BloquerAcces="";
+	} else {
+		$BloquerAcces="disabled='disabled'";
+	}
 
 	echo '<FORM Class="form ml-2 mr-2" method="post" action='.$_SERVER['PHP_SELF'].'>';
 
@@ -387,32 +426,34 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	echo '<div class="form-row">';
 	echo '<div class="form-group col-md-5">';
 	echo '<label for="labelIntitule">Intitulé</label>';
-	echo '<input type="text" class="form-control form-control-sm" id="labelIntitule" name="Intitule" size="30" maxlength="100" value="'.$_Intitule.'">';
+	echo '<input type="text" class="form-control form-control-sm" id="labelIntitule" name="Intitule" size="30" maxlength="100" value="'.$_Intitule.'" '.$BloquerAcces.'>';
 	echo '<FONT SIZE="2">'.$_ComplementIntitule.'</FONT>';
 	echo '</div>';
 
 	// Date
 	echo '<div class="form-group col-md-2">';
 	echo '<label for="DateRencontre">Date</label>';
-	echo '<input type="date" class="form-control form-control-sm" id="DateRencontre" name="DateRencontre" value="'.$_DateRencontre.'">';
+	echo '<input type="date" class="form-control form-control-sm" id="DateRencontre" name="DateRencontre" value="'.$_DateRencontre.'" '.$BloquerAcces.'>';
 	echo '</div>';
 	
 	// heure
 	echo '<div class="form-group col-md-2">';
 	echo '<label for="HeureRencontre">Heure</label>';
-	echo '<input type="time" class="form-control form-control-sm" id="HeureRencontre" name="heure" value="'.$_HeureRencontre.'">';
+	echo '<input type="time" class="form-control form-control-sm" id="HeureRencontre" name="heure" value="'.$_HeureRencontre.'" '.$BloquerAcces.'>';
 	echo '</div>';
 	
 	// Lieux
+	$Memo_Lieu_id = 0;
 	echo '<div class="form-group col-md-3">';
 	echo '<label for="LabelLieu">Lieux</label>';
-	echo '<SELECT class="form-control form-control-sm" id="LabelLieu" name="Lieux">';
+	echo '<SELECT class="form-control form-control-sm" id="LabelLieu" name="Lieux" '.$BloquerAcces.'>';
 	$Liste_Lieux_Evenements = pCOM_Get_liste_lieu_celebration(1);
 	foreach ($Liste_Lieux_Evenements as $Lieu_Celebration_array){
 		list($Lieu_id, $Lieu_name) = $Lieu_Celebration_array;
 		pCOM_DebugAdd($debug, "Lieu_name= ".$Lieu_name);
 		if ($_Lieu == $Lieu_name){
 			$SelectionDefault = ' selected="selected"';
+			$Memo_Lieu_id = $Lieu_id;
 		} else {
 			$SelectionDefault = '';
 		}
@@ -422,6 +463,13 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 	echo '</div>';
 
 	echo '</div>';
+	
+	if ($BloquerAcces != ""){
+		echo '<INPUT type="hidden" name="Intitule" value="'.$_Intitule.'">';
+		echo '<INPUT type="hidden" name="DateRencontre" value="'.$_DateRencontre.'">';
+		echo '<INPUT type="hidden" name="heure" value="'.$_HeureRencontre.'">';
+		echo '<INPUT type="hidden" name="Lieux" value="'.$Memo_Lieu_id.'">';
+	}
 	
 	// Prêtre
 	echo '<div class="form-row">';
@@ -577,7 +625,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		echo '<div class="form-group col-md-4">';
 		$BloquerAcces="disabled='disabled'";
 		if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
-		if (fCOM_Get_Autorization( 19 ) >= 30) { $BloquerAcces="";} // 19-Sono
+		if (fCOM_Get_Autorization( 19 ) >= 20) { $BloquerAcces="";} // 19-Sono
 		echo '<label for="LabelSono">Sono</label>';
 		echo '<SELECT class="form-control form-control-sm" id="LabelSono" name="Sono" '.$BloquerAcces.' >';
 		$liste_serviteurs = fCOM_Get_liste_serviteurs(19, False); // 19-Sono
@@ -596,7 +644,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		$BloquerAcces="disabled='disabled'";
 		echo '<div class="form-group col-md-4">';
 		if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
-		if (fCOM_Get_Autorization( 47 ) >= 30) { $BloquerAcces="";} // 47-Projection
+		if (fCOM_Get_Autorization( 47 ) >= 20) { $BloquerAcces="";} // 47-Projection
 		echo '<label for="LabelProjection">Projection</label>';
 		echo '<SELECT class="form-control form-control-sm" id="LabelProjection" name="Projection" '.$BloquerAcces.' >';
 		$liste_serviteurs = fCOM_Get_liste_serviteurs(47, False); // 47-Projection
@@ -616,7 +664,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="edit") {
 		$BloquerAcces="disabled='disabled'";
 		echo '<div class="form-group col-md-4">';
 		if (fCOM_Get_Autorization( $Activite_id ) >= 30) { $BloquerAcces="";}
-		if (fCOM_Get_Autorization( 20 ) >= 30) { $BloquerAcces="";} // 20-Vidéo Broadcast
+		if (fCOM_Get_Autorization( 20 ) >= 20) { $BloquerAcces="";} // 20-Vidéo Broadcast
 		echo '<label for="LabelBroadcast">Broadcast</label>';;
 		echo '<SELECT class="form-control form-control-sm" id="LabelBroadcast" name="Broadcast" '.$BloquerAcces.' >';
 		$liste_serviteurs = fCOM_Get_liste_serviteurs(20, False); // 20-Vidéo Broadcast
@@ -1220,13 +1268,34 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 	$number = mysqli_num_rows($result);
 	$PremLine = 1;
 	$i = 1;
-	if (fCOM_Get_Autorization( $Activite_id ) >= 30 || 
-		fCOM_Get_Autorization( 51 ) >= 30 || 
-		fCOM_Get_Autorization( 16 ) >= 30) {
+	
+	$debug=false;
+	if (fCOM_Get_Autorization( $Activite_id ) >= 30 OR 
+		fCOM_Get_Autorization( 47 ) >= 20 OR // Projection
+		fCOM_Get_Autorization( 19 ) >= 20 OR // Sono
+		fCOM_Get_Autorization( 20 ) >= 20 OR // Video
+		fCOM_Get_Autorization( 51 ) >= 30 OR // Animateur chants
+		fCOM_Get_Autorization(  0 ) >= 30 OR // all
+		fCOM_Get_Autorization( 16 ) >= 30) { // Sacristin
+		$Autorisation_Edition = True;
+	} else {
+		$Autorisation_Edition = False;
+	}
+	if (fCOM_Get_Autorization(  0 ) >= 30 ) { // all
 		$Gestionnaire = True;
+		pCOM_DebugAdd($debug, "Evenements:liste - Gestionnaire=true");
 	} else {
 		$Gestionnaire = False;
+		pCOM_DebugAdd($debug, "Evenements:liste - Gestionnaire=false");
 	}
+	pCOM_DebugAdd($debug, "Evenements:liste - Gestionnaire=".$Gestionnaire);
+	$debug=false;
+	if (fCOM_Get_Autorization(2) >= 20) {
+		$Accompagnateur_Mariage = true;
+	} else {
+		$Accompagnateur_Mariage = false;
+	}
+	
 	while($row = mysqli_fetch_assoc($result) OR ($i <= $number+1 AND $number > 0)){
 		
 		pCOM_DebugAdd($debug, "Evenements:liste - id=".$row['id']);
@@ -1257,7 +1326,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 				echo '<tr>';
 			}
 	
-			if ($Gestionnaire) {
+			if ($Autorisation_Edition) {
 				$TD_OnClick='onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=edit&id='.$MemoId.'&Date='.addslashes(urlencode(serialize($MemoDate))).'&Lieu='.$MemoLieu.'&Celebrant='.addslashes(urlencode(serialize($MemoCelebrant))).'&Intitule='.addslashes(urlencode(serialize($MemoIntitule))).'\')"';
 			} else {
 				$TD_OnClick='';
@@ -1492,6 +1561,8 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 
 function Build_Intitule ($pMemoIntitule, $pType, $pIntitule, $pId, $pParoissien, $pCelebrant) {
 	Global $Activite_id;
+	Global $Gestionnaire;
+	Global $Accompagnateur_Mariage;
 	
 	$Build_Intitule = $pMemoIntitule;
 	if (strlen($Build_Intitule) > 0 AND strlen($pIntitule) > 0 AND $Build_Intitule!=$pIntitule) { 		$Build_Intitule = $Build_Intitule."<BR>"; 
@@ -1506,9 +1577,7 @@ function Build_Intitule ($pMemoIntitule, $pType, $pIntitule, $pId, $pParoissien,
 			$Build_Intitule = $Build_Intitule.$pIntitule." de ";
 		}
 	}
-	if (fCOM_Get_Autorization( $Activite_id ) >= 30 || 
-		fCOM_Get_Autorization( 51 ) >= 30 || 
-		fCOM_Get_Autorization( 16 ) >= 30) {
+	if ($Gestionnaire) {
 		if ($pType==2) { // Mariage
 			if (file_exists("Photos/".$pId.".jpg")) { 
 				$Build_Intitule = $Build_Intitule.'<a data-toggle="tooltip" title="<img src=\'Photos/'.$pId.'.jpg\' width=\'150\'/>" HREF="/Mariage.php?action=edit&id='.$pId.'">'.$pParoissien.'<i class="fa fa-camera-retro text-secondary"></i></a>';
@@ -1519,7 +1588,7 @@ function Build_Intitule ($pMemoIntitule, $pType, $pIntitule, $pId, $pParoissien,
 		} elseif ( $pType==1 ) { // Baptême
 			$Build_Intitule = $Build_Intitule.'<A HREF="/Bapteme.php?action=edit&id='.$pId.'">'.$pParoissien.'.</A>';
 		}
-	} elseif (fCOM_Get_Autorization(2) >= 20 AND $pType==2) {
+	} elseif ($Accompagnateur_Mariage AND $pType==2) {
 		if (file_exists("Photos/".$pId.".jpg")) { 
 			$Build_Intitule = $Build_Intitule.'<a data-toggle="tooltip" title="<img src=\'Photos/'.$pId.'.jpg\' width=\'150\'/>" HREF="/Mariage.php?action=edit&id='.$pId.'">'.$pParoissien.'<i class="fa fa-camera-retro text-secondary"></i></a>';
 		} else {

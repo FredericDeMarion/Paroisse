@@ -338,6 +338,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	
 	// '.fCOM_Get_Autorization(3, $_SESSION['USER_LEVEL_REQUESTED']).'
 	Global $Debug;
+	
 	if (date("n") <= 7 ) {
 		$SessionActuelle= date("Y");
 	} else {
@@ -355,6 +356,8 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	//pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization - pLevel=".$pLevel);
 	$fCOM_Get_Autorization = $pLevel;
 	pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - USER_LEVEL_REQUESTED = 100");
+
+	$Debug=true;
 
 	// tester s'il est administrateur
 	$Requete = 'SELECT * from QuiQuoi WHERE Individu_id='.$_SESSION['USER_ID'].' AND Activite_id=116 AND Engagement_id=0 AND WEB_G=1 AND Session="'.$SessionActuelle.'"';
@@ -555,7 +558,7 @@ function fCOM_Get_liste_serviteurs($pService, $pAppendedList) {
 				LEFT JOIN `Individu` T1 ON T1.`id`=T0.`Individu_id`
 				LEFT JOIN `Lieux` T2 ON T2.`id`=T0.`Lieu_id`
 				WHERE T0.`Engagement_id`=0 AND T0.`Activite_id`='.$pService.' AND T0.`Session`='.$SessionActuelle.' AND T1.`Dead`=0 AND T1.`Actif`=1
-				ORDER BY T2.`Lieu`, T1.`Nom`, T1.`Prenom`';
+				ORDER BY T2.`Lieu`, T1.`Prenom`, T1.`Nom`';
 
 	$result_Serviteurs = mysqli_query($eCOM_db, $requete);
 	while($row_Serviteur = mysqli_fetch_assoc($result_Serviteurs)){

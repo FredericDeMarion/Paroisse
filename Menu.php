@@ -27,7 +27,7 @@ function fMENU_top ()
 	echo '<link rel="stylesheet" href="css/style_paroisse.css" />';
 	//echo '<meta name="generator" content="WYSIWYG Web Builder - http://www.wysiwygwebbuilder.com">';
 	// bootstarp 3 only : echo '<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>';
-	//echo '<link rel="icon" type="image/png" href="logo.png" />';
+	echo '<link rel="icon" type="image/png" href="logo.png" />';
 	fCOM_Bootstrap_init();
 	?>
 	<script language="JavaScript" type="text/javascript">
@@ -238,6 +238,7 @@ if (!isset($_SESSION["Session"])) {
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_services">Paroissiens au service</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_ressourcements">Paroissiens en ressourcement</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_souhaits">Souhaits des paroissiens</a>';
+			echo '<a class="dropdown-item" href="organigramme/index2.php">Organigramme</a>';
 		}
 		
 		echo '</div>';
@@ -254,7 +255,7 @@ if (!isset($_SESSION["Session"])) {
 	//============================
 	// Ajouter
 	//============================
-	if (fCOM_Get_Autorization( $_SESSION["Activite_id"] )>= 30 ) {
+	if (fCOM_Get_Autorization( 0 )>= 30 ) {
 		?>		
 		<li class="nav-item dropdown">
 		<a class="nav-link dropdown-toggle" style="color:white" href="http://example.com" id="navbarServicesLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Ajouter
@@ -461,12 +462,18 @@ if (!isset($_SESSION["Session"])) {
 	
     </ul>
 	
-	<!-- SEARCH -->	
-	<form class="form-inline my-2 my-lg-0" action="SuiviParoissien.php" method=POST>
-      <input class="form-control form-control-sm mr-sm-1" type="search" name="any" placeholder="Rechercher paroissien" aria-label="Search">
-      <button class="btn btn-outline-primary btn-sm" type="submit" value="Lancer recherche" >Search</button>
-    </form>
-	<!-- SEARCH -->	
+	<?php
+	if ($Gestionnaire == True) {
+		?>
+		<!-- SEARCH -->	
+		<form class="form-inline my-2 my-lg-0" action="SuiviParoissien.php" method=POST>
+		<input class="form-control form-control-sm mr-sm-1" type="search" name="any" placeholder="Rechercher paroissien" aria-label="Search">
+		<button class="btn btn-outline-primary btn-sm" type="submit" value="Lancer recherche" >Search</button>
+		</form>
+		<!-- SEARCH -->	
+		<?php
+	}
+	?>
 	
 
   </div>
@@ -504,6 +511,8 @@ echo '</div>';
 function fMENU_bottom () {
 
 Global $eCOM_db;
+
+$niveau=fCOM_Get_Autorization(0);
 // compter le nombre de personne connecté
 $sql3='SELECT * FROM Admin_user_online';
 $result3=mysqli_query($eCOM_db, $sql3);

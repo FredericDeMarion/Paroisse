@@ -2285,7 +2285,7 @@ if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 		ORDER BY '.$criteria;
 
 	} else {
-		$requete = 'SELECT T0.`id`, T0.`Session` AS Session, T1.`Lieu` As Lieu, T3.`id` AS Individu_id, T3.`Prenom` AS Prenom, T3.`Nom` AS Nom, T3.`Adresse`, T3.`e_mail`, T3.`Telephone`, 0 as Participation, "0" as NoFrat, T0.`QuoiQuoi_id` As Serv_ou_Ress
+		$requete = 'SELECT T0.`id`, T0.`Session` AS Session, "" As Date, T1.`Lieu` As Lieu, T3.`id` AS Individu_id, T3.`Prenom` AS Prenom, T3.`Nom` AS Nom, T3.`Adresse`, T3.`e_mail`, T3.`Telephone`, 0 as Participation, "0" as NoFrat, T0.`QuoiQuoi_id` As Serv_ou_Ress
 		FROM `QuiQuoi` T0
 		LEFT JOIN `Lieux` T1 ON T0.`Lieu_id`=T1.`id`
 		LEFT JOIN `Individu` T3 on T3.`id`= T0.`Individu_id`
@@ -2296,6 +2296,7 @@ if (($_SESSION["Activite_id"] == 26) || // Aumônerie Lycée et collège
 
 $debug = false;
 pCOM_DebugAdd($debug, 'Fraternite - requete ='.$requete);
+$debug = false;
 
 $resultat = mysqli_query($eCOM_db,  $requete );
 
