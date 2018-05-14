@@ -357,7 +357,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	$fCOM_Get_Autorization = $pLevel;
 	pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - USER_LEVEL_REQUESTED = 100");
 
-	$Debug=true;
+	$Debug=False;
 
 	// tester s'il est administrateur
 	$Requete = 'SELECT * from QuiQuoi WHERE Individu_id='.$_SESSION['USER_ID'].' AND Activite_id=116 AND Engagement_id=0 AND WEB_G=1 AND Session="'.$SessionActuelle.'"';

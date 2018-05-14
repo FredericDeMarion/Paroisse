@@ -17,6 +17,10 @@ session_start();
 // 30/09/2017 : Problème d'affichage du mauvais célébrant dans la liste générale
 // 26/10/2017 : Affichage du dernier événement pendant 5h
 //==================================================================================================
+//    V2.00 | 04/03/2018 | Intégration Bootstrap
+//==================================================================================================
+// 04/05/2018 | Donner accès aux participants sono, projection et broadcast pour se déclarer eux-même sur une célébration
+//==================================================================================================
 
 if (isset( $_SERVER['PHP_AUTH_USER'] ) AND $_SERVER['PHP_AUTH_USER'] == "celebration"){
 	echo '<META http-equiv="refresh" content="1; URL=https://'.$_SERVER['SERVER_NAME'].'/Celebration/index.php">';

@@ -7,6 +7,10 @@ session_start();
 //  Version |    Date    | Commentaires
 //--------------------------------------------------------------------------------------------------
 //    V1.00 | 12/04/2017 | Version originale
+//--------------------------------------------------------------------------------------------------
+//    V2.00 | 12/03/2018 | Intégration de Bootstrap
+//--------------------------------------------------------------------------------------------------
+//    V2.01 | 04/05/2018 | Donner accès aux participants d'un service même si pas gestionnaire
 //==================================================================================================
 
 // Initialiser variable si elle n'existe pas
@@ -1977,6 +1981,11 @@ function personne_list ($resultat, $Classe_order, $order) {
 	
 	$debug = true;
 	pCOM_DebugInit($debug);
+	if (fCOM_Get_Autorization(  0 ) >= 30 ) { // all
+		$isGestionnaire = True;
+	} else {
+		$isGestionnaire = False;
+	}
 	
 	$Memo_Titre_Parcours="";
 	$Memo_Classe="NULL";
@@ -2067,7 +2076,7 @@ function personne_list ($resultat, $Classe_order, $order) {
 		//--------
 		if ($enregistrement['Participation'] != 0) { $fgcolor = "green"; } else { $fgcolor = "black"; };
 		echo '<TD>';
-		fCOM_Display_Photo($enregistrement['Nom'], $enregistrement['Prenom'], $enregistrement['Individu_id'], "edit_Individu", true);
+		fCOM_Display_Photo($enregistrement['Nom'], $enregistrement['Prenom'], $enregistrement['Individu_id'], "edit_Individu", $isGestionnaire);
 		echo '</font></TD>';
 			
 		// Lieux
@@ -2100,7 +2109,7 @@ function personne_list ($resultat, $Classe_order, $order) {
 				}
 			}
 			if ( $enregistrement['e_mail'] != "" ) {
-				$debug=true;
+				$debug=False;
 				if ( $Memo_Classe != "NULL" ) {
 					pCOM_DebugAdd($debug, "Fraternité:liste Enfant=".$enregistrement['Prenom']." ".$enregistrement['Nom']);
 					fwrite($handle_EnfantClasse, '"'.$enregistrement['Prenom'].' '.$enregistrement['Nom'].'"< '.format_email_list($enregistrement['e_mail'], ">;< ").'>; ');

@@ -10,6 +10,9 @@ session_start();
 // 18/04/2017 : Suppression du bouton reset lorsque pas gestionnaire en edition d'une fiche
 // 22/04/2017 : AffecterBaseBapteme correction retour vers la bonne page après sauvegarde baptisé et $Qui remplacé par $_GET['Qui']
 // 19/09/2017 correction de la date sous list_accompagnateur_sssession %m/%d/%y
+//==================================================================================================
+// 10/05/18 : Optimisation de l'affichage de la date du baptême (sans les secondes) dans le listing
+//==================================================================================================
 
 
 
@@ -1505,7 +1508,7 @@ function personne_line($enregistrement, $pCompteur) {
 	if (strftime("%d/%m/%y", fCOM_sqlDateToOut($enregistrement['Date'])) == "01/01/70" ) {
 		echo '<TD>-';
 	} else {
-		echo '<TD'.$TD_Click.'>'.$enregistrement['Date'];
+		echo '<TD'.$TD_Click.'>'.substr($enregistrement['Date'], 0, 16);
 		//echo strftime("%Y/%m/%d %H:%M", fCOM_sqlDateToOut($enregistrement['Date']));
 	}
 	echo '</TD>';
@@ -1522,15 +1525,15 @@ function personne_list ($resultat, $order) {
 	fMENU_Title("Liste des Baptêmes ...");
 	echo '<table id="TableauTrier" class="table table-striped table-hover table-sm">';
 	echo '<thead><tr>';
-	echo '<th scope="col"></th>';
-	echo '<th scope="col">Prénom</th>';
-	echo '<th scope="col">Nom</th>';
-	echo '<th scope="col">Accompagnateurs</th>';
-	echo '<th scope="col">Session</th>';
-	echo '<th scope="col">Célébrant</th>';
-	echo '<th scope="col">Date&nbsp&nbsp';
+	echo '<th></th>';
+	echo '<th>Prénom</th>';
+	echo '<th>Nom</th>';
+	echo '<th>Accompagnateurs</th>';
+	echo '<th>Session</th>';
+	echo '<th>Célébrant</th>';
+	echo '<th>Date&nbsp&nbsp';
 	echo '<input type="checkbox" onclick="FiltrerLine()"> <label for="Filter_old_fich"></label></th>';
-	echo '<th scope="col">Lieu</th>';
+	echo '<th>Lieu</th>';
 	echo '</tr></thead>';
 	echo '<tbody>';
 
