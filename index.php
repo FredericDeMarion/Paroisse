@@ -26,8 +26,9 @@ if ( isset( $_POST['SessionSelection'] )) {
 }
 
 fMENU_top();
-fMENU_Title("Liste des prochains anniversaires ...");
-
+fMENU_Title("Liste des prochains anniversaires temporairement indisponible");
+fMENU_bottom();
+exit;
 ?>
 
 <?php

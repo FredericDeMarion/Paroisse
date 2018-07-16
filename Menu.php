@@ -7,6 +7,7 @@
 //    V1.00 | 12/04/2017 | Version originale
 //==================================================================================================
 // 17/07/2017 : Suppression du menu "Célébration"
+// 21/05/2018 : Gestion des annonces en fin de messe (Ajouter une table Annonces, créé un répertoire "Annonces" sous "images", ajouter dans la table "Activites" le service 170-"Annnonces fin de messe")
 //==================================================================================================
 
 
@@ -274,7 +275,7 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 					echo '<a class="dropdown-item" href="'.$_SERVER['PHP_SELF'].'?action=edit_Inscription&id=0">Une Inscription</a>';
 				}
 				echo '<a class="dropdown-item" href="'.$_SERVER['PHP_SELF'].'?action=edit&id=0">Une Fraternité</a>';
-			
+
 			} else {
 			
 				if ($_SESSION["Activite_id"]==2) { // Préparation mariage
@@ -288,7 +289,10 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 			}
 
 			if ($_SESSION["Activite_id"]==86) { // Messe et célébration
-				echo '<a class="dropdown-item" href="Evenements.php?Session='.$_SESSION["Session"].'&action=Prog_Recurrente_Celebration&id=0">Configurer Célébrations récurrentes</a>';
+				if (fCOM_Get_Autorization( 170 )>= 20 ) { // Annonces fin des messes
+					echo '<a class="dropdown-item" href="Evenements.php?action=Annonce">Configurer les Annonces de fin de messe</a>';
+				}
+				echo '<a class="dropdown-item" href="Evenements.php?Session='.$_SESSION["Session"].'&action=Prog_Recurrente_Celebration&id=0">Configurer les Célébrations récurrentes</a>';
 				
 			} else {
 				if ($_SESSION["Activite_id"] == 26 OR // Aumônerie Lycée et collège
@@ -423,7 +427,7 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 					 WHERE MID(T0.`Session`,1,4)="'.$Annee.'" AND (T0.`QuoiQuoi_id`=1 OR T0.`QuoiQuoi_id`=2 ) AND T0.`Individu_id`='.$_SESSION['USER_ID'].' AND ISNULL(T1.`Menu_PHP_File`)
 					)
 					ORDER BY Menu_Ordre, Nom ASC';
-
+		$Debug=False;
 		$result = mysqli_query($eCOM_db, $requete);
 		while( $row = mysqli_fetch_assoc( $result)) {
 			if (fCOM_Get_Autorization($row['id']) >= 20 AND $row['Nom']!= "Toutes") {

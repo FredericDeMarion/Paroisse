@@ -308,6 +308,23 @@ function ustr_replace($search, $replace, $subject, $cur=0) {
 return (strpos($subject, $search,$cur)) ? substr_replace($subject, $replace,(int)strpos($subject,$search,$cur), strlen($search)) : $subject;
 }//ustr_replace
 
+function fCOM_DisplayMsg($pOk, $pText) {
+	
+	fCOM_Bootstrap_init();
+	
+	echo '<div class="container">';
+	echo '<div class="row">';
+	echo '<div class="col">';
+	if ($pOk == true){
+	echo '<div class="alert alert-success" role="alert"><h4><strong>Bravo !</strong> '.$pText.'.</h4></div>';
+	} else {
+	echo '<div class="alert alert-primary" role="alert"><strong>Attention !</strong> '.$pText.'.</div>';
+	}
+	echo '</div>';
+	echo '</div>';
+	echo '</div>';
+}
+
 //=========================================================
 // Récupérer le niveau d'autorisation
 //=========================================================
@@ -337,8 +354,9 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	// 90 Administrateur
 	
 	// '.fCOM_Get_Autorization(3, $_SESSION['USER_LEVEL_REQUESTED']).'
-	Global $Debug;
-	
+	//Global $Debug;
+	$Debug=False;
+
 	if (date("n") <= 7 ) {
 		$SessionActuelle= date("Y");
 	} else {
@@ -355,10 +373,9 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	
 	//pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization - pLevel=".$pLevel);
 	$fCOM_Get_Autorization = $pLevel;
-	pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - USER_LEVEL_REQUESTED = 100");
+	//pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - USER_LEVEL_REQUESTED = 100");
 
-	$Debug=False;
-
+	
 	// tester s'il est administrateur
 	$Requete = 'SELECT * from QuiQuoi WHERE Individu_id='.$_SESSION['USER_ID'].' AND Activite_id=116 AND Engagement_id=0 AND WEB_G=1 AND Session="'.$SessionActuelle.'"';
 	//error_log($Requete);
@@ -367,7 +384,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 	if ($count_1 > 0) {
 		$fCOM_Get_Autorization = fCOM_Min(90, $pLevel);
 		$_SERVER['PHP_AUTH_USER'] = "Administrateur";
-		pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Administrateur ".$fCOM_Get_Autorization." requete = ".$Requete);
+		pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Administrateur ".$fCOM_Get_Autorization." Activité=".$pActivite_id);
 	} else {
 		
 		// tester s'il est super-utilisateur
@@ -378,7 +395,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 		if ($count_1 > 0) {
 			$fCOM_Get_Autorization = fCOM_Min(50, $pLevel);
 			$_SERVER['PHP_AUTH_USER'] = "Super-utilisateur";
-			pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Super-utilisateur ".$fCOM_Get_Autorization." requete = ".$Requete);
+			pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Super-utilisateur ".$fCOM_Get_Autorization." Activité=".$pActivite_id);
 		} else {
 			
 			// tester si niveau comptable "Conseil économique"=31
@@ -388,7 +405,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 			if ($count_1 > 0) {
 				$fCOM_Get_Autorization = fCOM_Min(40, $pLevel);
 				$_SERVER['PHP_AUTH_USER'] = "Comptable";
-				pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Comptable ".$fCOM_Get_Autorization." requete = ".$Requete);
+				pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Comptable ".$fCOM_Get_Autorization." Activité=".$pActivite_id);
 			} else {
 				
 				// tester s'il y a des droits niveau gestionnaire
@@ -398,7 +415,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 				if ($count_1 > 0) {
 					$fCOM_Get_Autorization = fCOM_Min(30, $pLevel);
 					$_SERVER['PHP_AUTH_USER'] = "Gestionnaire";
-					pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Gestionnaire ".$fCOM_Get_Autorization." requete = ".$Requete);				
+					pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Gestionnaire ".$fCOM_Get_Autorization." Activité=".$pActivite_id);
 				} else {
 
 					// tester s'il y a des droits niveau consultation, accompagnateur
@@ -408,7 +425,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 					if ($count_1 > 0) {
 						$fCOM_Get_Autorization = fCOM_Min(20, $pLevel);
 						$_SERVER['PHP_AUTH_USER'] = "Accompagnateur";
-						pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Accompagnateur ".$fCOM_Get_Autorization." requete = ".$Requete);
+						pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Accompagnateur ".$fCOM_Get_Autorization." Activité=".$pActivite_id);
 					} else {
 
 						// tester s'il y a des droits niveau paroissien consommateur de l'activité
@@ -422,7 +439,7 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 							$fCOM_Get_Autorization = 0;
 							$_SERVER['PHP_AUTH_USER'] = "Paroissien";
 						}
-						pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Paroissien ".$fCOM_Get_Autorization." requete = ".$Requete);
+						pCOM_DebugAdd($Debug, "Common:fCOM_Get_Autorization (user=".$_SESSION['USER_ID'].") - Paroissien ".$fCOM_Get_Autorization." Activité=".$pActivite_id);
 					}
 				}
 			}
@@ -466,11 +483,13 @@ function fCOM_PrintFile_End($pHandle) {
 // Récupérer la liste des lieux
 //=========================================================
 
-function pCOM_Get_liste_lieu_celebration($pParoisse) {
+function pCOM_Get_liste_lieu_celebration($pParoisse, $pNonDefini=0) {
 	Global $eCOM_db;
+	$Debug=False;
 	$Liste_Lieu_Celebration="";
 	$Item = 1;
-	$requete_Lieux = 'SELECT * FROM Lieux WHERE IsParoisse <= '.$pParoisse.' AND IsParoisse >= 0 ORDER BY IsParoisse, Lieu';
+	$requete_Lieux = 'SELECT * FROM Lieux WHERE IsParoisse <= '.$pParoisse.' AND IsParoisse >= '.$pNonDefini.' ORDER BY IsParoisse, Lieu';
+	pCOM_DebugAdd($Debug, "Common:pCOM_Get_liste_lieu_celebration requete=".$requete_Lieux);
 	$result_Lieux = mysqli_query($eCOM_db, $requete_Lieux);
 	while($row_lieu = mysqli_fetch_assoc($result_Lieux)){
 		$Liste_Lieu_Celebration[$Item]= array($row_lieu['id'], $row_lieu['Lieu']);

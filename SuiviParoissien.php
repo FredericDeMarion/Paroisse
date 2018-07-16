@@ -938,14 +938,38 @@ echo '<BODY>';
 	echo '<TR><TD BGCOLOR="#EEEEEE"><FONT face=verdana size=1>';
 
 	$trcolor = "#EEEEEE";
-	echo '<FORM action="'.$_SERVER['PHP_SELF'].'" method=POST>';
-	echo '<B>Trouver des résultats avec : </B><BR> <BR>';
-	echo 'Un de ces mots: <INPUT type="text" length=40 name="any" value="'.$any.'"> ';
-	echo 'Tous ces mots: <INPUT type="text" length=40 name="all" value="'.$all.'"> ';
-	echo 'Aucun de ces mots: <INPUT type="text" length=40 name="none" value="'.$none.'"> ';
-	echo '<INPUT type="submit" value="Lancer recherche">';
-	echo '</FORM></FONT>';
-	//echo '</table>';
+	
+	echo '<FORM method=post action='.$_SERVER['PHP_SELF'].'>';
+	echo '<div class="form-row ml-1 mt-3">';
+	echo '<div class="container-fluid"">';
+	echo '<div class="form-row">';
+		
+	echo '<div class="col-form-label">';
+	echo '<label for="any">Un de ces mots</label>';
+	echo '<input type="text" id="any" name="any" class="form-control form-control-sm" maxlength="40" size="8" value="'.$any.'">';
+	echo '</div>';
+	
+	echo '<div class="col-form-label">';
+	echo '<label for="all">Tous ces mots</label>';
+	echo '<input type="text" id="all" name="all" class="form-control form-control-sm" maxlength="40" size="8" value="'.$all.'">';
+	echo '</div>';
+	
+	echo '<div class="col-form-label">';
+	echo '<label for="any">Aucun de ces mots</label>';
+	echo '<input type="text" id="none" name="none" class="form-control form-control-sm" maxlength="40" size="8" value="'.$none.'">';
+	echo '</div>';
+	
+	echo '</div></div>';
+	
+	//echo '<FORM action="'.$_SERVER['PHP_SELF'].'" method=POST>';
+	//echo '<B>Trouver des résultats avec : </B><BR> <BR>';
+	//echo 'Un de ces mots: <INPUT type="text" length=40 name="any" value="'.$any.'"> ';
+	//echo 'Tous ces mots: <INPUT type="text" length=40 name="all" value="'.$all.'"> ';
+	//echo 'Aucun de ces mots: <INPUT type="text" length=40 name="none" value="'.$none.'"> ';
+	
+	echo '<INPUT type="submit" class="btn btn-secondary btn-sm ml-3" value="Lancer recherche">';
+	echo '</div></FORM>';
+	//echo '</FORM></FONT>';
 	
 
 	if ($any!="" || $all!="" || $none!="" ) {

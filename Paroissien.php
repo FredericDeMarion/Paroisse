@@ -557,7 +557,7 @@ function Edition_Fiche_Paroissien($pId, $pToutAfficher=True) {
 	?>
 	<div class="col-6">
 	<label for="e_mail">Email</label>
-	<input type="email" name="e_mail" class="form-control form-control-sm" placeholder="Séparer mail avec ';'" <?php if ( $id > 0 ) {echo ' value ="'.format_email_list(Securite_html($row['e_mail']), ";").'"';} ?> maxlength="50" <?php echo $BloquerAcces;?>>
+	<input type="email" name="e_mail" class="form-control form-control-sm" placeholder="Séparer mail avec ';'" <?php if ( $id > 0 ) {echo ' value ="'.format_email_list(Securite_html($row['e_mail']), ";").'"';} ?> maxlength="51" <?php echo $BloquerAcces;?>>
 	
 	</div>
 	</div>
@@ -1313,20 +1313,19 @@ function Display_google_map($Nom, $Adresse) {
 if ( isset( $_POST['edit_individu'] ) AND $_POST['edit_individu']=="Enregistrer") {
 //if ($edit_individu) {
 	
-	$debug = True;
+	$debug = False;
 	pCOM_DebugInit($debug);
-	fCOM_Bootstrap_init();
+	//fCOM_Bootstrap_init();
 
 	//debug($Sex . "<BR>\n");
-	pCOM_DebugAdd("Paroissien:edit_individu.Enregistrer - Mere id = " .$_POST['Mere_id']. "<BR>\n");
+	pCOM_DebugAdd($debug, "Paroissien:edit_individu.Enregistrer - Mere id = " .$_POST['Mere_id']. "<BR>");
 	//debug($Celebrant . "<BR>\n");
 	//debug('Pretre ='.$_POST["Pretre"].'<BR>\n');
 	
 	if (fCOM_Get_Autorization( 0) >= 30) {
 		
 		Paroissien_sauvegarder_Fiche ();
-
-		echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> la fiche a été enregistrée avec succès.</div>';
+		fCOM_DisplayMsg(True,"la fiche a été enregistrée avec succès");
 	}
 	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
 	exit;
@@ -1335,7 +1334,7 @@ if ( isset( $_POST['edit_individu'] ) AND $_POST['edit_individu']=="Enregistrer"
 
 
 function sauvegarder_avant() {
-	$debug = True;
+	$debug = False;
 	pCOM_DebugAdd($debug, "Paroissien.php:sauvegarde_avant : Individu_id=".$_POST['Individu_id']." Nom=".$_POST['Nom']);
 	
 	Paroissien_sauvegarder_Fiche ();

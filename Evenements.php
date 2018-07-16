@@ -19,7 +19,9 @@ session_start();
 //==================================================================================================
 //    V2.00 | 04/03/2018 | Intégration Bootstrap
 //==================================================================================================
-// 04/05/2018 | Donner accès aux participants sono, projection et broadcast pour se déclarer eux-même sur une célébration
+// 04/05/2018 : Donner accès aux participants sono, projection et broadcast pour se déclarer eux-même sur une célébration
+// 21/05/2018 : Gestion des annonces en fin de messe (Ajouter une table Annonces, créé un répertoire "Annonces" sous "images", ajouter dans la table "Activites" le service 170-"Annnonces fin de messe")
+// 16/07/2018 : Ordonnancement d'affichage des célébrations récurrentes
 //==================================================================================================
 
 if (isset( $_SERVER['PHP_AUTH_USER'] ) AND $_SERVER['PHP_AUTH_USER'] == "celebration"){
@@ -148,6 +150,7 @@ if ((isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder'
 
 	Global $eCOM_db;
 	fCOM_Bootstrap_init();
+	
 	$debug = False;
 	
 	pCOM_DebugInit($debug);
@@ -751,7 +754,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 	$requete = 'SELECT T0.`id`, T0.`DateDeb`, T0.`DateFin`, T0.`Jour`, T0.`Heure`, T1.`Lieu`
 				FROM Celebrations_rec T0
 				LEFT JOIN Lieux T1 ON T1.`id`=T0.`Lieu_id`
-				ORDER BY Jour';
+				ORDER BY Lieu, Jour, Heure';
 		
 	$result = mysqli_query($eCOM_db, $requete);
 	while($row = mysqli_fetch_assoc($result)){
@@ -761,14 +764,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 		$TD_OnClick = 'onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id='.$row['id'].'\')"';
 		
 		echo '<TR>';
-				
-		//if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
-		//	echo '<TD bgcolor='.$trcolor.'><CENTER>';
-		//	echo '<A HREF='.$_SERVER['PHP_SELF'].'?action=Prog_Recurrente_Celebration&id='.$row['id'].'><img src="images/edit.gif" border=0 alt="Mofifier Record"></A>  ';
-		//	echo '</CENTER></TD>';
-		//} else {
-		//	echo '<TD></TD>';
-		//}
 		echo '<TD> </TD>';
 		echo '<TD '.$TD_OnClick.'>'.$row['DateDeb'].'</TD>';
 		echo '<TD '.$TD_OnClick.'>'.$row['DateFin'].'</TD>';
@@ -801,7 +796,6 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Prog_Recurrente_Celebration"
 		
 		echo '<TD '.$TD_OnClick.'>'.substr($row['Heure'], 0, 5).'</TD>';
 		echo '<TD '.$TD_OnClick.'>'.$row['Lieu'].'</TD>';
-
 		echo '</TR>';
 	}
 	echo '<tbody></table>';
@@ -1077,6 +1071,429 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 }
 
 
+//=========================================================
+//=========================================================
+//=========================================================
+// Programmation des Annonces
+//=========================================================
+//=========================================================
+//=========================================================
+
+if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
+//if ($action == "rencontres") {
+	if ( ! isset($_GET['id'])) {$_GET['id']=0;};
+	
+	Global $eCOM_db;
+	$debug = false;
+	pCOM_DebugAdd($debug, "Evenements:".$_GET['action']." ... en cours");
+	
+	fMENU_top();
+	fMENU_Title("Configuration des annonces");
+	$_SESSION["RetourPage"]=$_SERVER['PHP_SELF']."?action=Annonce";
+
+	echo '<table id="TableauTrier" class="table table-striped table-bordered hover ml-1 mr-1" width="100%" cellspacing="0">';
+	echo '<thead><tr>';
+	echo '<th width="20"> </th>';
+	echo '<th width="70">Date Début</th>';
+	echo '<th width="70">Date Fin&nbsp<input type="checkbox" onclick="FiltrerLine()"> <label for="Filter_old_fich"></label></th>';
+	echo '<th >Lieu</th>';
+	echo '<th>Texte</th>';
+	echo '<th>Flyer</th>';
+	echo '</tr></thead>';
+	echo '<tbody>';
+	
+
+	$requete = 'SELECT T0.`id`, T0.`DateDeb`, T0.`DateFin`, T0.`Lieu_id`, T0.`Annonce_texte`, T1.`Lieu`
+				FROM Annonces T0
+				LEFT JOIN Lieux T1 ON T1.`id`=T0.`Lieu_id`
+				WHERE T0.`DateDeb`>=(NOW() - INTERVAL 18 MONTH)
+				ORDER BY T0.`DateDeb`';
+		
+	$result = mysqli_query($eCOM_db, $requete);
+	$compteur=0;
+	while($row = mysqli_fetch_assoc($result)){
+
+		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Date =".fCOM_sqlDateToOut($row['DateFin'])." à comparer avec=".fCOM_sqlDateToOut(date("Y/m/d")));
+		
+		$TD_OnClick = 'onclick="window.location.assign(\''.$_SERVER['PHP_SELF'].'?action=Annonce&id='.$row['id'].'\')"';
+		
+		if ($row['DateFin'] < date("Y-m-d H:i:s", Time() - (5*3600))) { // on laisse en visibilité pendant 5h
+			$compteur = $compteur + 1;
+			pCOM_DebugAdd($debug, "Evenements:Annonce - cas 2 filtre la ligne");
+			echo '<h6 style="display:none;"></h6><tr id="Filtrer_'.$compteur.'" style="display:none;">';
+					
+		} else {
+			pCOM_DebugAdd($debug, "Evenements:Annonce - cas 3");
+			echo '<TR>';
+		}
+			
+		echo '<TD> </TD>';
+		echo '<TD '.$TD_OnClick.'>'.$row['DateDeb'].'</TD>';
+		echo '<TD '.$TD_OnClick.'>'.$row['DateFin'].'</TD>';
+		echo '<TD '.$TD_OnClick.'>';
+		if ($row['Lieu_id'] == -1) {
+			echo "Pas sélectionné";
+		} elseif ($row['Lieu_id'] == 0) {
+			echo "Tous les clochers";
+		} else {
+			echo $row['Lieu'];
+		}
+		echo '</TD>';
+		echo '<TD '.$TD_OnClick.'>'.$row['Annonce_texte'].'</TD>';
+		echo '<TD '.$TD_OnClick.'>';
+		if (file_exists("images/Annonces/Annonce_".$row['id'].".jpg")) { 
+			?>
+			<a data-toggle="tooltip" title="<img src='images/Annonces/Annonce_<?php echo $row['id']?>.jpg' width='150' />"<?php echo 'href="images/Annonces/Annonce_'.$row['id'].'.jpg"'; ?>><?php echo 'Annonce_'.$row['id']?> <i class="fa fa-camera-retro text-secondary"></i></a>
+			<?php
+		}
+		echo '</TD>';
+		echo '</TR>';
+	}
+	echo '<tbody></table>';
+	echo '</div>';
+	
+	//---------------------
+	// formulaire de saisie
+	//---------------------
+	if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
+		echo '<FORM method=post action='.$_SERVER['PHP_SELF'].'>';
+		echo '<div class="form-row ml-1 mt-3">';
+		if ( $_GET['id'] > 0 ) {
+			echo '<BR><B>Modification d\'une annonce</B>';
+		} else {
+			echo '<BR><B>Saisie d\'une nouvelle annonce</B>';
+		}
+		echo '</div>';
+
+
+		if ( $_GET['id'] > 0 )
+		{
+			$requete = 'SELECT * FROM Annonces where id='.$_GET['id'].'';
+			$result = mysqli_query($eCOM_db, $requete);
+			while($row = mysqli_fetch_assoc($result))
+			{
+				$DateDeb=$row['DateDeb'];
+				$DateFin=$row['DateFin'];
+				$Lieu_id=$row['Lieu_id'];
+				$Annonce_texte=$row['Annonce_texte'];
+			}
+		} else {
+			$DateDeb = "";
+			$DateFin = "";
+			$Lieu_id = -1;
+			$Annonce_texte="";
+		}
+		
+		echo '<div class="container-fluid"">';
+		echo '<div class="form-row">';
+		
+		echo '<div class="col-form-label">';
+		echo '<label for="DateDebut">Date début</label>';
+		echo '<input type="date" id="DateDebut" name="DateDeb" class="form-control" size="8" value="'.$DateDeb.'">';
+		echo '</div>';
+		
+		echo '<div class="col-form-label">';
+		echo '<label for="DateFin">Date de fin</label>';
+		echo '<input type="date" id="DateFin" name="DateFin" class="form-control" size="8" value="'.$DateFin.'">';
+		echo '</div>';
+		
+		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Lieux_id =".$Lieu_id." id=".$_GET['id']);
+		$BloquerAcces="";
+		echo '<div class="col-form-label">';
+		echo '<label for="Lieu">Annonce sur</label>';
+		echo '<SELECT name="Lieu" id="Lieu" '.$BloquerAcces.' class="form-control" >';
+		
+		$Default_selection='';
+		if ($Lieu_id == -1){
+			$Default_selection = 'selected="selected"';
+		}
+		echo '<option value="-1" '.$Default_selection.'>Choisir dans la liste</option>';
+		
+		$Default_selection='';
+		if ($Lieu_id == 0){
+			$Default_selection = 'selected="selected"';
+		}
+		echo '<option value="0" '.$Default_selection.'>Tous les clochers</option>';
+		
+		$Liste_Lieu_Celebration = pCOM_Get_liste_lieu_celebration(1, 1);
+		foreach ($Liste_Lieu_Celebration as $Lieu_Celebration){
+			list($ListLieu_id, $Lieu_name) = $Lieu_Celebration;
+			if ( $_GET['id'] > 0 ) {
+				if ($Lieu_id == $ListLieu_id){
+					pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Lieux_id =".$Lieu_name);
+					echo '<option value="'.$ListLieu_id.'" selected="selected">'.$Lieu_name.'</option>';
+				} else {
+					echo '<option value="'.$ListLieu_id.'">'.$Lieu_name.'</option>';
+				}
+			} else {
+				echo '<option value="'.$ListLieu_id.'">'.$Lieu_name.'</option>';
+			}
+		}
+		echo '</SELECT></div>';
+
+		echo '<div class="col-form-label">';
+		echo '<label for="Annonce_texte">Texte de l\'annonce</label>';
+		echo '<textarea style="width:100%" '.$BloquerAcces.' rows=5 name="Annonce_texte" maxlength="350" value ="'.$Annonce_texte.'">'.$Annonce_texte.'</textarea>';
+		echo '</div>';
+		
+		echo '<div class="col-form-label">';
+		echo '<label for="Annonce_flyer">Flyer</label>';
+		echo '<div align=center><input type="submit" class="btn btn-outline-secondary btn-sm" name="select_flyer_annonce" value="Charger un flyer"></div>';
+		//echo '<textarea style="width:100%" '.$BloquerAcces.' rows=1 name="Annonce_flyer" maxlength="350" value ="'.$Annonce_flyer.'">'.$Annonce_flyer.'</textarea>';
+		if (file_exists("images/Annonces/Annonce_".$_GET['id'].".jpg")) { 
+			?>
+			<a data-toggle="tooltip" title="<img src='images/Annonces/Annonce_<?php echo $_GET['id']?>.jpg' width='150' />"><?php echo 'Annonce_'.$_GET['id']?> <i class="fa fa-camera-retro text-secondary"></i></a>
+			<?php
+		}
+		echo '</div>';
+		
+		echo '</div></div>';
+		
+		echo '<div class="container-fluid mb-1">';
+		echo '<INPUT type="submit" class="btn btn-secondary" name="Annonce_sauvegarder" value="Enregistrer">&nbsp';
+		echo '<a href="'.$_SERVER['PHP_SELF'].'?action=Annonce&id=0" class="btn btn-secondary" role="button">Reset</a>&nbsp';
+		//echo '<INPUT type="reset" name="Reset" value="Reset_Celebration_Recurrente">';
+		if ( $_GET['id'] > 0 ) {
+			echo '<INPUT type="submit" class="btn btn-secondary" name="Annonce_supprimer" value="Supprimer">';
+		}
+		echo '<INPUT type="hidden" name="id" value='.$_GET['id'].'>';
+		echo '</div></FORM>';
+
+	} 
+	fMENU_bottom();
+	Charger_Script_Filterline();
+	exit();
+}
+
+if ( isset( $_POST['select_flyer_annonce'] ) AND $_POST['select_flyer_annonce']=="Charger un flyer") {
+	Global $eCOM_db;
+	echo '<form method="POST" action='.$_SERVER['PHP_SELF'].' enctype="multipart/form-data">';
+	echo '<FONT color=green><h4>La taille maximum du fichier ne doit pas dépasser 5Mo<BR>';
+	echo '</font><BR>';
+	echo 'Flyer (Annonce_'.$_POST['id'].') :  <BR></h4>';
+	//<!-- On limite le fichier à 100Ko -->
+	echo '<input type="hidden" name="MAX_FILE_SIZE" value="5000000">';
+	echo '<input type="file" name="avatar">';
+	echo '<input type=hidden name=id value='.$_POST['id'].'>';
+	//echo '<input type=hidden name=Activite value='.$_POST['Activite'].'>';
+	echo '<input type=hidden name=fichier_target value="Annonce_'.$_POST['id'].'.jpg">';
+	echo '<input type="submit" name="upload_flyer_annonce" value="Télécharger le fichier"></form>';
+	mysqli_close($eCOM_db);
+	exit();
+}
+
+if ( isset( $_POST['upload_flyer_annonce'] ) AND $_POST['upload_flyer_annonce']=="Télécharger le fichier") {
+	$UpdVAR['DIR']	= "load/";
+	$dossier =$_SERVER['DOCUMENT_ROOT']."/Photos/";
+	$dossier ="images/Annonces/"; //."/"; // ='Photos/';
+	$fichier = basename($_FILES['avatar']['name']);
+	$fichier_tmp = basename($_FILES["avatar"]["tmp_name"]);
+	$taille_maxi = 5000000;
+	$taille = filesize($_FILES['avatar']['tmp_name']);
+	$extensions = array(0=>'.jpg', '.jpeg', '.pjpeg');
+	$extension = strtolower(strrchr($_FILES['avatar']['name'], "."));
+
+	if(!in_array($extension, $extensions)) { //Si l'extension n'est pas dans le tableau
+		$fichier = basename($_FILES['avatar']['name']);
+		$erreur = 'Vous devez sélectionner un fichier de type ".jpg" ou ".jpeg" <BR>Or, l\'extension du fichier '.$fichier.' est : "'.$extension.'" ';
+	}
+	if($taille>$taille_maxi) {
+		$erreur = 'Le fichier est trop gros, sa taille ('.$taille.') dépasse le max : '.$taille_maxi.'';
+	}
+
+	if(!isset($erreur)) {//pas d'erreur, on upload
+
+		//On formate le nom du fichier ici...
+		$fichier = strtr($fichier, 
+          'ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ', 
+          'AAAAAACEEEEIIIIOOOOOUUUUYaaaaaaceeeeiiiioooooouuuuyy');
+		$UpdSEND=$UpdVAR['DIR'].basename($_FILES['avatar']['name']);
+		
+		if(move_uploaded_file($_FILES['avatar']['tmp_name'], $UpdSEND)) {
+			//Si la fonction renvoie TRUE, c'est que ça a fonctionné... was move_uploaded_file($fichier, $dossier.$fichier_nom)
+			rename($UpdSEND, $dossier.$_POST['fichier_target']);
+			$erreur = "flyer récupérée avec succès !";
+		
+		} else { //Sinon (la fonction renvoie FALSE).
+			echo "Echec du chargement du flyer ".$fichier_tmp." vers ".$UpdSEND." ! erreur=". $_FILES['avatar']['error']." ";
+			if ($_FILES['avatar']['error'] == UPLOAD_ERR_NO_FILE) {
+				$erreur = "<BR>Fichier manquant"; }
+			elseif  ($_FILES['avatar']['error'] == UPLOAD_ERR_INI_SIZE) {
+				$erreur = "<BR>Fichier dépassant la taille maximale autorisée"; }
+			elseif  ($_FILES['avatar']['error'] == UPLOAD_ERR_FORM_SIZE) {
+				$erreur = "<BR>Fichier dépassant la taille maximale autorisée"; }
+			elseif  ($_FILES['avatar']['error'] == UPLOAD_ERR_PARTIAL) {
+				$erreur = "<BR>Fichier transféré partiellement";	}
+			else {
+				$erreur = "<BR>Fichier non transféré"; }
+			}
+		}
+	echo $erreur;
+
+	//echo '<META http-equiv="refresh" content="3; URL=https://'.$_SESSION["RetourPageCourante"].'">';
+	?>
+	<script language="JavaScript" type="text/javascript"><!--
+	setTimeout("window.history.go(-2)",3000);
+	</script>
+	<?php
+
+	exit();
+}
+
+if ( isset( $_POST['Reset'] ) AND 
+			$_POST['Reset']=="Reset_Annonce") {
+}
+
+if ( isset( $_POST['Annonce_supprimer'] ) AND 
+			$_POST['Annonce_supprimer']=="Supprimer") {
+
+	Global $eCOM_db;
+	$debug = false;
+
+	fMENU_top();
+
+	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
+	echo '<TR BGCOLOR="#F7F7F7">';
+	echo '<TD><FONT FACE="Verdana" SIZE="2"><B>Database Rencontre: Suppression d\'une annonce</B><BR>';
+	echo '</TD></TR>';
+	echo '<TR><TD BGCOLOR="#EEEEEE">';
+	echo '<FONT FACE="verdana" color="#313131" size="2">Etes-vous certain de vouloir supprimer cette annonce ?</FONT><BR><BR>';
+
+	$requete = 'SELECT T0.`id`, T0.`DateDeb`, T0.`DateFin`, T0.`Lieu_id`, T0.`Annonce_texte`, T1.`Lieu`
+				FROM Annonces T0
+				LEFT JOIN Lieux T1 ON T1.`id`=T0.`Lieu_id`
+				WHERE T0.`id`='.$_POST['id'].' '; 
+	$result = mysqli_query($eCOM_db, $requete);	
+	while($row = mysqli_fetch_assoc($result))
+	{
+		echo '<FONT FACE="verdana" color="#313131" size="2">';
+		echo 'Du '.strftime("%d/%m/%y", fCOM_sqlDateToOut($row['DateDeb']));
+		echo ' au '.strftime("%d/%m/%y", fCOM_sqlDateToOut($row['DateFin']));
+		if ($row['Lieu_id'] == -1) {
+		}elseif ($row['Lieu_id'] == 0) {
+			echo " sur tous les clochers";
+		} else {
+			echo ' sur '.$row['Lieu'];
+		}
+		echo '<BR>texte:'.$row['Annonce_texte'];
+		echo '<BR>&nbsp</FONT>';
+	}
+	pCOM_DebugAdd($debug, "Evenement:Annonce_del - requete =".$requete);
+	echo '</TD></TR>';
+	echo '<TR><TD><P><FORM method=post action='.$_SERVER['PHP_SELF'].'>';
+	echo '<INPUT type="submit" name="Annonce_supprimer_Conf" value="Oui">';
+	echo '<INPUT type="submit" name="Annonce_supprimer_Conf" value="Non">';
+	echo '<INPUT type="hidden" name="id" value='.$_POST['id'].'>';
+	echo '</FORM>';
+	echo '</TD></TR></TABLE>';
+	
+	fMENU_bottom();
+	mysqli_close($eCOM_db);
+	exit();	
+}
+
+
+if ( isset( $_POST['Annonce_supprimer_Conf'] ) AND 
+		  ( $_POST['Annonce_supprimer_Conf']=="Oui" OR
+			$_POST['Annonce_supprimer_Conf']=="Non" )) {
+//if ( $rencontre_delete ) {
+	Global $eCOM_db;
+	$debug = False;
+	$Delay = "0";
+	if ( $_POST['Annonce_supprimer_Conf'] == "Oui" )
+	{
+		if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30)
+		{
+			$requete = 'DELETE FROM Annonces WHERE id='.$_POST['id'].' '; 
+			pCOM_DebugAdd($debug, "Evenement:Annonce_supprimer_Conf - requete =".$requete);
+			$result = mysqli_query($eCOM_db, $requete); 
+			if (!$result) {
+				echo '<B><CENTER><FONT face="verdana" size="2" color=red>';
+				echo 'Impossible de retirer cette annonce : '.mysqli_error($eCOM_db);
+				echo '</FONT></CENTER></B>';
+			} else {
+				echo '<B><CENTER><FONT face="verdana" size="2" color=green>Annonce supprimées avec succès</FONT></CENTER></B>';
+			}
+		} else {
+			echo '<B><CENTER><FONT face="verdana" size="2" color=red>';
+			echo 'Impossible de retirer cette annonce : pas de droit accordé</FONT></CENTER></B>';
+		}
+		$Delay = "2";
+	}
+	echo '<META http-equiv="refresh" content="'.$Delay.'; URL='.$_SESSION["RetourPage"].'">';
+	mysqli_close($eCOM_db);
+	exit;
+}
+
+
+if ( isset( $_POST['Annonce_sauvegarder'] ) AND 
+			$_POST['Annonce_sauvegarder']=="Enregistrer") {
+
+	Global $eCOM_db;
+	fCOM_Bootstrap_init();
+		
+	if (fCOM_Get_Autorization($_SESSION["Activite_id"]) <= 20)
+	{
+		echo '<META http-equiv="refresh" content="0; URL='.$_SESSION["RetourPage"].'">';
+		mysqli_close($eCOM_db);
+		exit;
+	}
+	
+	$debug = False;
+	pCOM_DebugAdd($debug, "Evenement:AnnonceSave DateDeb=" .$_POST['DateDeb']);
+	pCOM_DebugAdd($debug, "Evenement:AnnonceSave DateFin=" .$_POST['DateFin']);
+	pCOM_DebugAdd($debug, "Evenement:AnnonceSave Lieu=" .$_POST['Lieu']);
+	
+	$id=$_POST['id'];
+	
+	// vérifierer :DateDeb, DateFin, jour, heure, minute, Lieu
+	$DateDeb=$_POST['DateDeb'];
+	if ( $DateDeb == "" ) {
+		fCOM_GetWindowBack(2);
+		exit;
+	}
+	$DateFin=$_POST['DateFin'];
+	if ( $DateFin == "" ) {
+		fCOM_GetWindowBack(2);
+		exit;
+	}
+
+	$Lieu_id=-1;
+	if (isset($_POST['Lieu'])) {
+		$Lieu_id=$_POST['Lieu'];
+		pCOM_DebugAdd($debug, "Evenement:AnnonceSave Lieu=existe");
+		if ($Lieu_id == '' ) {
+			$Lieu_id=-1;
+			pCOM_DebugAdd($debug, "Evenement:AnnonceSave Lieu=vide");
+		}
+	}
+	pCOM_DebugAdd($debug, "Evenement:AnnonceSave Lieu=" .$Lieu_id);
+	
+	if ( $id > 0 ) {
+		// sauvegarder :DateDeb, DateFin, jour, Lieu
+		mysqli_query($eCOM_db, 'UPDATE Annonces SET DateDeb="'.substr($DateDeb,0,10).'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Annonces SET DateFin="'.substr($DateFin,0,10).'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, 'UPDATE Annonces SET Lieu_id='.$Lieu_id.' WHERE id='.$id.'') or die (mysqli_error($eCOM_db));		
+		mysqli_query($eCOM_db, 'UPDATE Annonces SET Annonce_texte="'.$_POST['Annonce_texte'].'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
+		//mysqli_query($eCOM_db, 'UPDATE Annonces SET Annonce_flyer="'.$_POST['Annonce_flyer'].'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
+		echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été modifiée avec succès.</div>';
+		
+	} else {
+
+		$requete = 'INSERT INTO Annonces (id, DateDeb, DateFin, Lieu_id, Annonce_texte) VALUES (0, "'.substr($DateDeb,0,10).'", "'.substr($DateFin,0,10).'", '.$Lieu_id.', "'.$_POST['Annonce_texte'].'")';
+		pCOM_DebugAdd($debug, "Evenement:AnnonceSave - requete=".$requete);
+		mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
+		echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été ajoutée avec succès.</div>';
+
+		}
+		
+	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
+	mysqli_close($eCOM_db);
+	exit;
+}
+
+
+
 
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
@@ -1132,11 +1549,11 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 	echo '<th scope="col">Sacristin</th>';
 	echo '<th scope="col">Animateur</th>';
 	echo '<th scope="col">Musicien</th>';
+	echo '<th scope="col">Projection</th>';
+	echo '<th scope="col">Sono</th>';
+	echo '<th scope="col">Vidéo</th>';
 	echo '<th scope="col">Eveil_Foi</th>';
 	echo '<th scope="col">Garderie</th>';
-	echo '<th scope="col">Sono</th>';
-	echo '<th scope="col">Projection</th>';
-	echo '<th scope="col">Vidéo</th>';
 	echo '</tr></thead>';
 	echo '<tbody>';
 	
@@ -1166,12 +1583,14 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 		pCOM_DebugAdd($debug,"Evenements:Liste DateDeb=".fCOM_sqlDateToOut($row['DateDeb']));
 		pCOM_DebugAdd($debug,"Evenements:Liste DateFin=".fCOM_sqlDateToOut($row['DateFin']));
 		pCOM_DebugAdd($debug,"Evenements:Liste DateRec=".$DateRec);
+		$HeureMinuteSeconde = date(" H:i:s",$DateRec);
 		While ( $DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
 				$DateRec <= $DateLimite ) {
 			if ($DateRec >= fCOM_sqlDateToOut($row['DateDeb']) AND 
 				$DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
 				$DateRec <= $DateLimite ) {
-				$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d H:i:s",$DateRec).'", '.$row['Lieu_id'].')';
+				//$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d H:i:s",$DateRec).'", '.$row['Lieu_id'].')';
+				$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d",$DateRec).$HeureMinuteSeconde.'", '.$row['Lieu_id'].')';
 				pCOM_DebugAdd($debug,"Evenements:Liste Requete02=".$requete);
 			//pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - requete=".$requete);
 				mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
@@ -1230,7 +1649,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 		LEFT JOIN `Individu` T17 ON T16.`Individu_id` = T17.`id`
 		LEFT JOIN `QuiQuoi` T18 ON T0.`id` = T18.`Engagement_id` AND T18.`QuoiQuoi_id`=26 AND T18.`Activite_id`= T0.`Activite_id`
 		LEFT JOIN `Individu` T19 ON T18.`Individu_id` = T19.`id`
-		WHERE T0.`Activite_id`=86 AND T0.`Date`> (NOW() - INTERVAL 3 MONTH))
+		WHERE T0.`Activite_id`=86 AND T0.`Date`> (NOW() - INTERVAL 2 MONTH))
 				
 		UNION ALL
 				
@@ -1353,8 +1772,6 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			echo '<TD '.$TD_OnClick.'>'.$MemoSacristin.'</TD>';
 			echo '<TD '.$TD_OnClick.'>'.$MemoAnimateur.'</TD>';
 			echo '<TD '.$TD_OnClick.'>'.$MemoMusicien.'</TD>';
-			echo '<TD '.$TD_OnClick.'>'.$MemoEveilFoi.'</TD>';
-			echo '<TD '.$TD_OnClick.'>'.$MemoGarderie.'</TD>';
 						
 			if ($Gerer_Equipe_Technique_Messe == False ) {
 				// Extraction du fichier XML
@@ -1429,9 +1846,11 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 					}
 				}
 			}
-			echo '<TD '.$TD_OnClick.'>'.$Team_sono.'</TD>';
 			echo '<TD '.$TD_OnClick.'>'.$Team_projection.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$Team_sono.'</TD>';
 			echo '<TD '.$TD_OnClick.'>'.$Team_broadcast.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoEveilFoi.'</TD>';
+			echo '<TD '.$TD_OnClick.'>'.$MemoGarderie.'</TD>';
 			
 			//$MemoDate = strftime("%d/%m/%Y  %H:%M", fCOM_sqlDateToOut($row['Date']));
 			$MemoStatus="";
@@ -1533,7 +1952,7 @@ if ( isset( $_POST['Prog_Recurrente_Celebration_sauvegarder'] ) AND
 			}
 			$MemoIntitule = Build_Intitule($MemoIntitule, $row['Ordre'], $MemoActivité, $row['id'], $row['Paroissien'], $row['Celebrant']);
 			
-			if ($row['Celebrant'] != ""){$MemoCelebrant = $row['Celebrant'];}
+			if ($row['Celebrant'] != "" AND $MemoCelebrant == ""){$MemoCelebrant = $row['Celebrant'];}
 			if ($row['Sacristin'] != ""){$MemoSacristin = $row['Sacristin'];}
 			if ($row['EveilFoi'] != ""){$MemoEveilFoi = $row['EveilFoi'];}
 			if ($row['Garderie'] != ""){$MemoGarderie = $row['Garderie'];}
@@ -1610,25 +2029,30 @@ function Build_Intitule ($pMemoIntitule, $pType, $pIntitule, $pId, $pParoissien,
 	return $Build_Intitule;
 }
 
-?>
-<script type="text/javascript">
-var current=null;
-function FiltrerLine() {
+Charger_Script_Filterline();
+
+function Charger_Script_Filterline() {
+	?>
+	<script type="text/javascript">
+	var current=null;
+	function FiltrerLine() {
 	
-	var nombreh6 = document.getElementsByTagName('h6').length; //nombre de tr a cacher
-	for(var i=1; i<=nombreh6; i++)
-	{
-		var stockacacher = 'Filtrer_'+i;
-		current = document.getElementById(stockacacher);
+		var nombreh6 = document.getElementsByTagName('h6').length; //nombre de tr a cacher
+		for(var i=1; i<=nombreh6; i++)
+		{
+			var stockacacher = 'Filtrer_'+i;
+			current = document.getElementById(stockacacher);
 		
-		if(current.style.display=='table-row')	{
-			current.style.display='none';
-		} else {
-			current.style.display='table-row';
+			if(current.style.display=='table-row')	{
+				current.style.display='none';
+			} else {
+				current.style.display='table-row';
+			}
 		}
 	}
+	</script>
+	<?php
 }
-</script>
 
-<?php
+
 

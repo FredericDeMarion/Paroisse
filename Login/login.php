@@ -9,6 +9,8 @@ if(empty($a)) session_start();
 //--------------------------------------------------------------------------------------------------
 //    V1.00 | 12/04/2017 | Version originale
 //==================================================================================================
+// 21/05/2018 : Responsive 
+//==================================================================================================
 
 
 	$Paroisse_name = "Notre Dame de la Sagesse"; // Sophia-Antipolis
@@ -38,36 +40,52 @@ if(empty($a)) session_start();
 	echo '<!DOCTYPE HTML>';
 	echo '<HTML><HEAD>';
 	echo '<TITLE>Database '.$Paroisse_name.'</TITLE>';
-	//echo '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />';
+	echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
 	echo '</HEAD>';
 	setlocale (LC_TIME, 'fr_FR','fra');	
 	mb_internal_encoding('UTF-8');
+	echo '<link rel="icon" type="image/png" href="../logo.png" />';
+	
+	echo '<div class="row justify-content-around">';
+	echo '<div class="col-lg-4 col-xs-10 col-sm-10 col-md-10">';
 	
 	echo '<FORM name="form1" method="post" action="checklogin.php">';
-	echo '<TABLE width="420" border="0" align="center" cellpadding="3" cellspacing="1" bgcolor="#FFFFFF">';
+
+	echo '<div class="form-group">';
+	echo '<div align="center">';
+	echo '<IMG SRC="/logo.jpg" HEIGHT=150>';
+	echo '</div>';
+	echo '</div>';
 	
-	echo '<TR><TD colspan="3" align="center"><IMG SRC="/logo.jpg" HEIGHT=150></TD></TR>';
-	
-	echo '<TR><TD colspan="3" align="center" ><FONT face=verdana size=2><STRONG>Connection base de données '.$Paroisse_name.'<BR>&nbsp</FONT></STRONG></TD></TR>';
+	echo '<div class="form-group">';
+	echo '<div class="col" class="form-control" align="center">';
+	echo '<FONT face=verdana size=4><STRONG>Connection base de données<BR>'.$Paroisse_name.'<BR>&nbsp</FONT></STRONG>';
+	echo '</div>';
+	echo '</div>';
 	
 	// identifiant
-	echo '<TR><TD width="300">';
-	echo '<div class="col"><label for="e_mail">Email</label><INPUT name="myusername" type="email" class="form-control form-control-sm" id="e_mail">';
-	echo '</div></TD></TR>';
-
-	// mot de passe
-	echo '<TR><TD>';
-	echo '<div class="col"><label for="mypassword">Mot de Passe</label>';
-	echo '<INPUT name="mypassword" type="password" class="form-control form-control-sm" id="mypassword">';
-	echo '</div></TD></TR>';
+	echo '<div class="form-group">';
+	echo '<label for="e_mail">Email</label>';
+	echo '<INPUT name="myusername" type="email" class="form-control" id="e_mail">';
+	echo '</div>';
 	
+	// mot de passe
+	echo '<div class="form-group">';
+	echo '<label for="mypassword">Mot de Passe</label>';
+	echo '<INPUT name="mypassword" type="password" class="form-control" id="mypassword">';
+	echo '</div>';
+	
+
 	// Niveau souhaité
 	echo '<input type=hidden name="mylevelrequested" value=100 >';
 
-	echo '<TR><TD>';
-	echo '<div class="col"><INPUT type="submit" class="btn btn-secondary btn-sm" name="Submit" value="Login">';
-	echo '</div></TD></TR>';
-	echo '</TABLE></FORM>';
+	echo '<div class="form-group">';
+	echo '<INPUT type="submit" class="btn btn-secondary btn-sm" name="Submit" value="Login">';
+	echo '</div>';
 	
+	echo '</FORM>';
+	
+	echo '</div>';
+	echo '</div>';	
 	
 ?>
