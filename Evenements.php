@@ -149,7 +149,7 @@ if ((isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder'
 	(isset( $_POST['Evenement_annuler']))) {
 
 	Global $eCOM_db;
-	fCOM_Bootstrap_init();
+	//fCOM_Bootstrap_init();
 	
 	$debug = False;
 	
@@ -239,7 +239,8 @@ if ((isset( $_POST['Evenement_sauvegarder'] ) AND $_POST['Evenement_sauvegarder'
 		if (isset($_POST['Broadcast'])) {
 		Enregistrer_Intervenants($Activite_id, $Engagement_Id, 26, $_POST['Broadcast']);}
 	}
-	echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> la fiche a été enregistrée avec succès.</div>';
+	fCOM_DisplayAlerte(True, "la fiche a été enregistrée avec succès");
+	//echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> la fiche a été enregistrée avec succès.</div>';
 	//echo '<B><CENTER><FONT face="verdana" size="2" color=green>Evénement sauvegardée avec succes</FONT></CENTER></B>';
 
 	echo '<META http-equiv="refresh" content="0; URL='.$_SERVER['PHP_SELF'].'">';

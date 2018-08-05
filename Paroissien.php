@@ -1325,7 +1325,7 @@ if ( isset( $_POST['edit_individu'] ) AND $_POST['edit_individu']=="Enregistrer"
 	if (fCOM_Get_Autorization( 0) >= 30) {
 		
 		Paroissien_sauvegarder_Fiche ();
-		fCOM_DisplayMsg(True,"la fiche a été enregistrée avec succès");
+		fCOM_DisplayAlerte(True,"la fiche a été enregistrée avec succès");
 	}
 	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
 	exit;

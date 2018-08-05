@@ -96,26 +96,6 @@ function Securite_html($string)
 }
 
 
-// Compteur de login
-function Afficher_compteur_de_login()
-{
-	Global $eCOM_db;
-	$sql='SELECT counter FROM Admin_counter';
-	$result1=mysqli_query($eCOM_db, $sql);
-	$row1 = mysqli_fetch_assoc($result1);
-	$counter= $row1['counter'];
-
-	$CounterToPrint = sprintf("%07d", $row1['counter']);
-	echo "<img src='images/Digit_coin_G.gif' border='0' alt='Compteur'>";
-
-	for ($i=0; $i<=6; $i++) {
-		$digit = substr($CounterToPrint, $i, 1);
-		echo "<img src='images/Digit_".$digit.".jpg' border='0' alt='Compteur'>";
-	}
-	echo "<img src='images/Digit_coin_D.gif' border='0' alt='Compteur'>";
-	return (0);
-
-}
 
 //-------------------------------------------
 // Texte
@@ -308,7 +288,7 @@ function ustr_replace($search, $replace, $subject, $cur=0) {
 return (strpos($subject, $search,$cur)) ? substr_replace($subject, $replace,(int)strpos($subject,$search,$cur), strlen($search)) : $subject;
 }//ustr_replace
 
-function fCOM_DisplayMsg($pOk, $pText) {
+function fCOM_DisplayAlerte($pOk, $pText) {
 	
 	fCOM_Bootstrap_init();
 	

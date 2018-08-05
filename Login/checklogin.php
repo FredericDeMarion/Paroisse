@@ -11,6 +11,7 @@ header( 'content-type: text/html; charset=iso-8859-1' );
 //    V1.00 | 12/04/2017 | Version originale
 //==================================================================================================
 // 10/05/2017 : Suppression de USER_LEVEL_REQUESTED
+// 05/08/2018 : Configuration auto chaque début aout des services et ressourcements de l'année suivante
 //==================================================================================================
 
 
@@ -19,7 +20,6 @@ function debug_plus($ch) {
 	?><SCRIPT language=javascript>
 		alert('<?php print $ch; ?>')
 	</SCRIPT><?php
-
 }
 
 	$_SESSION['USER_ID']=0;
@@ -84,8 +84,9 @@ function debug_plus($ch) {
 		$sql4='DELETE FROM Admin_user_online WHERE time<'.$time_check.'';
 		$result4=mysqli_query($db, 'DELETE FROM Admin_user_online WHERE time<'.$time_check.'');
 	
+		// -------------------------------------------------------------
 		// vérifier si le user est attendu en login
-//		$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" and Naissance="'.$mynaissance.'" AND droit_acces = 1';
+		// -------------------------------------------------------------
 		$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" AND droit_acces = 1';
 		$result=mysqli_query($db, $requete);
 		$count=mysqli_num_rows($result);
@@ -103,10 +104,11 @@ function debug_plus($ch) {
 	// If result matched $myusername, $mynaissance and $mypassword, table row must be 1 row
 	if ( $count >= 1 && $_POST['mypassword'] != "" ){
 		error_log("Cas 8");
+		// -------------------------------------------------------------
 		// Le user et mdp existant - on va chercher l'ID de la personne
 		// sauvegarde de l'adresse IP et de l'horodate de connexion
+		// -------------------------------------------------------------
 
-		//$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" and Naissance="'.$mynaissance.'"';
 		if ($ldapbind) {
 			$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'"';
 		} else {
@@ -126,14 +128,18 @@ function debug_plus($ch) {
 		require('counter.php');
 		//error_log("Checklogin : counter.php passed");
 		//echo '<META http-equiv="refresh" content="0; URL=/index.php">';
-		header("location:/index.php");
+		//header("location:/index.php");
+		// vérifier s'il ne faut pas faire une sauvegarde des services et Ressourcements pour l'année passée (passage au mois d'Aout)
+		header("location:/Admin_Yearly.php?action=SauvegarderServicesYearly");
 		exit;
 
 	} elseif ($_POST['mypassword'] != "" AND $_SESSION["LDAP_Actif"] == False) {
 		error_log("Cas 9");
 		// valable avec ou sans LDAP et mot de passe non défini
+		// -------------------------------------------------------------
 		// 2ème cas de figure, c'est une première connexion, le mot de passe n'a jamais été saisie
-		//$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="" and Naissance="'.$mynaissance.'" AND droit_acces = 1';
+		// -------------------------------------------------------------
+
 		$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="" AND droit_acces = 1';
 		$result=mysqli_query($db, $requete);
 		$count=mysqli_num_rows($result);
@@ -141,11 +147,9 @@ function debug_plus($ch) {
 		if ( $count >= 1) {
 			error_log("Cas 10");
 			// sauvegarder le nouveau mot de passe, de l'adresse IP et de l'horodate de connexion
-//			$result=mysqli_query($db, 'UPDATE Admin_membres SET password="'.$mypassword.'", membre_adresse_ip="'.$_SERVER["REMOTE_ADDR"].'", membre_derniere_visite=NOW() WHERE username="'.$myusername.'" and Naissance="'.$mynaissance.'"')or die("Login : Erreur de sauvegarde du password");
 			$result=mysqli_query($db, 'UPDATE Admin_membres SET password="'.$mypassword.'", membre_adresse_ip="'.$_SERVER["REMOTE_ADDR"].'", membre_derniere_visite=NOW() WHERE username="'.$myusername.'" ')or die("Login : Erreur de sauvegarde du password");
 
 			// sauvegarde en session de l'individu id
-			//$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" and Naissance="'.$mynaissance.'" AND droit_acces = 1';
 			$requete='SELECT * FROM Admin_membres WHERE username="'.$myusername.'" and password="'.$mypassword.'" AND droit_acces = 1';
 			$result=mysqli_query($db, $requete);
 			while($row = mysqli_fetch_assoc($result)){
