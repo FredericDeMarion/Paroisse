@@ -11,6 +11,8 @@
 //				Appel de la fonction pCOM_Get_NomParoisse sans '()'
 // 10/05/2017 : Modification de la gestion des souhaits
 // 10/05/2017 : Suppression des $_SERVER['PHP_AUTH_USER']
+// 03/11/2018 : Ajout dans liste des services, ressourcements de l'information "Gestionnaire"
+// 03/11/2018 : Ajout de la liste des Gestionnaires (RGPD)
 //==================================================================================================
 function debug($ch) {
    global $debug;
@@ -71,11 +73,15 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 	} else {
 		$SessionActuelle= date("Y")+1;
 	}
+	
+	$ActiverListe = True;
+	if ( $pChampsIndividu == "Gestionnaires") {
+		$ActiverListe = False;
+	}
 
 	//echo '<link rel="stylesheet" type="text/css" href="includes/Tooltip.css">';
 	echo '<TABLE WIDTH="100%" BORDER="0" CELLSPACING="1" CELLPADDING="4" BGCOLOR="#FFFFFF">';
 	echo '<FORM method=post action="'.$_SERVER['PHP_SELF'].'">';
-
 
 	if ($pChampsIndividu == "Services" ) {
 		$AddWhere = "AND T0.`id` > 1 ";
@@ -101,52 +107,59 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 	echo '<TR BGCOLOR="#F7F7F7"><TD>';
 	echo '<DIV align="left">';
 	echo '<FONT FACE="Verdana" SIZE="2"><B>'.$pTitre.' : </B>';
-	echo '<SELECT name="Engagement"  >';
-	echo '<option value="All" selected="selected">All</option>';
-	pCOM_DebugAdd($debug, 'SuiviParoissien:Lister_engagements - Requete = '. $requete);
-	$result = mysqli_query($eCOM_db, $requete);
-	while($row = mysqli_fetch_assoc($result)){
-		if ($pChampsIndividu == "Services" ) {
-			if ($row['Lieu']=="") {
-				$AfficheLibelle = $row['Activite'];
-			} else {
-				$AfficheLibelle = $row['Activite']." - ".$row['Lieu'];
+	if ($ActiverListe == True) {
+		echo '<SELECT name="Engagement"  >';
+		echo '<option value="All" selected="selected">All</option>';
+		pCOM_DebugAdd($debug, 'SuiviParoissien:Lister_engagements - Requete = '. $requete);
+		$result = mysqli_query($eCOM_db, $requete);
+		while($row = mysqli_fetch_assoc($result)){
+			if ($pChampsIndividu == "Services" ) {
+				if ($row['Lieu']=="") {
+					$AfficheLibelle = $row['Activite'];
+				} else {
+					$AfficheLibelle = $row['Activite']." - ".$row['Lieu'];
+				}
+			} elseif ( $pChampsIndividu == "Ressourcements" ) {
+				$AfficheLibelle = $row['Nom'];
+			} elseif ( $pChampsIndividu == "Souhaits") {
+				$AfficheLibelle = $row['Nom'];
+			} elseif ( $pChampsIndividu == "LangueMaternelle") {
+				$AfficheLibelle = $row['LangueMaternelle'];
+			} elseif ( $pChampsIndividu == "Gestionnaires") {
+				//$AfficheLibelle = $row['LangueMaternelle'];
 			}
+			if ($AfficheLibelle == $pEngagement){
+				$SelectionnerChoix='selected="selected"';
+			} else {
+				$SelectionnerChoix='';
+			}
+			echo '<option value="'.$AfficheLibelle.'" '.$SelectionnerChoix.'>'.$AfficheLibelle.'</option>';
+		}
+		echo '</SELECT>';
+
+		if ($pChampsIndividu == "Services" ) {
+			echo '<input type="submit" name="Afficher_liste_services" value="Afficher">';
 		} elseif ( $pChampsIndividu == "Ressourcements" ) {
-			$AfficheLibelle = $row['Nom'];
-		} elseif ( $pChampsIndividu == "Souhaits") {
-			$AfficheLibelle = $row['Nom'];
-		} elseif ( $pChampsIndividu == "LangueMaternelle") {
-			$AfficheLibelle = $row['LangueMaternelle'];
+			echo '<input type="submit" name="Afficher_liste_ressourcements" value="Afficher">';
+		} elseif ( $pChampsIndividu == "Souhaits" ) {
+			echo '<input type="submit" name="Afficher_liste_souhaits" value="Afficher">';
+		} elseif ( $pChampsIndividu == "LangueMaternelle" ) {
+			echo '<input type="submit" name="Afficher_liste_langues" value="Afficher">';
+		} elseif ( $pChampsIndividu == "Gestionnaires" ) {
+			//echo '<input type="submit" name="Afficher_liste_langues" value="Afficher">';
 		}
-		if ($AfficheLibelle == $pEngagement){
-			$SelectionnerChoix='selected="selected"';
-		} else {
-			$SelectionnerChoix='';
-		}
-		echo '<option value="'.$AfficheLibelle.'" '.$SelectionnerChoix.'>'.$AfficheLibelle.'</option>';
-	}
-	echo '</SELECT>';
-	if ($pChampsIndividu == "Services" ) {
-		echo '<input type="submit" name="Afficher_liste_services" value="Afficher">';
-	} elseif ( $pChampsIndividu == "Ressourcements" ) {
-		echo '<input type="submit" name="Afficher_liste_ressourcements" value="Afficher">';
-	} elseif ( $pChampsIndividu == "Souhaits" ) {
-		echo '<input type="submit" name="Afficher_liste_souhaits" value="Afficher">';
-	} elseif ( $pChampsIndividu == "LangueMaternelle" ) {
-		echo '<input type="submit" name="Afficher_liste_langues" value="Afficher">';
 	}
 	if ($pChampsIndividu == "Services" ) {
-		echo '<BR><FONT face=verdana color=#555555# size=0>(<i class="fa fa-star text-success"></i>) Responsable &nbsp&nbsp&nbsp(<i class="fa fa-bullseye text-success"></i>) Point contact</FONT>';
+		echo '<BR><FONT face=verdana color=#555555# size=0>(<i class="fa fa-star text-success"></i>) Responsable &nbsp&nbsp&nbsp(<i class="fa fa-bullseye text-success"></i>) Point contact &nbsp&nbsp&nbsp(<i class="fa fa-edit text-success"></i>) Gestionnaire</FONT>';
 	}
+	
 	echo '</DIV>';	
-	echo '</TR></FORM>';
-
-
+	echo '</TD></TR></FORM>';
+	
 	echo '<TR><TD BGCOLOR="#EEEEEE">';
 
 	echo '<table id="TableauSansTriero" class="table table-striped table-hover table-sm" width="100%" cellspacing="0">';
-	echo '<thead><tr>';
+	echo '<thead><TR>';
 	
 	echo "<TH>Engagement</TH>";
 	echo "<TH>Nom </TH>";
@@ -163,12 +176,12 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		$NbColonne=$NbColonne+2;
 	}
 	
-	if (fCOM_Get_Autorization( 0 ) >= 40 AND $pChampsIndividu != "LangueMaternelle" ) { // was 40
+	if (fCOM_Get_Autorization( 0 ) >= 40 AND $pChampsIndividu != "LangueMaternelle" AND $pChampsIndividu != "Gestionnaires" ) { // was 40
 		echo "<TH>Denier</TH>";
 		$NbColonne=$NbColonne+1;
 	}
 	$NbColonne=$NbColonne-2;
-	echo '</tr></thead>';
+	echo '</TR></thead>';
 	echo '<tbody>';
 	
 	$Total_pers = 0;
@@ -211,6 +224,8 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		$requete = 'SELECT * FROM `Activites` T0 where T0.`Souhait` = 1 '.$ExtraRequete.' ORDER BY T0.`Nom`';
 	} elseif ( $pChampsIndividu == "LangueMaternelle") {
 		$requete = 'SELECT Distinct LangueMaternelle FROM `Individu` T0 where T0.`'.$pChampsIndividu.'`!="Langue Maternelle ?" and T0.`'.$pChampsIndividu.'`!="" and T0.`'.$pChampsIndividu.'`!="Autre" '.$ExtraRequete.' ORDER BY T0.`LangueMaternelle`';
+	} elseif ( $pChampsIndividu == "Gestionnaires") {
+		$requete = 'SELECT "Gestionnaires" as Nom';
 	}
 
 	if ($pChampsIndividu == "Services" AND ( $pEngagement == "" OR  $pEngagement == "All") ) {
@@ -240,19 +255,17 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		} elseif ( $pChampsIndividu == "LangueMaternelle") {
 			//$TreatedValue=$row[LangueMaternelle];
 			$TreatedName=$row['LangueMaternelle'];
+		} elseif ( $pChampsIndividu == "Gestionnaires") {
+			//$TreatedValue=$row[LangueMaternelle];
+			$TreatedName="Gestionnaire";
 		}
 		
-		// ligne de séparation des services
-		//---------------------------------
-		
-		//echo '<TR><TD colspan="2" bgcolor="#A1A1A1"><font size=3>'.$TreatedName.'</font></TD><TD colspan="'.$NbColonne.'" bgcolor="#A1A1A1"><font size=2> Liste <A HREF="load/ListeMail_'.$File_Counter.'.php">e_mail</A></font></TD></TR>';
-
 		$temp = "load/ListeMail_".$File_Counter.".php";
 		$handle = fopen($temp, 'w');
 		fCOM_PrintFile_Init($handle, "Liste des adresses mail : ".$TreatedName);
 		$File_Counter += 1;
 		if ($pChampsIndividu == "Services" ) {
-			$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Prenom`, T1.`Nom`, T1.`Adresse`, T1.`Telephone`, T1.`e_mail`, IFNULL(T2.Lieu, "") As Lieu, T0.`Lieu_id`, T0.`Responsable`, T0.`Point_de_contact`
+			$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Prenom`, T1.`Nom`, T1.`Adresse`, T1.`Telephone`, T1.`e_mail`, IFNULL(T2.Lieu, "") As Lieu, T0.`Lieu_id`, T0.`Responsable`, T0.`Point_de_contact`, T0.`WEB_G` AS Gestionnaire
 					FROM `QuiQuoi` T0
 					LEFT JOIN `Individu` T1 ON T1.`id`=T0.`Individu_id`
 					LEFT JOIN `Lieux` T2 ON T2.`id`=T0.`Lieu_id`
@@ -276,7 +289,14 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 					
 		} elseif ( $pChampsIndividu == "LangueMaternelle") {
 			$requete2 = 'SELECT T0.`id`, T0.`Nom`, T0.`Prenom`, T0.`Adresse`, T0.`Telephone`, T0.`e_mail` FROM `Individu` T0 where T0.`'.$pChampsIndividu.'`!="Langue Maternelle ?" and T0.`'.$pChampsIndividu.'`!="" and T0.`'.$pChampsIndividu.'`!="Autre" and T0.`'.$pChampsIndividu.'`="'.$TreatedName.'" AND T0.`Dead`=0 AND T0.`Actif`=1 ORDER BY T0.`Nom`, T0.`Prenom`';
-		}
+
+		} elseif ( $pChampsIndividu == "Gestionnaires") {
+			$requete2 = 'SELECT DISTINCT T1.`id`, T1.`Prenom`, T1.`Nom`, T1.`Adresse`, T1.`Telephone`, T1.`e_mail`, T0.`WEB_G` AS Gestionnaire
+					FROM `QuiQuoi` T0
+					LEFT JOIN `Individu` T1 ON T1.`id`=T0.`Individu_id`
+					LEFT JOIN `Admin_membres` T2 ON T2.`Individu_id`=T0.`Individu_id`
+					WHERE T0.`WEB_G`=1 AND T2.`droit_acces`=1
+					ORDER BY T1.`Nom`, T1.`Prenom`';		}
 		
 		pCOM_DebugAdd($debug, "SuiviParoissien:Lister_engagements: Requete2=".$requete2);
 		
@@ -284,6 +304,7 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 		while($row2 = mysqli_fetch_assoc($result2)){
 			$Check_Responsable = "";
 			$Check_Point_de_contact = "";
+			$Check_Gestionnaire = "";
 			if ($pChampsIndividu == "Services" ) {
 				if ($row2['Responsable'] == 1 OR $row2['Point_de_contact'] == 1) {
 					if ( $pEngagement == "" OR  $pEngagement == "All") {
@@ -295,6 +316,9 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 						if ($row2['Point_de_contact'] == 1) {
 							fwrite($handle_xml, "<Point_Contact>Oui</Point_Contact>\n\r");
 						}
+						//if ($row2['Gestionnaire'] == 1) {
+						//	fwrite($handle_xml, "<Gestionnaire>Oui</Gestionnaire>\n\r");
+						//}
 						fwrite($handle_xml, "<name>".$row2['Prenom']." ".$row2['Nom']."</name>\n\r");
 						fwrite($handle_xml, "<telephone>".$row2['Telephone']."</telephone>\n\r");
 						fwrite($handle_xml, "<email>".$row2['e_mail']."</email>\n\r");
@@ -307,14 +331,15 @@ function Lister_engagements($pTitre, $pChampsIndividu, $pEngagement)
 				if ($row2['Point_de_contact'] == 1) {
 					$Check_Point_de_contact = '<i class="fa fa-bullseye text-success"></i> ';
 				}
-
+				if ($row2['Gestionnaire'] == 1) {
+					$Check_Gestionnaire = '<i class="fa fa-edit text-success"></i> ';
+				}
 			}
 			fCOM_PrintFile_Email($handle, $row2['Prenom'].' '.$row2['Nom'], $row2['e_mail']);
-			//fwrite($handle, '"'.$row2['Prenom'].' '.$row2['Nom'].'"< '.$row2['e_mail'].'>; ');
 			echo '<TR>';
 			echo '<TD>'.$TreatedName.' <i class="fa fa-long-arrow-right"></i> <A HREF="load/ListeMail_'.($File_Counter - 1).'.php">e_mail</A></TD>';
 			echo "<TD>";
-			fCOM_Display_Photo($row2['Nom'].' '.$Check_Responsable.$Check_Point_de_contact, $row2['Prenom'], $row2['id'], "edit_Individu", true);
+			fCOM_Display_Photo($row2['Nom'].' '.$Check_Responsable.$Check_Point_de_contact.$Check_Gestionnaire, $row2['Prenom'], $row2['id'], "edit_Individu", true);
 			echo '</TD>';
 
 			echo "<TD>".$row2['Adresse']."</TD>";
@@ -440,6 +465,20 @@ if (( isset( $_GET['action'] ) AND $_GET['action']=="list_souhaits") OR
 	
 	Lister_engagements("Liste des souhaits", "Souhaits", $Engagement);
 }
+
+if (( isset( $_GET['action'] ) AND $_GET['action']=="list_gestionnaires") OR 
+	( isset( $_POST['Afficher_liste_gestionnaires'] ) AND $_POST['Afficher_liste_gestionnaires']=="Afficher" )) {
+//if ($action == "list_souhaits" || $Afficher_liste_souhaits) {
+
+	if ( isset( $_GET['action'] ) AND $_GET['action']=="list_gestionnaires") {
+		$Engagement = "";//$_GET['Engagement'];
+	} else {
+		$Engagement = $_POST['Engagement'];
+	}
+	
+	Lister_engagements("Liste des gestionnaires", "Gestionnaires", $Engagement);
+}
+
 
 
 

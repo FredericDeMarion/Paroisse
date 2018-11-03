@@ -239,6 +239,8 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_services">Paroissiens au service</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_ressourcements">Paroissiens en ressourcement</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_souhaits">Souhaits des paroissiens</a>';
+			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_gestionnaires">Liste des gestionnaires de la base</a>';
+			//echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_paroissiens_RGPD">Liste des paroissiens dans la base (RGPD)</a>';
 			echo '<a class="dropdown-item" href="organigramme/index2.php">Organigramme</a>';
 		}
 		
