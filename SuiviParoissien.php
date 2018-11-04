@@ -479,7 +479,64 @@ if (( isset( $_GET['action'] ) AND $_GET['action']=="list_gestionnaires") OR
 	Lister_engagements("Liste des gestionnaires", "Gestionnaires", $Engagement);
 }
 
+if ( isset( $_GET['action'] ) AND $_GET['action']=="list_paroissiens_RGPD") {
+	
+	Global $eCOM_db;
+	$debug = false;	
+	
+	$temp = "load/ListeMail_RGPD.php";
+	$handle = fopen($temp, 'w');
+	fCOM_PrintFile_Init($handle, "Liste des adresses mail des paroissiens : RGPD");
+	
+	$temp = "load/ListeMail_RGPD_error.php";
+	$handle_err = fopen($temp, 'w');
+	fCOM_PrintFile_Init($handle_err, "Liste des paroissiens sans adresse mail : RGPD");
 
+	$requete = 'SELECT DISTINCT T0.`id`, T0.`Prenom` As Prenom, T0.`Nom` As Nom, T0.`Naissance`, T0.`e_mail` as e_mail, T0.`telephone` as telephone, T1.`id` as id_Pere, T1.`Prenom` as Prenom_Pere, T1.`Nom` As Nom_Pere, T1.`e_mail` As e_mail_Pere, T2.`id` as id_Mere, T2.`Prenom` As Prenom_Mere, T2.`Nom` As Nom_Mere, T2.`e_mail` As e_mail_Mere
+		FROM `Individu` T0
+		LEFT JOIN `Individu` T1 ON T1.`id`=T0.`Pere_id`
+		LEFT JOIN `Individu` T2 ON T2.`id`=T0.`Mere_id`
+		WHERE T0.`Prenom` != "" AND T0.`Nom` != "" AND T0.`Prenom` != "Annulé dupliqué"
+		ORDER BY T0.`Nom`, T0.`Prenom`';
+	$result = mysqli_query($eCOM_db, $requete);
+	
+	while($row = mysqli_fetch_assoc($result)){
+		if (fCOM_Afficher_Age($row['Naissance']) < 18 ) {
+			$ListMail="";
+			if (strpos($row['e_mail'], "@") > 0) { 
+				$ListMail=$ListMail.';'.$row['e_mail'];
+			}
+			if (strpos($row['e_mail_Pere'], "@") > 0) { 
+				$ListMail=$ListMail.';'.$row['e_mail_Pere'];
+			}
+			if (strpos($row['e_mail_Mere'], "@") > 0) { 
+				$ListMail=$ListMail.';'.$row['e_mail_Mere'];
+			}
+			$ListMail=fCOM_format_email_list($ListMail, ';');
+			fCOM_PrintFile_Email($handle, 'Tuteur de '.$row['Prenom'].' '.$row['Nom'], $ListMail);
+			//if ($row['Prenom'] == "Pauline" and $row['Nom']=="VOLPATI") {
+			//	fCOM_PrintFile_End($handle);
+			//	fclose($handle);
+			//	echo '<META http-equiv="refresh" content="0; URL=load/ListeMail_RGPD.php">';
+			//	exit();
+			//}
+		}
+		if (strpos($row['e_mail'], "@") > 0) { 
+			fCOM_PrintFile_Email($handle, $row['Nom'].' '.$row['Prenom'], $row['e_mail']);
+		} else {
+			//fwrite($handle_err, '<BR>(id='.$row['id'].') '.$row['Prenom'].' '.$row['Nom'].' Tel:'.$row['telephone'].' email='.$row['e_mail']);
+			fwrite($handle_err, '<BR><A href="'.$_SERVER['PHP_SELF'].'?action=edit_Individu&id='.$row['id'].'">'.$row['Prenom'].' '.$row['Nom'].'</A> Tel:'.$row['telephone'].' email='.$row['e_mail']);
+			}
+	}
+	fwrite($handle, "<BR>");
+	fCOM_PrintFile_End($handle);
+	fwrite($handle, "<BR><A HREF=\"ListeMail_RGPD_error.php\">Liste des Paroissiens sans adresse e-mail</A><BR>");
+	fclose($handle);
+	fCOM_PrintFile_End($handle_err);
+	fclose($handle_err);
+	echo '<META http-equiv="refresh" content="0; URL=load/ListeMail_RGPD.php">';
+	exit();
+}
 
 
 //======================================

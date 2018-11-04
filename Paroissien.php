@@ -10,6 +10,7 @@
 // 26/04/2016 : Lorsque l'on donne accès à la base de données, vider le mot de passe
 // 10/05/2017 : Modification de la gestion des souhaits
 // 10/05/2017 : Suppression des $_SERVER['PHP_AUTH_USER']
+// 04/11/2018 : Gestion de l'attribution des services avec bootstrap
 //==================================================================================================
 
 // Initialiser variable si elle n'existe pas
@@ -42,11 +43,19 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 //if ($action == "AjouterCeService") {
 	Global $eCOM_db;
 	$debug = false;
+	
+	fCOM_Bootstrap_init();
 	pCOM_DebugInit($debug);
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService");
 	
 	echo '<html>';
-	echo '<head></head>';
+	echo '<head>';
+	if ($_GET['QuiQuoi_id'] == 0) {
+		echo '<TITLE>Ajouter un service</TITLE>';
+	} else {
+		echo '<TITLE>Modifier le service</TITLE>';
+	}
+	echo '</head>';
 	echo '<body bgcolor="#FFFFFF" link=blue vlink=blue alink=blue>';
 	echo '<font face="verdana"><center>';
 	$requete = 'SELECT Concat(Prenom, " ", Nom) as SonNom FROM Individu where id = '.$_GET['Individu_id'].' '; 
@@ -57,21 +66,48 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	//{
 	//	echo '<option value="'.$row3[id].'">'.$row3[Nom].'</option>';
 	//}
+	
+	echo '<div class="container-fluid">';
+	echo '<div class="col-md-2">';
+	
+	echo '<div class="row">';
+	echo '<div class="col">';
+	echo '<div class="alert alert-info" role="alert">';
 	if ($_GET['QuiQuoi_id'] == 0) {
-		echo '<FONT SIZE="3">Ajouter un service<BR></FONT>';
+		echo '<U>Ajouter un service</U> à ';
 	} else {
-		echo '<FONT SIZE="3">Modifier le service<BR></FONT>';
+		echo '<U>Modifier le service</U> de ';
 	}
-	echo '<BR>';
-	echo '<FORM method=post id="NewService" action="'.$_SERVER['PHP_SELF'].'">';
-	echo '<table border=1 cellpadding=2 cellspacing=0 bordercolor=#000000 width="95%" bgcolor=eeeeee>';
-	echo '<TR><TD><FONT SIZE="2"><U>Nom</U> : '.$row['SonNom'].'</FONT></TD></TR>';
-	echo '<TR><TD>';
+	echo $row['SonNom'];
+	echo '</div></div></div>';
+	
+	echo '<FORM method=post id="NewService" action="'.$_SERVER['PHP_SELF'].'" >';
+	//echo '<div class="row">';
+	//echo '<div class="col">';
+	//echo '<FONT SIZE="2"><U>Nom</U> : '.$row['SonNom'].'</FONT>';
+	//echo '</div></div>';
+	echo '<div class="row">';
+	echo '<div class="col">';
+	echo '</div></div>';
+	
+	
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- Individu_id=".$_GET['Individu_id']);
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- QuiQuoi_id=".$_GET['QuiQuoi_id']);
 	if ($_GET['QuiQuoi_id'] == 0) {
-		echo '<FONT SIZE="2"><U>Selectionner un service</U> : ';
-		echo '<select name="Activite_id" >';
+		echo '<div class="row">';
+		echo '<div class="col; text-align=left">';
+		echo '<U>Sélectionner</U> :';
+		echo '</div></div>';
+		
+		echo '<div class="row">';
+		echo '<div class="form-group">';
+		echo '<div class="col">';
+		echo 'Service';
+		echo '</div></div>';
+		
+		echo '<div class="row">';
+		echo '<div class="col">';
+		echo '<SELECT name="Activite_id" class="form-control form-control-sm">';
 		echo '<option value=" "> </option>';
 		if (fCOM_Get_Autorization(0) >= 50) {
 			$requete = 'SELECT * FROM `Activites` WHERE Service=1 ORDER BY `Nom` '; 
@@ -79,11 +115,12 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 			$requete = 'SELECT * FROM `Activites` WHERE Service=1 AND id > 1 ORDER BY `Nom` '; 
 		}
 		$result = mysqli_query($eCOM_db, $requete);
-		while( $row3 = mysqli_fetch_assoc( $result )) 
-		{
+		while( $row3 = mysqli_fetch_assoc( $result )) {
 			echo '<option value="'.$row3['id'].'">'.$row3['Nom'].'</option>';
 		}
-		echo '</select></FONT>';
+		echo '</SELECT>';
+		echo '</div></div></div>';
+		
 		$Lieu_id = 0;
 		$Responsable = 0;
 		$Point_de_contact = 0;
@@ -102,7 +139,18 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 		pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- requete=".$requete);
 		$result = mysqli_query($eCOM_db, $requete);
 		$row3 = mysqli_fetch_assoc( $result );
-		echo '<FONT SIZE="2"><U>Service</U> : '.$row3['Nom'].'</FONT>';
+		echo '<div class="row">';
+		echo '<div class="col; text-align=left">';
+		echo '<U>Service</U> : '.$row3['Nom'];
+		echo '</div></div>';
+		
+		echo '<div class="dropdown-divider"></div>';
+
+		echo '<div class="row">';
+		echo '<div class="col; text-align=left">';
+		echo '<U>Sélectionner</U> :';
+		echo '</div></div>';
+		
 		$Lieu_id = $row3['Lieu_id'];
 		$Responsable = $row3['Responsable'];
 		$Point_de_contact = $row3['Point_de_contact'];
@@ -124,10 +172,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	if ($Essentiel_Formation==1) {$Checked_Formation="checked";} else {$Checked_Formation="";};
 	if ($Essentiel_Mission==1) {$Checked_Mission="checked";} else {$Checked_Mission="";};
 	
-	echo '</TD></TR>';
-	echo '<TR><TD>';
-	echo '<FONT SIZE="2">Selectionner un clocher : ';
-	echo '<select name="Lieu_id" >';
+	
+	echo '<div class="row">';
+	echo '<div class="form-group">';
+	echo '<div class="col">';
+	echo 'Clocher';
+	echo '</div>';
+	echo '</div>';
+	echo '<div class="row">';
+	echo '<div class="col">';	
+	echo '<SELECT name="Lieu_id" class="form-control form-control-sm">';
 	echo '<option value="0">Tous les clochers</option>';
 	$requete = 'SELECT id, Lieu FROM Lieux where isParoisse = 1 ORDER BY Lieu'; 
 	$result = mysqli_query($eCOM_db, $requete);
@@ -139,16 +193,33 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 		}
 		echo '<option value="'.$row3['id'].'"'.$OptionSelect.'>'.$row3['Lieu'].'</option>';
 	}
-	echo '</select></FONT>';
-	echo '</TD></TR>';
+	echo '</SELECT>';
+	echo '</div></div></div>';
 	
+	echo '<div class="dropdown-divider"></div>';
+	// Fonction dans l'activité
 	
-	echo '<TR><TD>';
-	echo '<FONT SIZE="2"><U>Rôle</U> :';
-	echo '<input type="checkbox" name="Responsable" id="Responsable" value="on" '.$Checked_Responsable.'/> <label for="Responsable"><FONT SIZE="2">Responsable</b></label></FONT> ';
-	echo '<input type="checkbox" name="Point_de_contact" id="Point_de_contact" value="on" '.$Checked_Point_de_contact.'/> <label for="Point_de_contact"><FONT SIZE="2">Point de contact</b></label></FONT>';
+	echo '<div class="row">';
+	echo '<div class="col; text-align=left">';
+	echo '<U>Rôle</U> :';
+	echo '</div></div>';
+	
+	echo '<div class="row">';
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Responsable" id="Responsable" value="on" '.$Checked_Responsable.'><label class="form-check-label" for="Responsable"> Responsable</label>';
+	echo '</div></div>';
+	
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Point_de_contact" id="Point_de_contact" value="on" '.$Checked_Point_de_contact.'><label class="form-check-label" for="Point_de_contact"> Point_de_contact</label>';
+	echo '</div></div>';
+
 	if (fCOM_Get_Autorization(0)>= 50) {
-		echo ' <input type="checkbox" name="WEB_G" id="WEB_Gestionnaire" value="on" '.$Checked_WEB_gestionnaire.'/> <label for="WEB_Gestionnaire"><FONT SIZE="2">Gestionnaire</b></label></FONT>';
+		echo '<div class="col">';
+		echo '<div class="form-check">';
+		echo '<input type="checkbox" class="form-check-input" name="WEB_G" id="WEB_Gestionnaire" value="on" '.$Checked_WEB_gestionnaire.'><label class="form-check-label" for="WEB_Gestionnaire"> Gestionnaire</label>';
+		echo '</div>';
 	} else {
 		if ( $WEB_gestionnaire == 1 ){
 			echo '<INPUT TYPE=hidden name="WEB_G" value="on" >';
@@ -156,33 +227,71 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 			echo '<INPUT TYPE=hidden name="WEB_G" value="off" >';
 		}
 	}
-	echo '<BR><FONT SIZE="2"><U>Essentiels</U> :<BR>';
-	echo '<input type="checkbox" name="Essentiel_Fraternite" id="Essentiel_Fraternite" value="on" '.$Checked_Fraternite.'/> <label for="Essentiel_Fraternite"><FONT SIZE="2">Fraternite</b></label>';
-	echo '<input type="checkbox" name="Essentiel_Adoration" id="Essentiel_Adoration" value="on" '.$Checked_Adoration.'/> <label for="Essentiel_Adoration"><FONT SIZE="2">Adoration</b></label>';
-	echo '<input type="checkbox" name="Essentiel_Service" id="Essentiel_Service" value="on" '.$Checked_Service.'/> <label for="Essentiel_Service"><FONT SIZE="2">Service</b></label>';
-	echo '<input type="checkbox" name="Essentiel_Formation" id="Essentiel_Formation" value="on" '.$Checked_Formation.'/> <label for="Essentiel_Formation"><FONT SIZE="2">Formation</b></label>';
-	echo '<input type="checkbox" name="Essentiel_Mission" id="Essentiel_Mission" value="on" '.$Checked_Mission.'/> <label for="Essentiel_Mission"><FONT SIZE="2">Mission</b></label>';
-	echo '</TD></TR>';
+	echo '</div></div>';
 	
-	//echo '<TR><TD>';
-	echo '</table><br>';
+	echo '<div class="dropdown-divider"></div>';
+	
+	// 5 Essentiels
+	
+	echo '<div class="row">';
+	echo '<div class="col; text-align=left">';
+	echo '<U>Essentiels</U> :';
+	echo '</div>';
+	echo '</div>';
+	
+	echo '<div class="row">';
+	echo '<div class="col">';
+	
+	echo '<div class="form-check ml-4">';
+	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Fraternite" id="Essentiel_Fraternite" value="on" '.$Checked_Fraternite.'><label class="form-check-label" for="Essentiel_Fraternite"> Fraternite</label>';
+	echo '</div></div>';
+	
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Adoration" id="Essentiel_Adoration" value="on" '.$Checked_Adoration.'><label class="form-check-label" for="Essentiel_Adoration"> Adoration</label>';
+	echo '</div></div>';
+	
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Service" id="Essentiel_Service" value="on" '.$Checked_Service.'><label class="form-check-label" for="Essentiel_Service"> Service</label>';
+	echo '</div></div>';
+	
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Formation" id="Essentiel_Formation" value="on" '.$Checked_Formation.'><label class="form-check-label" for="Essentiel_Formation"> Formation</label>';
+	echo '</div></div>';
+	
+	echo '<div class="col">';
+	echo '<div class="form-check">';
+	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Mission" id="Essentiel_Mission" value="on" '.$Checked_Mission.'><label class="form-check-label" for="Essentiel_Mission"> Mission</label>';
+	echo '</div>';
+	
+	echo '</div></div>';
+	
 	
 	if ($_GET['QuiQuoi_id'] == 0) {
 		$ActionIs="Ajouter ce service";
 	}else{
 		$ActionIs="Enregistrer";
 	}
-	echo '<span align="center">';
-	echo '<INPUT type="submit" formnovalidate="formnovalidate" name="ajouter_service" value="'.$ActionIs.'">';
-	echo '<INPUT TYPE="submit" formnovalidate="formnovalidate" name="delete_service" value="Supprimer ce service">';
-	echo '<INPUT TYPE="button" value="Fermer" onClick="parent.close()">';
-	echo '</span>';
+	
+	
+	echo '<div class="row mt-2 mb-2" align="center">';
+	echo '<div class="col">';
+	
+	echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="ajouter_service" value="'.$ActionIs.'"> ';
+	echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="delete_service" value="Supprimer ce service"> ';
+	echo '<INPUT TYPE="button" class="btn btn-secondary btn-sm" value="Fermer" onClick="parent.close()">';
 	echo '<INPUT TYPE=hidden name=Individu_id value='.$_GET['Individu_id'].' >';
 	echo '<INPUT TYPE=hidden name=QuiQuoi_id value='.$_GET['QuiQuoi_id'].' >';
-	echo '</BR>';
+	
+	echo '</div></div>';
 	
 	echo '</FORM>';
 
+	echo '</div></div>';
+	echo '</body>';
+	
 	mysqli_close($eCOM_db);
 	exit();	
 }
@@ -239,7 +348,7 @@ function Edition_Fiche_Paroissien($pId, $pToutAfficher=True) {
 	<SCRIPT LANGUAGE="JavaScript">
 	<!-- Begin
 	function AjouterService(Individu_id, Quiquoi_id) {
-		var windowprops = "toolbar=0,location=0,directories=0,status=0,menubar=0,scrollbars=0,resizable=0,width=500,height=270";
+		var windowprops = "toolbar=0,location=0,directories=0,status=0,menubar=0,scrollbars=0,resizable=0,width=500,height=425";
 
 		OpenWindow = window.open("<?php echo $_SERVER['PHP_SELF']; ?>?action=AjouterCeService&Individu_id=" + Individu_id + "&QuiQuoi_id=" + Quiquoi_id , "profile", windowprops); 
 		

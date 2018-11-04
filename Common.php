@@ -7,6 +7,7 @@
 //    V1.00 | 12/04/2017 | Version originale
 //==================================================================================================
 // 10/05/2017 : suppression des USER_LEVEL_REQUESTED
+// 03/11/2018 : Correction dans la fonction fCOM_format_email_list et fCOM_PrintFile_Email
 //==================================================================================================
 
 
@@ -432,31 +433,39 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 // Print file
 //=========================================================
 function fCOM_PrintFile_Init($pHandle, $pTitle) {
-	header('Content-type: application/json; charset=utf-8');
-	fwrite($pHandle, "<html><head>");
+	
+	fwrite($pHandle, '<?php');
+	fwrite($pHandle, '$a = session_id();');
+	fwrite($pHandle, 'if(empty($a)) session_start(); ');
+	fwrite($pHandle, "header('Content-type: application/json; charset=utf-8'); ");
+	fwrite($pHandle, "mb_internal_encoding('UTF-8'); ");
+	fwrite($pHandle, '<!DOCTYPE HTML>');
+	fwrite($pHandle, "<HTML><HEAD>");
+	fwrite($pHandle, "<TITLE>".$pTitle."</TITLE>");
 	fwrite($pHandle, '<meta charset="utf-8">');
-	fwrite($pHandle, "<title>".$pTitle."</title></head>");
-	fwrite($pHandle, "<body><br>");
-	fwrite($pHandle, "<h1><FONT face=verdana>".$pTitle." : </FONT></h1>\r\n");
+	fwrite($pHandle, '<meta name="viewport" content="width=device-width, initial-scale=1">');
+	fwrite($pHandle, "</HEAD>");
+	fwrite($pHandle, "<BODY><BR>");
+	fwrite($pHandle, "<h1><FONT face=verdana>".$pTitle." </FONT></h1>");
 	fwrite($pHandle, "<FONT face=verdana size=2>");
 	fwrite($pHandle, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>\r\n");
-	fwrite($pHandle, "<p>===================================================</p><br>\r\n<table>");
+	fwrite($pHandle, "<p>===================================================</p><BR><TABLE><TR><TD>");
 	fwrite($pHandle, "<FONT face=verdana size=2>");
 }
 
 function fCOM_PrintFile_Email($pHandle, $pNom, $pEmail) {
 	if ($pNom != "" AND $pEmail != "") {
-		$Email=str_replace(';', '> < ', $pEmail);
+		$Email=str_replace(';', '>; "'.$pNom.'" < ', $pEmail);
 		fwrite($pHandle, '"'.$pNom.'" < '.$Email.'>; ');
 	}
 }
 
 function fCOM_PrintFile_End($pHandle) {
-	fwrite($pHandle, "</TD></TR><TR><TD> </TD></TR><TR><TD> </TD></TR><TR><TD>\r\n\r\n\r\n");
-	fwrite($pHandle, "<FONT face=verdana size=2>");
-	fwrite($pHandle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-	fwrite($pHandle, "</FONT></TD></TR></TABLE>\r\n");
-	fwrite($pHandle, "</BODY>\r\n</HTML>\r\n");
+	fwrite($pHandle, "</TD></TR>");
+	fwrite($pHandle, "<TR><TD><BR><FONT face=verdana size=2>");
+	fwrite($pHandle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)<BR>");
+	fwrite($pHandle, "</FONT></TD></TR></TABLE>");
+	fwrite($pHandle, "</BODY></HTML>");
 }
 
 //=========================================================
@@ -743,6 +752,10 @@ function format_email_list( $pListeEmail, $pSeparation) {
 
 function fCOM_format_email_list( $pListeEmail, $pSeparation) {
 	
+	$debug=False;
+	
+	pCOM_DebugAdd($debug, 'fCOM_format_email_list:1 pListeEmail='.$pListeEmail);
+	
 	$pListeEmail = strtolower(trim(str_replace('  ', ' ', $pListeEmail)));
 	$pListeEmail = str_replace(';', ' ', $pListeEmail);
 	$pListeEmail = str_replace('/', ' ', $pListeEmail);
@@ -750,20 +763,28 @@ function fCOM_format_email_list( $pListeEmail, $pSeparation) {
 	$pListeEmail = str_replace(' ou ', ' ', $pListeEmail);	
 	$pListeEmail = str_replace('  ', ' ', $pListeEmail);
 	$pListeEmail = str_replace('  ', ' ', $pListeEmail);
+	$pListeEmail = trim($pListeEmail);
+	pCOM_DebugAdd($debug, 'fCOM_format_email_list:2 pListeEmail='.$pListeEmail);
 	$RetourChaine="";
 	$pos = 0;
 	while (strlen($pListeEmail) > 0) {
-		$pos = strpos($pListeEmail, " ");
+		$pos = strpos($pListeEmail, ' ');
 		if ($pos > 0) {
+			pCOM_DebugAdd($debug, 'fCOM_format_email_list:3 pos='.$pos);
 			$ChaineTrouve = substr($pListeEmail, 0, $pos);
-			if (strpos($pListeEmail, $ChaineTrouve, 1) === False) {
-				$RetourChaine .= $ChaineTrouve." ";
+			pCOM_DebugAdd($debug, 'fCOM_format_email_list:3 ChaineTrouve='.$ChaineTrouve);
+			if (strpos($pListeEmail, $ChaineTrouve, 2) === False) {
+				if (strpos($ChaineTrouve, "@") > 0) {
+					$RetourChaine .= $ChaineTrouve." ";
+				}
 			}
 			$pListeEmail = trim(substr($pListeEmail,  $pos));
 		} else {
 			$RetourChaine .= $pListeEmail;
 			$pListeEmail = "";
 		}
+		pCOM_DebugAdd($debug, 'fCOM_format_email_list:4 pListeEmail='.$pListeEmail);
+		pCOM_DebugAdd($debug, 'fCOM_format_email_list:4 RetourChaine='.$RetourChaine);
 	}
 	$RetourChaine = str_replace(' ', $pSeparation.' ', $RetourChaine);
 	return trim($RetourChaine);

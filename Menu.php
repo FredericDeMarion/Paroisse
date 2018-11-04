@@ -240,7 +240,7 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_ressourcements">Paroissiens en ressourcement</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_souhaits">Souhaits des paroissiens</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_gestionnaires">Liste des gestionnaires de la base</a>';
-			//echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_paroissiens_RGPD">Liste des paroissiens dans la base (RGPD)</a>';
+			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_paroissiens_RGPD">Liste des paroissiens dans la base (RGPD)</a>';
 			echo '<a class="dropdown-item" href="organigramme/index2.php">Organigramme</a>';
 		}
 		
@@ -306,12 +306,10 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 					$_SESSION["Activite_id"] ==  2) { // Préparation mariage
 					echo '<a class="dropdown-item" href="'.$ModulePhp.'?Session='.$_SESSION["Session"].'&action=Configuration_Accompagnateur&id=0&Activite='.$_SESSION["Activite_id"].'">Ajouter/Retirer accompagnateur</a>';
 				}
-				echo '<div class="dropdown-divider"></div>';
-				echo '<a class="dropdown-item" href="'.$ModulePhp.'?Session='.$_SESSION["Session"].'&action=edit_Individu&id=0">Créer un nouveau paroissien dans la base</a>';
 			}
-		} else {
-			echo '<a class="dropdown-item" href="'.$ModulePhp.'?Session='.$_SESSION["Session"].'&action=edit_Individu&id=0">Créer un nouveau paroissien dans la base</a>';
 		}
+		echo '<div class="dropdown-divider"></div>';
+		echo '<a class="dropdown-item" href="'.$ModulePhp.'?Session='.$_SESSION["Session"].'&action=edit_Individu&id=0">Créer un nouveau paroissien dans la base</a>';
 		echo '</div>';
 		echo '</li>';
 
