@@ -50,14 +50,15 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	
 	echo '<html>';
 	echo '<head>';
+	echo '<meta name="viewport" content="width=device-width,  initial-scale=1, shrink-to-fit=no">';
 	if ($_GET['QuiQuoi_id'] == 0) {
 		echo '<TITLE>Ajouter un service</TITLE>';
 	} else {
 		echo '<TITLE>Modifier le service</TITLE>';
 	}
 	echo '</head>';
-	echo '<body bgcolor="#FFFFFF" link=blue vlink=blue alink=blue>';
-	echo '<font face="verdana"><center>';
+	echo '<body>';
+	
 	$requete = 'SELECT Concat(Prenom, " ", Nom) as SonNom FROM Individu where id = '.$_GET['Individu_id'].' '; 
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- requete=".$requete);
 	$result = mysqli_query($eCOM_db, $requete);
@@ -67,8 +68,9 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	//	echo '<option value="'.$row3[id].'">'.$row3[Nom].'</option>';
 	//}
 	
-	echo '<div class="container-fluid">';
-	echo '<div class="col-md-2">';
+	//echo '<div class="container-fluid">';
+	echo '<div class="container">';
+	echo '<div class="col">';
 	
 	echo '<div class="row">';
 	echo '<div class="col">';
@@ -82,26 +84,18 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	echo '</div></div></div>';
 	
 	echo '<FORM method=post id="NewService" action="'.$_SERVER['PHP_SELF'].'" >';
-	//echo '<div class="row">';
-	//echo '<div class="col">';
-	//echo '<FONT SIZE="2"><U>Nom</U> : '.$row['SonNom'].'</FONT>';
-	//echo '</div></div>';
-	echo '<div class="row">';
-	echo '<div class="col">';
-	echo '</div></div>';
-	
 	
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- Individu_id=".$_GET['Individu_id']);
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- QuiQuoi_id=".$_GET['QuiQuoi_id']);
 	if ($_GET['QuiQuoi_id'] == 0) {
 		echo '<div class="row">';
-		echo '<div class="col; text-align=left">';
+		echo '<div class="col-lg-12; text-align=left">';
 		echo '<U>Sélectionner</U> :';
 		echo '</div></div>';
 		
 		echo '<div class="row">';
 		echo '<div class="form-group">';
-		echo '<div class="col">';
+		echo '<div class="col-lg-12">';
 		echo 'Service';
 		echo '</div></div>';
 		
@@ -140,14 +134,14 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 		$result = mysqli_query($eCOM_db, $requete);
 		$row3 = mysqli_fetch_assoc( $result );
 		echo '<div class="row">';
-		echo '<div class="col; text-align=left">';
+		echo '<div class="col-lg-12; text-align=left">';
 		echo '<U>Service</U> : '.$row3['Nom'];
 		echo '</div></div>';
 		
 		echo '<div class="dropdown-divider"></div>';
 
 		echo '<div class="row">';
-		echo '<div class="col; text-align=left">';
+		echo '<div class="col-lg-12; text-align=left">';
 		echo '<U>Sélectionner</U> :';
 		echo '</div></div>';
 		
@@ -175,12 +169,12 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	
 	echo '<div class="row">';
 	echo '<div class="form-group">';
-	echo '<div class="col">';
+	echo '<div class="col-lg-12">';
 	echo 'Clocher';
 	echo '</div>';
 	echo '</div>';
 	echo '<div class="row">';
-	echo '<div class="col">';	
+	echo '<div class="col-lg-12">';	
 	echo '<SELECT name="Lieu_id" class="form-control form-control-sm">';
 	echo '<option value="0">Tous les clochers</option>';
 	$requete = 'SELECT id, Lieu FROM Lieux where isParoisse = 1 ORDER BY Lieu'; 
@@ -200,23 +194,23 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	// Fonction dans l'activité
 	
 	echo '<div class="row">';
-	echo '<div class="col; text-align=left">';
+	echo '<div class="col-lg-12; text-align=left">';
 	echo '<U>Rôle</U> :';
 	echo '</div></div>';
 	
 	echo '<div class="row">';
-	echo '<div class="col">';
+	echo '<div class="col-auto">';
 	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Responsable" id="Responsable" value="on" '.$Checked_Responsable.'><label class="form-check-label" for="Responsable"> Responsable</label>';
 	echo '</div></div>';
 	
-	echo '<div class="col">';
+	echo '<div class="col-auto">';
 	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Point_de_contact" id="Point_de_contact" value="on" '.$Checked_Point_de_contact.'><label class="form-check-label" for="Point_de_contact"> Point_de_contact</label>';
 	echo '</div></div>';
 
 	if (fCOM_Get_Autorization(0)>= 50) {
-		echo '<div class="col">';
+		echo '<div class="col-auto">';
 		echo '<div class="form-check">';
 		echo '<input type="checkbox" class="form-check-input" name="WEB_G" id="WEB_Gestionnaire" value="on" '.$Checked_WEB_gestionnaire.'><label class="form-check-label" for="WEB_Gestionnaire"> Gestionnaire</label>';
 		echo '</div>';
@@ -234,34 +228,33 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	// 5 Essentiels
 	
 	echo '<div class="row">';
-	echo '<div class="col; text-align=left">';
+	echo '<div class="col-lg-12; text-align=left">';
 	echo '<U>Essentiels</U> :';
 	echo '</div>';
 	echo '</div>';
 	
 	echo '<div class="row">';
-	echo '<div class="col">';
-	
-	echo '<div class="form-check ml-4">';
+	echo '<div class="col-auto">';
+	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Fraternite" id="Essentiel_Fraternite" value="on" '.$Checked_Fraternite.'><label class="form-check-label" for="Essentiel_Fraternite"> Fraternite</label>';
 	echo '</div></div>';
 	
-	echo '<div class="col">';
+	echo '<div class="col-auto">';
 	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Adoration" id="Essentiel_Adoration" value="on" '.$Checked_Adoration.'><label class="form-check-label" for="Essentiel_Adoration"> Adoration</label>';
 	echo '</div></div>';
 	
-	echo '<div class="col">';
+	echo '<div class="col-auto">';
 	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Service" id="Essentiel_Service" value="on" '.$Checked_Service.'><label class="form-check-label" for="Essentiel_Service"> Service</label>';
 	echo '</div></div>';
 	
-	echo '<div class="col">';
+	echo '<div class="col-auto">';
 	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Formation" id="Essentiel_Formation" value="on" '.$Checked_Formation.'><label class="form-check-label" for="Essentiel_Formation"> Formation</label>';
 	echo '</div></div>';
 	
-	echo '<div class="col">';
+	echo '<div class="col-auto">';
 	echo '<div class="form-check">';
 	echo '<input type="checkbox" class="form-check-input" name="Essentiel_Mission" id="Essentiel_Mission" value="on" '.$Checked_Mission.'><label class="form-check-label" for="Essentiel_Mission"> Mission</label>';
 	echo '</div>';
@@ -276,11 +269,13 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	}
 	
 	
-	echo '<div class="row mt-2 mb-2" align="center">';
-	echo '<div class="col">';
+	echo '<div class="row" align="center">';
+	echo '<div class="col-lg-12">';
 	
 	echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="ajouter_service" value="'.$ActionIs.'"> ';
-	echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="delete_service" value="Supprimer ce service"> ';
+	if ($_GET['QuiQuoi_id'] > 0) {
+		echo '<input type="submit" class="btn btn-secondary btn-sm" formnovalidate="formnovalidate" name="delete_service" value="Retirer service"> ';
+	}
 	echo '<INPUT TYPE="button" class="btn btn-secondary btn-sm" value="Fermer" onClick="parent.close()">';
 	echo '<INPUT TYPE=hidden name=Individu_id value='.$_GET['Individu_id'].' >';
 	echo '<INPUT TYPE=hidden name=QuiQuoi_id value='.$_GET['QuiQuoi_id'].' >';
@@ -290,7 +285,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	echo '</FORM>';
 
 	echo '</div></div>';
-	echo '</body>';
+	echo '</BODY></HTML>';
 	
 	mysqli_close($eCOM_db);
 	exit();	
