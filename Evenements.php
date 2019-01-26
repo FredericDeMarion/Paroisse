@@ -1166,24 +1166,44 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 		}
 		echo '</div>';
 
+		$debug = false;
+		pCOM_DebugAdd($debug, "Evenement:Annonces - Formulaire GET[id]=".$_GET['id']);
 
+		$Nouvelle_Annonce = true;
 		if ( $_GET['id'] > 0 )
 		{
-			$requete = 'SELECT * FROM Annonces where id='.$_GET['id'].'';
+			$id=$_GET['id'];
+			$requete = 'SELECT * FROM Annonces where id='.$id.'';
 			$result = mysqli_query($eCOM_db, $requete);
 			while($row = mysqli_fetch_assoc($result))
 			{
+				$Nouvelle_Annonce = False;
 				$DateDeb=$row['DateDeb'];
 				$DateFin=$row['DateFin'];
 				$Lieu_id=$row['Lieu_id'];
 				$Annonce_texte=$row['Annonce_texte'];
 			}
 		} else {
+			$requete = 'SELECT * FROM Annonces where DateDeb="0000-00-00" AND DateFin="0000-00-00"';
+			$result = mysqli_query($eCOM_db, $requete);
+			$count_Nb = mysqli_num_rows($result);
+			if ($count_Nb == 0){
+				mysqli_query($eCOM_db, 'INSERT INTO Annonces ( DateDeb, DateFin ) VALUES ("", "") ') or die (mysqli_error($eCOM_db));
+				$id=mysqli_insert_id($eCOM_db);
+				pCOM_DebugAdd($debug, "Evenement:Annonces - Formulaire Fiche null crée");
+			} else {
+				while($row = mysqli_fetch_assoc($result)) {
+					pCOM_DebugAdd($debug, "Evenement:Annonces - Formulaire Fiche null trouvée");
+					$id = $row['id'];
+				}
+			}
 			$DateDeb = "";
 			$DateFin = "";
 			$Lieu_id = -1;
 			$Annonce_texte="";
 		}
+		pCOM_DebugAdd($debug, "Evenement:Annonces - Formulaire id=".$id);
+		$debug = false;
 		
 		echo '<div class="container-fluid"">';
 		echo '<div class="form-row">';
@@ -1198,7 +1218,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 		echo '<input type="date" id="DateFin" name="DateFin" class="form-control" size="8" value="'.$DateFin.'">';
 		echo '</div>';
 		
-		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Lieux_id =".$Lieu_id." id=".$_GET['id']);
+		pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Lieux_id =".$Lieu_id." id=".$id);
 		$BloquerAcces="";
 		echo '<div class="col-form-label">';
 		echo '<label for="Lieu">Annonce sur</label>';
@@ -1219,9 +1239,9 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 		$Liste_Lieu_Celebration = pCOM_Get_liste_lieu_celebration(1, 1);
 		foreach ($Liste_Lieu_Celebration as $Lieu_Celebration){
 			list($ListLieu_id, $Lieu_name) = $Lieu_Celebration;
-			if ( $_GET['id'] > 0 ) {
+			if ( $id > 0 ) {
 				if ($Lieu_id == $ListLieu_id){
-					pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - Lieux_id =".$Lieu_name);
+					pCOM_DebugAdd($debug, "Evenement:Annonces - Lieux_id =".$Lieu_name);
 					echo '<option value="'.$ListLieu_id.'" selected="selected">'.$Lieu_name.'</option>';
 				} else {
 					echo '<option value="'.$ListLieu_id.'">'.$Lieu_name.'</option>';
@@ -1241,9 +1261,9 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 		echo '<label for="Annonce_flyer">Flyer</label>';
 		echo '<div align=center><input type="submit" class="btn btn-outline-secondary btn-sm" name="select_flyer_annonce" value="Charger un flyer"></div>';
 		//echo '<textarea style="width:100%" '.$BloquerAcces.' rows=1 name="Annonce_flyer" maxlength="350" value ="'.$Annonce_flyer.'">'.$Annonce_flyer.'</textarea>';
-		if (file_exists("images/Annonces/Annonce_".$_GET['id'].".jpg")) { 
+		if (file_exists("images/Annonces/Annonce_".$id.".jpg") and ! $Nouvelle_Annonce) { 
 			?>
-			<a data-toggle="tooltip" title="<img src='images/Annonces/Annonce_<?php echo $_GET['id']?>.jpg' width='150' />"><?php echo 'Annonce_'.$_GET['id']?> <i class="fa fa-camera-retro text-secondary"></i></a>
+			<a data-toggle="tooltip" title="<img src='images/Annonces/Annonce_<?php echo $id?>.jpg' width='150' />"><?php echo 'Annonce_'.$id?> <i class="fa fa-camera-retro text-secondary"></i></a>
 			<?php
 		}
 		echo '</div>';
@@ -1257,7 +1277,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 		if ( $_GET['id'] > 0 ) {
 			echo '<INPUT type="submit" class="btn btn-secondary" name="Annonce_supprimer" value="Supprimer">';
 		}
-		echo '<INPUT type="hidden" name="id" value='.$_GET['id'].'>';
+		echo '<INPUT type="hidden" name="id" value='.$id.'>';
 		echo '</div></FORM>';
 
 	} 
@@ -1268,6 +1288,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 
 if ( isset( $_POST['select_flyer_annonce'] ) AND $_POST['select_flyer_annonce']=="Charger un flyer") {
 	Global $eCOM_db;
+	Sauvegarder_Annonce(False);
 	echo '<form method="POST" action='.$_SERVER['PHP_SELF'].' enctype="multipart/form-data">';
 	echo '<FONT color=green><h4>La taille maximum du fichier ne doit pas dépasser 5Mo<BR>';
 	echo '</font><BR>';
@@ -1284,6 +1305,7 @@ if ( isset( $_POST['select_flyer_annonce'] ) AND $_POST['select_flyer_annonce']=
 }
 
 if ( isset( $_POST['upload_flyer_annonce'] ) AND $_POST['upload_flyer_annonce']=="Télécharger le fichier") {
+	fCOM_Bootstrap_init();
 	$UpdVAR['DIR']	= "load/";
 	$dossier =$_SERVER['DOCUMENT_ROOT']."/Photos/";
 	$dossier ="images/Annonces/"; //."/"; // ='Photos/';
@@ -1297,9 +1319,11 @@ if ( isset( $_POST['upload_flyer_annonce'] ) AND $_POST['upload_flyer_annonce']=
 	if(!in_array($extension, $extensions)) { //Si l'extension n'est pas dans le tableau
 		$fichier = basename($_FILES['avatar']['name']);
 		$erreur = 'Vous devez sélectionner un fichier de type ".jpg" ou ".jpeg" <BR>Or, l\'extension du fichier '.$fichier.' est : "'.$extension.'" ';
+		echo '<div class="alert alert-primary" role="alert"><strong>Attention !</strong> '.$erreur.'.</div>';
 	}
 	if($taille>$taille_maxi) {
 		$erreur = 'Le fichier est trop gros, sa taille ('.$taille.') dépasse le max : '.$taille_maxi.'';
+		echo '<div class="alert alert-primary" role="alert"><strong>Attention !</strong> '.$erreur.'.</div>';
 	}
 
 	if(!isset($erreur)) {//pas d'erreur, on upload
@@ -1313,32 +1337,35 @@ if ( isset( $_POST['upload_flyer_annonce'] ) AND $_POST['upload_flyer_annonce']=
 		if(move_uploaded_file($_FILES['avatar']['tmp_name'], $UpdSEND)) {
 			//Si la fonction renvoie TRUE, c'est que ça a fonctionné... was move_uploaded_file($fichier, $dossier.$fichier_nom)
 			rename($UpdSEND, $dossier.$_POST['fichier_target']);
-			$erreur = "flyer récupérée avec succès !";
+			//$erreur = "flyer récupérée avec succès !";
+			echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> flyer récupérée avec succès !.</div>';
 		
 		} else { //Sinon (la fonction renvoie FALSE).
-			echo "Echec du chargement du flyer ".$fichier_tmp." vers ".$UpdSEND." ! erreur=". $_FILES['avatar']['error']." ";
+			$erreur = "Echec du chargement du flyer ".$fichier_tmp." vers ".$UpdSEND." ! erreur=". $_FILES['avatar']['error']." ";
 			if ($_FILES['avatar']['error'] == UPLOAD_ERR_NO_FILE) {
-				$erreur = "<BR>Fichier manquant"; }
+				$erreur = $erreur."<BR>Fichier manquant"; }
 			elseif  ($_FILES['avatar']['error'] == UPLOAD_ERR_INI_SIZE) {
-				$erreur = "<BR>Fichier dépassant la taille maximale autorisée"; }
+				$erreur = $erreur."<BR>Fichier dépassant la taille maximale autorisée"; }
 			elseif  ($_FILES['avatar']['error'] == UPLOAD_ERR_FORM_SIZE) {
-				$erreur = "<BR>Fichier dépassant la taille maximale autorisée"; }
+				$erreur = $erreur."<BR>Fichier dépassant la taille maximale autorisée"; }
 			elseif  ($_FILES['avatar']['error'] == UPLOAD_ERR_PARTIAL) {
-				$erreur = "<BR>Fichier transféré partiellement";	}
+				$erreur = $erreur."<BR>Fichier transféré partiellement";	}
 			else {
-				$erreur = "<BR>Fichier non transféré"; }
-			}
+				$erreur = $erreur."<BR>Fichier non transféré"; }
+			echo '<div class="alert alert-primary" role="alert"><strong>Attention !</strong> '.$erreur.'</div>';
 		}
-	echo $erreur;
+	}
 
-	//echo '<META http-equiv="refresh" content="3; URL=https://'.$_SESSION["RetourPageCourante"].'">';
+	echo '<META http-equiv="refresh" content="2; URL='.$_SERVER['PHP_SELF'].'?action=Annonce&id='.$_POST['id'].'">';
+	exit();
+
 	?>
 	<script language="JavaScript" type="text/javascript"><!--
 	setTimeout("window.history.go(-2)",3000);
 	</script>
 	<?php
 
-	exit();
+
 }
 
 if ( isset( $_POST['Reset'] ) AND 
@@ -1399,6 +1426,7 @@ if ( isset( $_POST['Annonce_supprimer_Conf'] ) AND
 			$_POST['Annonce_supprimer_Conf']=="Non" )) {
 //if ( $rencontre_delete ) {
 	Global $eCOM_db;
+	fCOM_Bootstrap_init();
 	$debug = False;
 	$Delay = "0";
 	if ( $_POST['Annonce_supprimer_Conf'] == "Oui" )
@@ -1413,11 +1441,14 @@ if ( isset( $_POST['Annonce_supprimer_Conf'] ) AND
 				echo 'Impossible de retirer cette annonce : '.mysqli_error($eCOM_db);
 				echo '</FONT></CENTER></B>';
 			} else {
-				echo '<B><CENTER><FONT face="verdana" size="2" color=green>Annonce supprimées avec succès</FONT></CENTER></B>';
+				//echo '<B><CENTER><FONT face="verdana" size="2" color=green>Annonce supprimée avec succès</FONT></CENTER></B>';
+				echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été supprimée avec succès.</div>';
 			}
 		} else {
-			echo '<B><CENTER><FONT face="verdana" size="2" color=red>';
-			echo 'Impossible de retirer cette annonce : pas de droit accordé</FONT></CENTER></B>';
+			
+			echo '<div class="alert alert-primary" role="alert"><strong>Bravo !</strong> Impossible de retirer cette annonce : pas de droit accordé.</div>';
+			//echo '<B><CENTER><FONT face="verdana" size="2" color=red>';
+			//echo 'Impossible de retirer cette annonce : pas de droit accordé</FONT></CENTER></B>';
 		}
 		$Delay = "2";
 	}
@@ -1431,6 +1462,15 @@ if ( isset( $_POST['Annonce_sauvegarder'] ) AND
 			$_POST['Annonce_sauvegarder']=="Enregistrer") {
 
 	Global $eCOM_db;
+	Sauvegarder_Annonce(True);
+	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
+	mysqli_close($eCOM_db);
+	exit;
+}
+
+function Sauvegarder_Annonce($pAfficher_Message) {
+	
+	Global $eCOM_db;
 	fCOM_Bootstrap_init();
 		
 	if (fCOM_Get_Autorization($_SESSION["Activite_id"]) <= 20)
@@ -1440,10 +1480,17 @@ if ( isset( $_POST['Annonce_sauvegarder'] ) AND
 		exit;
 	}
 	
-	$debug = False;
+	$debug = True;
 	pCOM_DebugAdd($debug, "Evenement:AnnonceSave DateDeb=" .$_POST['DateDeb']);
 	pCOM_DebugAdd($debug, "Evenement:AnnonceSave DateFin=" .$_POST['DateFin']);
 	pCOM_DebugAdd($debug, "Evenement:AnnonceSave Lieu=" .$_POST['Lieu']);
+	pCOM_DebugAdd($debug, "Evenement:AnnonceSave id=" .$_POST['id']);
+	$debug = False;
+	if ($_POST['DateDeb'] == "" OR $_POST['DateFin'] == "" ) {
+		echo '<div class="alert alert-primary" role="alert"><strong>Erreur </strong> Sauvegarde impossible les dates ne sont pas renseignées.</div>';
+		echo '<META http-equiv="refresh" content="2; URL='.$_SESSION["RetourPage"].'">';
+		exit;
+	}
 	
 	$id=$_POST['id'];
 	
@@ -1477,23 +1524,20 @@ if ( isset( $_POST['Annonce_sauvegarder'] ) AND
 		mysqli_query($eCOM_db, 'UPDATE Annonces SET Lieu_id='.$Lieu_id.' WHERE id='.$id.'') or die (mysqli_error($eCOM_db));		
 		mysqli_query($eCOM_db, 'UPDATE Annonces SET Annonce_texte="'.$_POST['Annonce_texte'].'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
 		//mysqli_query($eCOM_db, 'UPDATE Annonces SET Annonce_flyer="'.$_POST['Annonce_flyer'].'" WHERE id='.$id.'') or die (mysqli_error($eCOM_db));
-		echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été modifiée avec succès.</div>';
+		if ($pAfficher_Message) {
+			echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été modifiée avec succès.</div>';
+		}
 		
 	} else {
 
 		$requete = 'INSERT INTO Annonces (id, DateDeb, DateFin, Lieu_id, Annonce_texte) VALUES (0, "'.substr($DateDeb,0,10).'", "'.substr($DateFin,0,10).'", '.$Lieu_id.', "'.$_POST['Annonce_texte'].'")';
 		pCOM_DebugAdd($debug, "Evenement:AnnonceSave - requete=".$requete);
 		mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
-		echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été ajoutée avec succès.</div>';
-
+		if ($pAfficher_Message) {
+			echo '<div class="alert alert-success" role="alert"><strong>Bravo !</strong> l\'annonce a été ajoutée avec succès.</div>';
 		}
-		
-	echo '<META http-equiv="refresh" content="1; URL='.$_SESSION["RetourPage"].'">';
-	mysqli_close($eCOM_db);
-	exit;
+	}
 }
-
-
 
 
 //----------------------------------------------------------------------

@@ -442,7 +442,7 @@ function fCOM_PrintFile_Init($pHandle, $pTitle) {
 	fwrite($pHandle, '<!DOCTYPE HTML>');
 	fwrite($pHandle, "<HTML><HEAD>");
 	fwrite($pHandle, "<TITLE>".$pTitle."</TITLE>");
-	fwrite($pHandle, '<meta charset="utf-8">');
+	fwrite($pHandle, '<meta http-equiv="Content-type" content="text/html;charset=UTF-8">');
 	fwrite($pHandle, '<meta name="viewport" content="width=device-width, initial-scale=1">');
 	fwrite($pHandle, "</HEAD>");
 	fwrite($pHandle, "<BODY><BR>");

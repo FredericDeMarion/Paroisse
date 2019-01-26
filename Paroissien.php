@@ -11,6 +11,7 @@
 // 10/05/2017 : Modification de la gestion des souhaits
 // 10/05/2017 : Suppression des $_SERVER['PHP_AUTH_USER']
 // 04/11/2018 : Gestion de l'attribution des services avec bootstrap
+// 02/12/2018 : Ajout du champs RGPD_Consent
 //==================================================================================================
 
 // Initialiser variable si elle n'existe pas
@@ -59,7 +60,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="AjouterCeService") {
 	echo '</head>';
 	echo '<body>';
 	
-	$requete = 'SELECT Concat(Prenom, " ", Nom) as SonNom FROM Individu where id = '.$_GET['Individu_id'].' '; 
+	$requete = 'SELECT Concat(Prenom, " ", Nom) as SonNom FROM Individu WHERE id = '.$_GET['Individu_id'].' '; 
 	pCOM_DebugAdd($debug, "Paroissien:AjouterCeService- requete=".$requete);
 	$result = mysqli_query($eCOM_db, $requete);
 	$row = mysqli_fetch_assoc( $result);
@@ -803,6 +804,13 @@ function Edition_Fiche_Paroissien($pId, $pToutAfficher=True) {
 	</div>
 	</div>
 
+	<div class="row mt-4">
+	<div class="col-auto">
+	<label for="RGPD_Consent">RGPD Consentement</label>
+	<input type="date" name="RGPD_Consent" id="RGPD_Consent" class="form-control form-control-sm" placeholder="JJ/MM/AAAA" style="width:145px" <?php echo ' value ="'.$row['RGPD_Consent'].'"'; echo $BloquerAcces;?>>
+	</div>
+	</div>
+	
 	<?php
 	//echo '</TD></TR>';
 	
@@ -924,7 +932,6 @@ function Edition_Fiche_Paroissien($pId, $pToutAfficher=True) {
 			$AddWhere = "";
 		}
 
-		$Compteur = 0;
 		$requete2 = 'SELECT DISTINCT T0.`id` as QuiQuoi_id, T0.`Lieu_id` as Lieu_id, T1.`id`, T1.`Nom`, T2.`Lieu` as Clocher
 					FROM `QuiQuoi` T0
 					LEFT JOIN `Activites` T1 ON T1.`id` = T0.`Activite_id`
@@ -939,19 +946,13 @@ function Edition_Fiche_Paroissien($pId, $pToutAfficher=True) {
 			} else {
 				$Clocher = '';
 			}
-			$Compteur = $Compteur + 1;
 			echo '<span align="center">';
 			echo "<A HREF=\"javascript:AjouterService('".$id."', '".$row2['QuiQuoi_id']."')\">";
 			echo '<button type="button" '.$BloquerAcces.' style="background-color:SandyBrown">'.$row2['Nom'].$Clocher.' <img src="images/profile.gif" width=10 height=10 alt="Modifier ce service"></button>';
 			echo "</A>";
 			echo '</span>';
-			if ($Compteur % 3 == 0) {
-				//echo '<BR>';
-			}
 		}
-		if ($Compteur > 0) {
-			//echo '<BR>';
-		}
+
 		echo '</div>';
 		echo '</div>';
 	
@@ -1529,6 +1530,7 @@ function Paroissien_sauvegarder_Fiche () {// ($Individu_id, $Nom, $Prenom, $Sex,
 		mysqli_query($eCOM_db, "UPDATE Individu SET Communion='".$_POST['Communion']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
 		mysqli_query($eCOM_db, "UPDATE Individu SET ProfessionFoi='".$_POST['ProfessionFoi']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
 		mysqli_query($eCOM_db, "UPDATE Individu SET Confirmation='".$_POST['Confirmation']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
+		mysqli_query($eCOM_db, "UPDATE Individu SET RGPD_Consent='".$_POST['RGPD_Consent']."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
 
 		mysqli_query($eCOM_db, "UPDATE Individu SET Commentaire='".$Commentaire."' WHERE id=".$_POST['Individu_id']." ") or die (mysqli_error($eCOM_db));
 		
@@ -1703,7 +1705,7 @@ if ( isset( $_POST['ajouter_service'] ) AND
 	exit;
 }
 
-if ( isset( $_POST['delete_service'] ) AND $_POST['delete_service']=="Supprimer ce service" ) {
+if ( isset( $_POST['delete_service'] ) AND $_POST['delete_service']=="Retirer service" ) {
 //if( $delete_service ) {
 	Global $eCOM_db;
 	$debug = False;

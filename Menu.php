@@ -151,15 +151,17 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 	}
 	
 	// tester si le paroissien est gestionnaire
+	$Gestionnaire = False;
+	$Administrateur = False;
 	$Requete = 'SELECT * from QuiQuoi WHERE Individu_id='.$_SESSION['USER_ID'].' AND Engagement_id=0 AND WEB_G = 1 AND Session="'.$_SESSION["Session"].'"';
 	$result=mysqli_query($eCOM_db, $Requete);
 	$count_1=mysqli_num_rows($result);
 	if ($count_1 > 0) {
 		$Gestionnaire = True;
-	} else {
-		$Gestionnaire = False;
 	}
-		
+	if (fCOM_Get_Autorization(0) == 90 ) {
+		$Administrateur = True;
+	}
 	//============================
 	// Afficher
 	//============================
@@ -240,7 +242,9 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_ressourcements">Paroissiens en ressourcement</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_souhaits">Souhaits des paroissiens</a>';
 			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_gestionnaires">Liste des gestionnaires de la base</a>';
-			echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_paroissiens_RGPD">Liste des paroissiens dans la base (RGPD)</a>';
+			if ($Administrateur == True) {
+				echo '<a class="dropdown-item" href="SuiviParoissien.php?Session='.$_SESSION["Session"].'&action=list_paroissiens_RGPD">RGPD Consultation des paroissiens pour consentement</a>';
+			}
 			echo '<a class="dropdown-item" href="organigramme/index2.php">Organigramme</a>';
 		}
 		
@@ -291,7 +295,7 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 			}
 
 			if ($_SESSION["Activite_id"]==86) { // Messe et célébration
-				if (fCOM_Get_Autorization( 170 )>= 20 ) { // Annonces fin des messes
+				if (fCOM_Get_Autorization( 171 )>= 20 ) { // Annonces fin des messes
 					echo '<a class="dropdown-item" href="Evenements.php?action=Annonce">Configurer les Annonces de fin de messe</a>';
 				}
 				echo '<a class="dropdown-item" href="Evenements.php?Session='.$_SESSION["Session"].'&action=Prog_Recurrente_Celebration&id=0">Configurer les Célébrations récurrentes</a>';
@@ -302,8 +306,7 @@ setlocale(LC_TIME, 'fr_FR.utf8','fra');
 					$_SESSION["Activite_id"] == 22 OR // Emmaüs
 					$_SESSION["Activite_id"] ==  3 OR // Baptême Bébé
 					$_SESSION["Activite_id"] ==  4 OR // Alpha Classic
-					$_SESSION["Activite_id"] == 46 OR // Baptême Adulte
-					$_SESSION["Activite_id"] ==  2) { // Préparation mariage
+					$_SESSION["Activite_id"] == 46) { // Baptême Adulte
 					echo '<a class="dropdown-item" href="'.$ModulePhp.'?Session='.$_SESSION["Session"].'&action=Configuration_Accompagnateur&id=0&Activite='.$_SESSION["Activite_id"].'">Ajouter/Retirer accompagnateur</a>';
 				}
 			}
