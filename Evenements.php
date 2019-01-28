@@ -22,6 +22,8 @@ session_start();
 // 04/05/2018 : Donner accès aux participants sono, projection et broadcast pour se déclarer eux-même sur une célébration
 // 21/05/2018 : Gestion des annonces en fin de messe (Ajouter une table Annonces, créé un répertoire "Annonces" sous "images", ajouter dans la table "Activites" le service 170-"Annnonces fin de messe")
 // 16/07/2018 : Ordonnancement d'affichage des célébrations récurrentes
+// 28/01/2019 : Annonce - limiter la saisie à 200 caractères
+// 28/01/2019 : Annonces, bug les gestionnaires n'avaient accès à la création d'annonces
 //==================================================================================================
 
 if (isset( $_SERVER['PHP_AUTH_USER'] ) AND $_SERVER['PHP_AUTH_USER'] == "celebration"){
@@ -1156,7 +1158,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 	//---------------------
 	// formulaire de saisie
 	//---------------------
-	if (fCOM_Get_Autorization($_SESSION["Activite_id"])>= 30) {
+	if (fCOM_Get_Autorization(171)>= 30) { // Annonces fin de messe
 		echo '<FORM method=post action='.$_SERVER['PHP_SELF'].'>';
 		echo '<div class="form-row ml-1 mt-3">';
 		if ( $_GET['id'] > 0 ) {
@@ -1254,7 +1256,7 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="Annonce") {
 
 		echo '<div class="col-form-label">';
 		echo '<label for="Annonce_texte">Texte de l\'annonce</label>';
-		echo '<textarea style="width:100%" '.$BloquerAcces.' rows=5 name="Annonce_texte" maxlength="350" value ="'.$Annonce_texte.'">'.$Annonce_texte.'</textarea>';
+		echo '<textarea style="width:100%" '.$BloquerAcces.' rows=5 name="Annonce_texte" maxlength="200" value ="'.$Annonce_texte.'">'.$Annonce_texte.'</textarea>';
 		echo '</div>';
 		
 		echo '<div class="col-form-label">';
