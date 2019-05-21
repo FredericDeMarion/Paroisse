@@ -8,6 +8,7 @@
 //==================================================================================================
 // 17/07/2017 : Suppression du menu "Célébration"
 // 21/05/2018 : Gestion des annonces en fin de messe (Ajouter une table Annonces, créé un répertoire "Annonces" sous "images", ajouter dans la table "Activites" le service 170-"Annnonces fin de messe")
+// 12/05/2019 : fMENU_top passage en <meta charset="iso-8859-1"> 
 //==================================================================================================
 
 
@@ -18,10 +19,12 @@
 function fMENU_top () 
 {
 	header( 'content-type: text/html; charset=iso-8859-1' );
+	//header( 'content-type: text/html; charset=utf-8' );
 
 	echo '<!DOCTYPE HTML>';
 	echo '<HTML><HEAD>';
-	echo '<meta charset="utf-8">';
+	echo '<meta charset="iso-8859-1">';
+	//echo '<meta charset="utf-8">';
 	echo '<meta name="viewport" content="width=device-width,  initial-scale=1, shrink-to-fit=no">';
 	echo '<TITLE> Database '.pCOM_Get_NomParoisse().' </TITLE>';
 	echo '<link rel="footer" href="Menu.css" />';

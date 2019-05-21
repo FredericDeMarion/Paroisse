@@ -24,6 +24,7 @@ session_start();
 // 16/07/2018 : Ordonnancement d'affichage des célébrations récurrentes
 // 28/01/2019 : Annonce - limiter la saisie à 200 caractères
 // 28/01/2019 : Annonces, bug les gestionnaires n'avaient accès à la création d'annonces
+// 12/05/2019 : Optimisation du code, génération des futurs messes une fois par mois seulement
 //==================================================================================================
 
 if (isset( $_SERVER['PHP_AUTH_USER'] ) AND $_SERVER['PHP_AUTH_USER'] == "celebration"){
@@ -1548,6 +1549,7 @@ function Sauvegarder_Annonce($pAfficher_Message) {
 // Listing general de la session
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
+// 12/05/2019 : Optimisation du code, génération des futurs messes une fois par mois seulement
 //----------------------------------------------------------------------
 	fMENU_top();
 	fMENU_Title("Liste des Messes et célébrations ...");
@@ -1609,40 +1611,48 @@ function Sauvegarder_Annonce($pAfficher_Message) {
 	
 	//----------------------------------------------------
 	// Réinitialiser la liste des prochaines célébrations
-	// Date limite = today + 60 jours
-	//---------------------------------------------------
+	// Cette partie de code doit être exécutée 1 fois par mois car elle prend de la CPU
+	//----------------------------------------------------
 	$DateLimite=fCOM_sqlDateToOut(date("Y-m-d H:i:s")) + (24*3600*360);
 	$CurrentDate=date("Y-m-d");
-	pCOM_DebugAdd($debug,"Evenements:Liste DateLimite=".$DateLimite);
-	pCOM_DebugAdd($debug,"Evenements:Liste CurrentDate=".$CurrentDate);
-	
-	$requete="Truncate Celebrations_futur";
+	$requete = 'SELECT Date FROM Celebrations_futur ORDER BY Date ASC LIMIT 0, 10';
 	$result = mysqli_query( $eCOM_db, $requete);
-	$requete='SELECT * FROM Celebrations_rec WHERE "'.$CurrentDate.'" <= DateFin';
-	pCOM_DebugAdd($debug,"Evenements:Liste Requete=".$requete);
+	$row = mysqli_fetch_assoc($result);
+	if (fCOM_sqlDateToOut($CurrentDate) - fCOM_sqlDateToOut($row['Date']) >= (24*3600*31)) {
+		// Réinitialiser la liste des prochaines célébrations
+		// Date limite = today + 360 jours
+		pCOM_DebugAdd($debug,"Evenements:Réinitialiser liste des futurs messes");
+		pCOM_DebugAdd($debug,"Evenements:Liste Date=".fCOM_sqlDateToOut($row['Date']));
+		pCOM_DebugAdd($debug,"Evenements:Liste DateLimite=".$DateLimite);
+		pCOM_DebugAdd($debug,"Evenements:Liste CurrentDate=".$CurrentDate);
+		
+		$requete="Truncate Celebrations_futur";
+		$result = mysqli_query( $eCOM_db, $requete);
+		$requete='SELECT * FROM Celebrations_rec WHERE "'.$CurrentDate.'" <= DateFin';
+		pCOM_DebugAdd($debug,"Evenements:Liste Requete=".$requete);
 
-	$result = mysqli_query( $eCOM_db, $requete);
-	while($row = mysqli_fetch_assoc($result)) {
-		$DateRec = fCOM_sqlDateToOut(date("Y-m-d").' '.$row['Heure']);
-		while ( date('N', $DateRec) != $row['Jour'] ) {
-			$DateRec = $DateRec + (24*3600);
-		}
-		pCOM_DebugAdd($debug,"Evenements:Liste DateDeb=".fCOM_sqlDateToOut($row['DateDeb']));
-		pCOM_DebugAdd($debug,"Evenements:Liste DateFin=".fCOM_sqlDateToOut($row['DateFin']));
-		pCOM_DebugAdd($debug,"Evenements:Liste DateRec=".$DateRec);
-		$HeureMinuteSeconde = date(" H:i:s",$DateRec);
-		While ( $DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
-				$DateRec <= $DateLimite ) {
-			if ($DateRec >= fCOM_sqlDateToOut($row['DateDeb']) AND 
-				$DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
-				$DateRec <= $DateLimite ) {
-				//$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d H:i:s",$DateRec).'", '.$row['Lieu_id'].')';
-				$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d",$DateRec).$HeureMinuteSeconde.'", '.$row['Lieu_id'].')';
-				pCOM_DebugAdd($debug,"Evenements:Liste Requete02=".$requete);
-			//pCOM_DebugAdd($debug, "Evenement:ProgRecCelSave - requete=".$requete);
-				mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
+		$result = mysqli_query( $eCOM_db, $requete);
+		while($row = mysqli_fetch_assoc($result)) {
+			$DateRec = fCOM_sqlDateToOut(date("Y-m-d").' '.$row['Heure']);
+			while ( date('N', $DateRec) != $row['Jour'] ) {
+				$DateRec = $DateRec + (24*3600);
 			}
-			$DateRec = $DateRec + (24*3600*7); // 7 jours
+			pCOM_DebugAdd($debug,"Evenements:Liste DateDeb=".fCOM_sqlDateToOut($row['DateDeb']));
+			pCOM_DebugAdd($debug,"Evenements:Liste DateFin=".fCOM_sqlDateToOut($row['DateFin']));
+			pCOM_DebugAdd($debug,"Evenements:Liste DateRec=".$DateRec);
+			$HeureMinuteSeconde = date(" H:i:s",$DateRec);
+			While ( $DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
+					$DateRec <= $DateLimite ) {
+				if ($DateRec >= fCOM_sqlDateToOut($row['DateDeb']) AND 
+					$DateRec <= fCOM_sqlDateToOut($row['DateFin']) AND
+					$DateRec <= $DateLimite ) {
+					//$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d H:i:s",$DateRec).'", '.$row['Lieu_id'].')';
+					$requete = 'INSERT INTO Celebrations_futur (Date, Lieu_id) VALUES ("'.date("Y-m-d",$DateRec).$HeureMinuteSeconde.'", '.$row['Lieu_id'].')';
+					pCOM_DebugAdd($debug,"Evenements:Liste Requete02=".$requete);
+					mysqli_query($eCOM_db, $requete) or die (mysqli_error($eCOM_db));
+				}
+				$DateRec = $DateRec + (24*3600*7); // 7 jours
+			}
 		}
 	}
 	

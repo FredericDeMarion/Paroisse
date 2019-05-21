@@ -15,6 +15,7 @@ $a = session_id();
 if(empty($a)) session_start();
 
 header( 'content-type: text/html; charset=iso-8859-1' );
+//header( 'content-type: text/html; charset=utf-8' );
 
 
 
@@ -433,22 +434,30 @@ Function fCOM_Get_Autorization($pActivite_id, $pLevel= 100) {
 // Print file
 //=========================================================
 function fCOM_PrintFile_Init($pHandle, $pTitle) {
+	//fwrite($pHandle, '<?php');
+	//fwrite($pHandle, '$a = session_id();');
+	//fwrite($pHandle, 'if(empty($a)) session_start(); ');
 	
-	fwrite($pHandle, '<?php');
-	fwrite($pHandle, '$a = session_id();');
-	fwrite($pHandle, 'if(empty($a)) session_start(); ');
-	fwrite($pHandle, "header('Content-type: application/json; charset=utf-8'); ");
-	fwrite($pHandle, "mb_internal_encoding('UTF-8'); ");
+	//fwrite($pHandle, "header('content-type:text/html; charset=iso-8859-15' ); ");
+	//fwrite($pHandle, "header( 'content-type: text/html; charset=utf-8' ); ");
+	//fwrite($pHandle, "header('Content-type: application/json; charset=utf-8'); ");
+	//fwrite($pHandle, 'mb_internal_encoding("ISO-8859-1");');
+	//fwrite($pHandle, "mb_internal_encoding('UTF-8'); ");
+	//fwrite($pHandle, 'mb_http_output("ISO-8859-1");');
+	//fwrite($pHandle, 'mb_http_output("UTF-8");');
+	//fwrite($pHandle, "header( 'content-type: text/html; charset=iso-8859-1' );");
 	fwrite($pHandle, '<!DOCTYPE HTML>');
 	fwrite($pHandle, "<HTML><HEAD>");
-	fwrite($pHandle, "<TITLE>".$pTitle."</TITLE>");
-	fwrite($pHandle, '<meta http-equiv="Content-type" content="text/html;charset=UTF-8">');
+	fwrite($pHandle, '<meta charset="iso-8859-1">');
+	//fwrite($pHandle, '<meta http-equiv="Content-type" content="text/html;charset=iso-8859-15">');
+	//fwrite($pHandle, '<meta http-equiv="Content-type" content="text/html;charset=UTF-8">');
 	fwrite($pHandle, '<meta name="viewport" content="width=device-width, initial-scale=1">');
+	fwrite($pHandle, "<TITLE>".$pTitle."</TITLE>");
 	fwrite($pHandle, "</HEAD>");
 	fwrite($pHandle, "<BODY><BR>");
 	fwrite($pHandle, "<h1><FONT face=verdana>".$pTitle." </FONT></h1>");
 	fwrite($pHandle, "<FONT face=verdana size=2>");
-	fwrite($pHandle, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>\r\n");
+	fwrite($pHandle, "<p>Date : ".ucwords(strftime("%A %x %X",mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))))."</p>");
 	fwrite($pHandle, "<p>===================================================</p><BR><TABLE><TR><TD>");
 	fwrite($pHandle, "<FONT face=verdana size=2>");
 }
@@ -457,6 +466,8 @@ function fCOM_PrintFile_Email($pHandle, $pNom, $pEmail) {
 	if ($pNom != "" AND $pEmail != "") {
 		$Email=str_replace(';', '>; "'.$pNom.'" < ', $pEmail);
 		fwrite($pHandle, '"'.$pNom.'" < '.$Email.'>; ');
+		//fwrite($pHandle, '"'.$pNom.'" < '.$Email.'>; ');
+		//fwrite($pHandle, utf8_encode('"'.$pNom.'" < '.$Email.'>; '));
 	}
 }
 

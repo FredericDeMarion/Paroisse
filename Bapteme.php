@@ -11,7 +11,8 @@ session_start();
 // 22/04/2017 : AffecterBaseBapteme correction retour vers la bonne page après sauvegarde baptisé et $Qui remplacé par $_GET['Qui']
 // 19/09/2017 correction de la date sous list_accompagnateur_sssession %m/%d/%y
 //==================================================================================================
-// 10/05/18 : Optimisation de l'affichage de la date du baptême (sans les secondes) dans le listing
+// 10/05/2018 : Optimisation de l'affichage de la date du baptême (sans les secondes) dans le listing
+// 12/05/2019 : Optimisation code appel aux fonctions fCOM_PrintFile_* dans list_accompagnateur_sssession
 //==================================================================================================
 
 
@@ -203,12 +204,16 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accompagnateur_sssessio
 	$aujourdhui = date("F j, Y, g:i a");
 	$File_Counter=1;
 	
+	$temp = "load/ListeMail_00.php";
+	$handle_main = fopen($temp, 'w');
+	fCOM_PrintFile_Init($handle_main, "Liste des adresses mail préparation Baptême bébé");
+	
 	echo '<table class="table table-bordered table-hover table-sm">';
 	echo '<thead><tr>';
 	$trcolor = "#EEEEEE";
 	echo '<th scope="col">Session</th>';
 	echo '<th scope="col">Enfant</th>';
-	echo '<th scope="col">Parents</th>';
+	echo '<th scope="col">Parents&nbsp&nbsp <i class="fa fa-long-arrow-right"></i> </FONT><FONT face=verdana size=2><A HREF="load/ListeMail_00.php">e_mail</A></FONT></th>';
 	echo '<th scope="col">Téléphone</th>';
 	echo '<th scope="col">Date</th>';
 	echo '<th scope="col">Heure</th>';
@@ -252,27 +257,15 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accompagnateur_sssessio
 			echo '<A HREF="load/ListeMail_'.$File_Counter.'.php">Récupérer liste e_mail</A></FONT></TD>';
 				
 			if ($File_Counter==2) {
-					// fermeture du fichier avant d'ouvrir le suivant
-				fwrite($handle, "</TD></TR><TR><TD> </TD></TR><TR><TD> </TD></TR><TR><TD>\r\n\r\n\r\n");
-				fwrite($handle, "<FONT face=verdana size=2>");
-				fwrite($handle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-				fwrite($handle, "</FONT></td></tr></table>\r\n");
-				fwrite($handle, "</body>\r\n</html>\r\n");
+				// fermeture du fichier avant d'ouvrir le suivant
+				fCOM_PrintFile_End($handle);
 				fclose($handle);
 			}
 			$temp = "load/ListeMail_".$File_Counter.".php";
 			$handle = fopen($temp, 'w');
-			fwrite($handle, "<html><head><title>Liste adresses mail</title></head>\r\n<body><br>");
-			fwrite($handle, "<h1><FONT face=verdana>Liste des adresses mail : ".$TitreLigneSession."</FONT></h1>\r\n");
-			fwrite($handle, "<FONT face=verdana size=2>");
-			fwrite($handle, "<p>Date : ".$aujourdhui."</p>\r\n");
-			fwrite($handle, "<p>===================================================</p><br>\r\n<table>");
+			fCOM_PrintFile_Init($handle, "Liste des adresses mail : ".$TitreLigneSession);
 			echo "<tr><td><font face=verdana size=2>";
-			fwrite($handle, "<FONT face=verdana size=2>");
 			$File_Counter += 1;
-
-			//echo '<td align="center" bgcolor="#A1A1A1" colspan=4>';
-			//echo "<font face=verdana size=2>Prévoir ".$Total_pers." couverts.</font></td>";
 			echo "</TR>";
 			$MemoAccompagnateur = $row['Accompagnateur'];
 			$MemoSSession = $row['SS_Session'];
@@ -296,9 +289,9 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accompagnateur_sssessio
 			echo '<td>'.$row['SS_Session'].'</td>';
 		}
 			
-		echo '<td>';
+		echo '<TD>';
 		fCOM_Display_Photo($row['Baptise'], "", $row['Baptise_id'], "edit_Individu", False);
-		echo '</td>';
+		echo '</TD>';
 			
 		echo '<TD>';
 		$Simplifier = array("\\", "<BR>");
@@ -306,9 +299,10 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accompagnateur_sssessio
 		$AddParents=str_replace($Simplifier, "", $row['Parents_e_mail']);
         echo '<A HREF="mailto:'.$AddParents.'?subject= Préparation Baptême : " TITLE="Envoyer un mail à '.$NomParents.'">'.$row['Parents'].'</A>';
 		echo '</TD>';
-		fwrite($handle, '"'.$NomParents.'"< '.$AddParents.'>; ');
-			
-		echo '<td>'.format_Telephone($row['Parents_tel'], " ").'<BR>'.$AddParents.'</TD>';
+		fCOM_PrintFile_Email($handle, $NomParents, $AddParents);
+		fCOM_PrintFile_Email($handle_main, $NomParents, $AddParents);
+		
+		echo '<TD>'.format_Telephone($row['Parents_tel'], " ").'<BR>'.$AddParents.'</TD>';
 
 		echo '<TD>'.$Date.'</TD>';
 		echo '<TD>'.$Heure.'</TD>';
@@ -318,12 +312,10 @@ if ( isset( $_GET['action'] ) AND $_GET['action']=="list_accompagnateur_sssessio
 	}
 	echo '</tbody>';
 	echo '</table>';
-	fwrite($handle, "</TD></TR><TR><TD> </TD></TR><TR><TD> </TD></TR><TR><TD>\r\n\r\n\r\n");
-	fwrite($handle, "<FONT face=verdana size=2>");
-	fwrite($handle, "(Faites un copier+coller de toute la liste ci-dessus vers la zone destinataire de votre mail)");
-	fwrite($handle, "</FONT></td></tr></table>\r\n");
-	fwrite($handle, "</BODY>\r\n</html>\r\n");
-	fclose($handle);
+	if (isset($handle)) {fCOM_PrintFile_End($handle);}
+	if (isset($handle)) {fclose($handle);}
+	fCOM_PrintFile_End($handle_main);
+	fclose($handle_main);
 	fMENU_bottom();
 	exit();
 }		
